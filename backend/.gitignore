@@ -1,0 +1,11 @@
+node_modules
+._*
+*.out
+*.log
+prisma/dev*
+*~
+.env
+.DS_Store
+.vscode/
+package-lock.json
+coverage/
