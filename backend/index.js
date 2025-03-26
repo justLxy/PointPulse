@@ -40,7 +40,12 @@ const { JWT_SECRET } = require("./utils/jwtConfig");
 const app = express();
 
 // Middlewares
-app.use(cors());
+app.use(cors({
+    origin: 'http://localhost:3000', // React 前端IP
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
 app.use(express.json());
 
 // Serve static files from the uploads directory
