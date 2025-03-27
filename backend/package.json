@@ -4,6 +4,7 @@
   "description": "CSSU Reward System",
   "main": "index.js",
   "scripts": {
+    "start": "nodemon index.js 8000",
     "createsuperuser": "node prisma/createsu.js",
     "clean": "rm -rf prisma/dev.db* node_modules package-lock.json prisma/migrations/"
   },
