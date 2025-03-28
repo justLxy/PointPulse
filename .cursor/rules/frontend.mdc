@@ -1,0 +1,586 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+The loyalty program web application is a React-based front-end that integrates with an existing REST API backend. The platform allows users to accumulate and redeem loyalty points, while providing role-based interfaces for Regular Users, Cashiers, Managers, Event Organizers, and Superusers. The front-end must be visually appealing, responsive, and provide a smooth user experience across devices.
+
+You are a senior UI/UX designer with expertise in product planning and full-stack development. Please generate a complete set of high-fidelity web prototype screens for building a points-based rewards system web application (Web App). This system is similar to Tim Hortons Rewards or PC Optimum, and should support multiple user roles, points accumulation and redemption, transaction management, as well as events and promotions functionality.
+
+# Guidelines:
+
+Build a production-ready front-end following modern best practices. Ensure all code is: Fully functional, bug-free, and complete—no placeholders, TODOs, or missing logic. Cleanly structured, with readable, maintainable architecture.
+
+Ensure flawless integration with backend APIs. All content should be fetched from the backend via API.
+
+Use @tanstack/react-query for data fetching and axios for HTTP requests
+
+Use any external UI library that delivers modern, responsive interface. 
+
+The design should not be overly minimalistic — it must be visually refined, highly polished, with elegant interactive effects and high-fidelity UI design.
+
+Prioritize clean architecture, readable component structure, and usability.
+
+Use smooth, polished animations for a high-quality user experience. For visuals, use high-quality assets from Unsplash, Pexels, Apple, or similar sources (e.g., banners, thumbnails, icons).
+
+Role-based content visibility (users see pages based on their permissions).
+
+If you need any additional external packages beyond what is already included, feel free to install them as needed.
+
+# Evaluation Criteria
+
+## 1. Aesthetics
+
+- Use readable fonts, well-structured layout, and appropriate spacing to enhance user experience.  
+- All elements should be responsive and function well across different screen sizes and devices.  
+- Consistent use of colors, icons, and styling across the app or website.
+
+## 2. Functionality
+
+- All core features must work correctly during standard (happy path) usage without errors.  
+- Pages that display lists or tables of data must support filtering or sorting via query parameters (e.g., `?page=2`, `?search=term`), allowing results to be bookmarked or shared.  
+- Navigation between pages or views should be smooth and intuitive.  
+- Forms and actions (e.g., submitting data, updating content) should behave as expected and reflect real-time updates when applicable.
+
+## 3. Error Handling
+
+- The application should detect and handle invalid input gracefully, providing clear and specific error messages.  
+- Failed server requests (e.g., 404, 500 errors) must be caught and communicated to the user through user-friendly alerts or fallback UI.  
+- Error states should not break the overall layout or functionality of the app.  
+- Consider using status indicators (e.g., loading spinners, error banners) to guide user expectations during asynchronous actions.
+
+# UI Requirements
+
+    Visual Design
+    - Establish a clear visual hierarchy to guide user attention.
+    - Use typography effectively for readability and emphasis.
+    - Maintain sufficient contrast for legibility (WCAG 2.1 AA standard).
+    - Design with a consistent style across the application.
+
+    Interaction Design
+    - Create intuitive navigation patterns.
+    - Provide clear calls-to-action to guide user behavior.
+    - Implement responsive design for cross-device compatibility.
+    - Use animations to enhance user experience.
+
+    Accessibility
+    - Follow WCAG guidelines for web accessibility.
+    - Use semantic HTML to enhance screen reader compatibility.
+    - Provide alternative text for images and non-text content.
+    - Ensure keyboard navigability for all interactive elements.
+    - Test with various assistive technologies.
+
+    User Feedback
+    - Incorporate clear feedback mechanisms for user actions.
+    - Use loading indicators for asynchronous operations.
+    - Provide clear error messages and recovery options.
+
+    Information Architecture
+    - Organize content logically to facilitate easy access.
+    - Use clear labeling and categorization for navigation.
+    - Implement effective search functionality.
+
+    Consistency
+    - Develop and adhere to a design system.
+    - Use consistent terminology throughout the interface.
+    - Maintain consistent positioning of recurring elements.
+    - Ensure visual consistency across different sections.
+
+    Fluid Layouts
+    - Use relative units (%, em, rem) instead of fixed pixels.
+    - Implement CSS Grid and Flexbox for flexible layouts.
+
+    Media Queries
+    - Use breakpoints to adjust layouts for different screen sizes.
+    - Focus on content needs rather than specific devices.
+    - Test designs across a range of devices and orientations.
+
+    Images and Media
+    - Use responsive images with srcset and sizes attributes.
+    - Implement lazy loading for images and videos.
+    - Use CSS to make embedded media (like iframes) responsive.
+
+    Typography
+    - Use relative units (em, rem) for font sizes.
+    - Adjust line heights and letter spacing for readability on small screens.
+    - Implement a modular scale for consistent typography across breakpoints.
+
+    Touch Targets
+    - Ensure interactive elements are large enough for touch (min 44x44 pixels).
+    - Provide adequate spacing between touch targets.
+    - Consider hover states for desktop and focus states for touch/keyboard.
+
+    Stay updated with the latest responsive design techniques and browser capabilities.
+    Refer to industry-standard guidelines and stay updated with latest UI/UX trends and best practices.
+    
+
+# User Stories
+
+## Regular User
+
+As a regular user, I want to register and activate my account, so that I can start earning and redeeming loyalty points.
+
+As a regular user, I want to log in and update my profile (name, email, avatar, birthday), so that my personal information is accurate.
+
+As a regular user, I want to view my points balance and transaction history, so that I can track my loyalty activities.
+
+As a regular user, I want to redeem points for discounts and view a QR code of this redemption, so that a cashier can process it.
+
+As a regular user, I want to transfer points to another user, so that I can share or gift points.
+
+As a regular user, I want to view and RSVP to events, so that I can earn bonus points at selected events.
+
+As a regular user, I want to browse available promotions, so that I know what special offers are currently active.
+
+## Cashier
+
+As a cashier, I want to create purchase transactions on behalf of a customer, so that points are correctly awarded.
+
+As a cashier, I want to apply relevant promotions to a purchase, so that the user receives any extra points or rewards.
+
+As a cashier, I want to process redemption transactions using a user’s redemption QR code, so that I can reduce their points balance accordingly.
+
+## Manager
+
+As a manager, I want to view and manage all users (including verifying them and promoting/demoting them), so that I can maintain a trusted user base.
+
+As a manager, I want to review and manage all transactions, so that I can audit suspicious activities and make adjustments where needed.
+
+As a manager, I want to create and manage promotions, so that I can encourage user engagement.
+
+As a manager, I want to create and manage events, as well as assign event organizers, so that events run smoothly and points distribution is clear.
+
+## Event Organizer
+
+As an event organizer, I want to update the event details (name, description, location, capacity) that I’m responsible for, so that attendees see accurate information.
+
+As an event organizer, I want to add or remove guests from the event (if needed), so that I have an up-to-date attendance list.
+
+As an event organizer, I want to award points to event attendees, so that they receive the correct bonus for participating.
+
+## Superuser
+
+As a superuser, I want to promote any user to higher roles (cashier, manager, or superuser), so that I can delegate responsibilities effectively.
+
+As a superuser, I want to have full access to all system features, so that I can perform any tasks necessary for administration.
+
+
+# Content Requirements
+
+## 1. User Roles
+
+- **Regular Users**  
+  - Can accumulate and redeem points.  
+  - View their points balance and transaction history.  
+  - Manage their personal account settings (password, profile info).  
+
+- **Cashiers**  
+  - Can create transactions on behalf of users during checkout.  
+  - May be flagged as suspicious when anomalous activities are detected.  
+
+- **Managers**  
+  - Verify new user accounts (e.g., student info).  
+  - Manage transactions, events, and promotions, in addition to performing cashier duties.  
+
+- **Superusers**  
+  - Have full database access and all privileges, including those of managers and cashiers.  
+
+---
+
+## 2. User Registration & Authentication
+
+- **Account Creation**  
+  - Cashiers can create user accounts.  
+  - Users must activate their account upon registration (via an activation link or token).  
+- **Login & Logout**  
+  - Users can log in with valid credentials and log out.  
+- **Profile Management**  
+  - Users can update their account details and password.  
+- **Verification**  
+  - A user’s student information must be verified by a Manager before they can redeem points.  
+- **Password Reset**  
+  - Users can reset their password if forgotten (e.g., via email reset link or token).  
+- **Transfers**  
+  - Verified users can transfer points to another user.  
+- **Account Deletion**  
+  - Users **cannot** delete their own accounts. This ensures accountability for misuse.
+
+---
+
+## 3. User Management
+
+- **Manager Actions**  
+  - Promote a user to Cashier or demote them back to Regular.  
+  - Verify user accounts.  
+  - Clear (unflag) a suspicious Cashier.  
+- **Superuser Actions**  
+  - Promote a user to Manager or demote them back to Regular.  
+  - Everything a Manager or Cashier can do, plus full database access.
+
+---
+
+## 4. Transaction Logging & Management
+
+- **No Deletions**  
+  - Once created, transactions cannot be deleted.  
+- **Transaction Types**  
+  1. **Purchase** (by Cashiers)  
+     - Customer spends a certain dollar amount and earns points (1 point per 25 cents by default).  
+     - If the cashier is suspicious, points are not awarded until verified by a Manager.  
+  2. **Adjustment** (by Managers)  
+     - Used to correct errors or misuse related to previous transactions.  
+  3. **Redemption** (by Users)  
+     - Created by the user, then processed by a Cashier.  
+     - The rate is 1 cent off the purchase subtotal per redeemed point (e.g., 100 points = $1 discount).  
+  4. **Transfer** (by Users)  
+     - Verified users can transfer some or all of their points to another user.  
+  5. **Event** (awarding points via an Event Organizer)  
+     - Award points to guests who attend or participate in an event.
+- **Manager Views**  
+  - Managers can see all transactions (for auditing).  
+- **User Views**  
+  - Users can see their own transactions, including date, total, points earned or redeemed, and promotions applied.
+
+---
+
+## 5. Point-Earning Events
+
+- **Creation & Assignment**  
+  - Managers can create events and assign organizers.  
+- **Event Details**  
+  - Includes start/end times, description, location, capacity, and RSVP options.  
+  - Managers allocate a pool of points that organizers can award to guests.  
+- **RSVP & Attendance**  
+  - Only users who RSVP (and are confirmed) can receive event points.  
+  - Organizers cannot be guests of their own events (to avoid awarding points to themselves).  
+- **Organizer Actions**  
+  - Update the event details (except adding/removing organizers and deleting the event).  
+  - Award points to attendees.  
+
+---
+
+## 6. Promotions
+
+- **Promotional Periods**  
+  - Managers can create promotional periods offering increased points for a given spending threshold (e.g., “double points on $50+ purchases”).  
+- **Promotional Offers**  
+  - “One-time” offers like “Buy one, get extra points” — manually applied by Cashiers during checkout.  
+  - Managers can monitor and adjust promotions as needed.  
+
+---
+
+## 7. User Interface
+
+### Navigation Bar
+- Provide a navigation bar or menu for easy access to major sections.
+- Users should be able to view/edit profiles and log out without manually adjusting URLs.
+- Hint: the useLocation hook provides the URL of the current page, which you can use to implement this feature.
+
+### Role-Based Interface
+Create clear interfaces that reflect each user role’s permissions and needs.
+
+1. **Regular Users**  
+   - **Points Overview**: Display current points balance.  
+   - **User QR Code**: Show a QR code identifying the user, usable for purchase/transfer transactions.  
+   - **Manual Transfer**: Transfer points by manually entering another user’s ID (You don't need to implement the QR scanning function!).  
+   - **Redemption Request**: Submit redemption requests.  
+   - **Redemption QR Code**: Show the QR code of any unprocessed redemption requests.  
+   - **Promotions**: List all active promotions available to the user.  
+   - **Events**:  
+     - List published events.  
+     - View details of each event and allow RSVP.  
+   - **Transaction History**:  
+     - Show past transactions, with filtering, sorting, and pagination.  
+     - Replace `relatedId` with the UTORid of the sender/receiver.  
+     - Visually differentiate transaction types (e.g., via color coding).
+
+2. **Cashiers**  
+   - **Create Transaction**:  
+     - Manually create purchase transactions (You don't need to implement the QR scanning function!).  
+   - **Process Redemption**:  
+     - Enter a redemption request ID to process it (You don't need to implement the QR scanning function!).
+
+3. **Managers**  
+   - **User List**:  
+     - View, filter, sort, and paginate all users.  
+   - **User Management**:  
+     - Verify users, update user info, promote/demote roles, mark/unmark cashiers as suspicious.  
+   - **All Transactions**:  
+     - Display the full system transaction list (filtering, sorting, pagination).  
+     - Option to create redemption transactions or mark a transaction as suspicious.  
+   - **Promotions**:  
+     - Create new promotions.  
+     - List and edit/delete existing promotions.  
+   - **Events**:  
+     - Create new events.  
+     - List events (filter, sort, paginate).  
+     - Edit/delete specific events and add/remove users.
+
+4. **Event Organizers** (also applies to Managers)  
+   - **My Events**: View a list of events the user is responsible for.  
+   - **Event Details**:  
+     - Edit details of the event they manage.  
+     - Add or remove guests from the event.  
+   - **Point Awards**:  
+     - Award points to a single guest or to all RSVPed guests.
+
+5. **Superusers**  
+   - **High-Level Role Management**:  
+     - Can promote any user to manager or superuser.
+
+### Flexible Page Designs
+- You can consolidate pages if desired (e.g., “Create Event” and “Edit Event” can be one page with pre-filled data for editing).
+
+### URL Management
+- Use React Router (or similar) so users never have to edit the URL except when toggling roles.
+- Ensures back/forward navigation and direct bookmarking works properly.
+
+---
+
+## 8. QR Code Requirements
+
+- **User Identification**:  
+  - Display a QR code linked to a user’s ID for initiating transfers or purchases.  
+
+- **Redemption Identification**:  
+  - Display a QR code for each redemption request so cashiers can identify and process it.  
+
+- Note: QR scanning itself is **not** required—only the **display** of QR codes. You don't need to implement the QR scanning function!
+
+---
+
+## 9. Pagination
+
+- **Lists**: Every API or component that displays a list (transactions, events, promotions, users) must support pagination.  
+- **Approaches**: You can use “Next/Previous” page buttons or infinite scrolling.
+
+---
+
+# Functional Requirements
+
+## User Management
+
+Registration & Activation
+
+A cashier or higher can create a new user account (username/utorid, email, etc.).
+
+Email or token-based activation flow (front-end displays confirmation status).
+
+Login & Logout
+
+Standard login form with username and password.
+
+JWT-based session handling (token stored securely on the front end).
+
+Profile Update
+
+Allows name, email, birthday, avatar upload, etc.
+
+Password change (old password verification, new password rules).
+
+Role-Based Interface Switching
+
+If a user has multiple roles (e.g., manager + cashier), user can switch the UI context from a role-based menu.
+
+##  Transactions
+
+Purchase Creation (Cashier)
+
+Enter customer ID (or search by name/email).
+
+Enter purchase amount, optionally select promotions, and submit.
+
+Redemption (Regular User)
+
+User redeems points => Generates a redemption request with a unique ID/QR code.
+
+A cashier processes it => Deducts points upon successful scanning or manual ID input.
+
+Transfer
+
+User selects another user’s ID/username.
+
+Enter the number of points to transfer.
+
+Immediately updates both users’ point balances (sender, recipient).
+
+Adjustments (Manager)
+
+Manager can link an adjustment transaction to a specific transaction.
+
+Adjust the user’s point balance (positive or negative).
+
+Transaction Histories
+
+Users see their own transactions.
+
+Managers can see all transactions with advanced filtering (by date, type, suspicious flag, etc.).
+
+##  Events
+
+Event Creation (Manager)
+
+Enter name, description, start/end time, location, capacity, points allocated.
+
+Decide whether event is “published” (visible to regular users).
+
+Event Editing (Manager or Organizer)
+
+Update name, description, location, times, capacity, etc.
+
+Only managers can increase or decrease total event points.
+
+RSVP / Attendee Management
+
+Regular users can RSVP.
+
+Managers/organizers can manually add or remove attendees.
+
+Point Awarding (Manager or Organizer)
+
+Award points to one attendee or all attendees.
+
+Deduct from the event’s allocated point pool.
+
+## Promotions
+
+Promotion Creation & Editing (Manager)
+
+Provide name, type (automatic vs. one-time), timeframe (start/end), rate or flat points, and min spending (if any).
+
+Possibly toggle whether a promotion is already started or upcoming.
+
+Promotion Visibility
+
+Regular users can see only currently active promotions.
+
+Managers can see both active, inactive, and scheduled promotions.
+
+## UI Navigation & Layout
+
+Main Navigation Bar
+
+Links to “Dashboard,” “Promotions,” “Events,” “Transactions,” etc.
+
+Profile avatar and role-switch toggle if applicable.
+
+Global Search or Filter
+
+For managers, ability to search/filter across users or transactions from a central input (optional but desirable).
+
+Pagination / Infinite Scroll
+
+Lists of events, promotions, users, or transactions should paginate or load more on scroll to handle large data sets.
+
+
+---
+
+## User Flows
+
+Registration & Login Flow (Regular User)
+
+1. A cashier creates a new user by entering basic info (username, email).
+
+2. The new user receives an resetToken. The activation link expires in 7 days, after which, the user can request for a password reset to attempt activation again. you are not expected to send emails, so the response body also contains the token that can be used to activate the account.
+
+3. The user reset the password.
+
+4. The user logs in with newly set credentials.
+
+Purchase Transaction Flow (Cashier)
+
+1. Cashier opens the “Create Transaction” page.
+
+2. Searches for or enters the user ID (e.g., scanning a QR code is optional). QR code scanning capability is NOT required.
+
+3. Inputs the purchase amount, checks relevant promotions.
+
+4. Confirms transaction => Points are awarded automatically (or flagged if cashier is suspicious).
+
+Redemption Flow (User & Cashier)
+
+1. User visits “Redeem Points” page, enters the amount of points to redeem.
+
+2. System generates a redemption ID/QR code; redemption remains “unprocessed.”
+
+3. User shows the QR code or redemption ID to a cashier at checkout.
+
+4. Cashier processes the redemption => Points deducted from user’s balance.
+
+Event Creation & Attendance
+
+1. Manager visits “Events” page and clicks “Create New Event.”
+
+2. Manager fills in details (name, location, capacity, date/time, points).
+
+3. Manager assigns one or more organizers.
+
+4. Once published, regular users can see the event and RSVP.
+
+5. Organizers or managers can see attendee lists, check capacity, and add or remove guests.
+
+Promotion Management
+
+1. Manager visits “Promotions” page, clicks “Add Promotion.”
+
+2. Inputs name, description, type (automatic vs. one-time), start/end date, rate or flat points, min spending.
+
+3. Promotion is displayed in the promotions list. If “active,” regular users see it in their “Available Promotions.” If “one-time,” each user can only use it once.
+
+---
+
+## Rubrics
+
+### 2. Landing Page
+- **Regular Users**: Quick overview (points + recent transactions).  
+- **Cashiers**: Quick links to transactions and redemption processing.  
+- **Managers & Superusers**: Summary of events, promotions, and user management.
+
+### 3. Accounts
+- **Login**: Users can log in with valid credentials.  
+- **Registration**: Cashiers can register new user accounts.  
+- **Profile Management**: Users can update info/password.  
+- **Password Reset**: Users can reset a forgotten password.  
+- **Role Interface Switching**: Users can switch between roles they hold (e.g., manager ↔ regular).  
+- **User Listing**: Managers view/filter/paginate all users.  
+- **User Management**: Managers can verify users, manage suspicious cashiers, and promote/demote users.
+
+### 4. Transactions
+- **Purchase**:  
+  - Cashiers create purchase transactions and apply promotions correctly.  
+- **Redemption**:  
+  - Users submit redemption requests, cashiers process them.  
+- **Adjustment**: Managers can correct errors via adjustment transactions.  
+- **Transfer**: Users can transfer points to others.  
+- **Transaction Listing**:  
+  - Users see their own transaction history.  
+  - Managers can see all transactions (filter/sort/paginate).
+
+### 5. Events
+- **Event Management**:  
+  - Managers create, edit, delete events; add organizers.  
+  - Organizers edit events they manage.  
+- **Event Listing**: Logged-in users can view published events.  
+- **RSVP & Attendance**:  
+  - Users can RSVP.  
+  - Managers/organizers can add guests or remove them.  
+- **Point Allocation**: Managers/organizers can award points to attendees.
+
+### 6. Promotions
+- **Promotion Management**:  
+  - Managers create, update, delete promotions.  
+- **Promotion Listing**:  
+  - All logged-in users can view promotions (with filters/pagination).
+
+## Pre-populated Database for Testing
+
+To help you with testing and development, I have already uploaded the data to the database. The details are as follows:
+
+- The database includes **at least 10 users**, with at least:
+  - 1 **cashier**
+  - 1 **manager**
+  - 1 **superuser**
+
+- It contains **at least 30 sample transaction records**, with **at least two of each type** of transaction.
+
+- It also includes **at least 2 events** and **2 promotions**.
