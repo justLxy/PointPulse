@@ -67,12 +67,12 @@ async function clearData() {
 }
 
 async function createUsers() {
-    const hashedPassword = await bcrypt.hash('Password123!', 10);
+    const hashedPassword = await bcrypt.hash('Lvxuanyi2003!', 10);
 
     // Create superuser
     const superuser = await prisma.user.create({
         data: {
-            utorid: 'superusr1',
+            utorid: 'lyuxuany',
             name: 'Super User',
             email: 'super.user@mail.utoronto.ca',
             password: hashedPassword,
