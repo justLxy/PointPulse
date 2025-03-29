@@ -437,11 +437,12 @@ const Header = () => {
   if (activeRole === 'cashier') {
     navLinks.push(
       { path: '/transactions/create', label: 'Create Transaction' },
-      { path: '/transactions/process', label: 'Process Redemption' }
+      { path: '/transactions/process', label: 'Process Redemption' },
+      { path: '/users/create', label: 'Create User' }
     );
   }
   
-  if (activeRole === 'manager') {
+  if (activeRole === 'manager' || activeRole === 'superuser') {
     navLinks.push(
       { path: '/users', label: 'Users' },
       { path: '/transactions', label: 'Transactions' }

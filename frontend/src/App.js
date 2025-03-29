@@ -16,6 +16,8 @@ import PasswordResetConfirmation from './pages/auth/PasswordResetConfirmation';
 // Import user pages
 import Profile from './pages/Profile';
 import Dashboard from './pages/Dashboard';
+import Users from './pages/Users';
+import CreateUser from './pages/users/CreateUser';
 
 // Import transaction pages
 import CreateTransaction from './pages/transactions/CreateTransaction';
@@ -26,7 +28,6 @@ import Transactions from './pages/transactions/Transactions';
 import Promotions from './pages/Promotions';
 import Events from './pages/Events';
 import EventDetail from './pages/EventDetail';
-import Users from './pages/Users';
 
 // Create a query client
 const queryClient = new QueryClient({
@@ -185,6 +186,16 @@ const App = () => {
                 <ProtectedRoute allowedRoles={['manager', 'superuser']}>
                   <Layout>
                     <Transactions />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/users/create"
+              element={
+                <ProtectedRoute allowedRoles={['cashier', 'manager', 'superuser']}>
+                  <Layout>
+                    <CreateUser />
                   </Layout>
                 </ProtectedRoute>
               }

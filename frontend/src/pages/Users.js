@@ -236,6 +236,7 @@ const Users = () => {
     verified: false,
     suspicious: false,
     role: 'regular',
+    email: '',
   });
   
   // Get users with current filters
@@ -333,6 +334,7 @@ const Users = () => {
       verified: user.verified,
       suspicious: user.suspicious || false,
       role: user.role,
+      email: user.email
     });
     setEditModalOpen(true);
   };
@@ -510,6 +512,34 @@ const Users = () => {
                     <FaCheck />
                   </Button>
                 )}
+
+                {user.role === 'cashier' && (
+                  <Button 
+                    size="small" 
+                    variant={user.suspicious ? "success" : "danger"}
+                    style={{ 
+                      color: user.suspicious ? 'white' : 'white', 
+                      borderColor: user.suspicious ? '#27ae60' : '#e74c3c',
+                      backgroundColor: user.suspicious ? '#27ae60' : '#e74c3c'
+                    }}
+                    onClick={() => {
+                      updateUser(
+                        { 
+                          userId: user.id, 
+                          userData: { suspicious: !user.suspicious } 
+                        },
+                        {
+                          onSuccess: () => {
+                            // 成功更新状态
+                          },
+                        }
+                      );
+                    }}
+                    title={user.suspicious ? "Clear Suspicious Flag" : "Mark as Suspicious"}
+                  >
+                    <FaExclamationTriangle />
+                  </Button>
+                )}
               </ActionButtons>
             </TableRow>
           ))
@@ -614,14 +644,35 @@ const Users = () => {
       >
         <ModalContent>
           <ModalForm>
-            <Select
-              label="Verification Status"
-              value={editData.verified.toString()}
-              onChange={(e) => setEditData((prev) => ({ ...prev, verified: e.target.value === 'true' }))}
-            >
-              <option value="true">Verified</option>
-              <option value="false">Unverified</option>
-            </Select>
+            <Input
+              label="Email"
+              value={editData.email || ''}
+              onChange={(e) => setEditData((prev) => ({ ...prev, email: e.target.value }))}
+              placeholder="Enter email address"
+              helperText="Valid University of Toronto email"
+            />
+            
+            {!editData.verified && (
+              <Button
+                fullWidth
+                onClick={() => setEditData((prev) => ({ ...prev, verified: true }))}
+                style={{ marginBottom: theme.spacing.md }}
+              >
+                Verify User
+              </Button>
+            )}
+            
+            {editData.verified && (
+              <div style={{ 
+                backgroundColor: '#27ae60', 
+                color: 'white', 
+                padding: theme.spacing.md, 
+                borderRadius: theme.radius.md,
+                marginBottom: theme.spacing.md 
+              }}>
+                User is verified. Verification cannot be revoked.
+              </div>
+            )}
             
             {(selectedUser?.role === 'cashier' || editData.role === 'cashier') && (
               <Select
@@ -678,7 +729,6 @@ const Users = () => {
         isOpen={viewUserDetails}
         onClose={() => {
           setViewUserDetails(false);
-          setSelectedUser(null);
         }}
         title="User Details"
         size="medium"
@@ -715,7 +765,10 @@ const Users = () => {
             
             <ModalActions>
               <Button
-                onClick={() => handleEditUser(selectedUser)}
+                onClick={() => {
+                  setViewUserDetails(false);
+                  handleEditUser(selectedUser);
+                }}
                 style={{ flex: 1 }}
               >
                 Edit User
@@ -724,7 +777,6 @@ const Users = () => {
                 variant="outlined"
                 onClick={() => {
                   setViewUserDetails(false);
-                  setSelectedUser(null);
                 }}
                 style={{ flex: 1 }}
               >
