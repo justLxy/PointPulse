@@ -4,6 +4,7 @@ import styled from '@emotion/styled';
 import { css } from '@emotion/react';
 import theme from '../../styles/theme';
 import { useAuth } from '../../contexts/AuthContext';
+import { API_URL } from '../../services/api';
 import {
   FaUser,
   FaSignOutAlt,
@@ -50,15 +51,18 @@ const Nav = styled.nav`
   
   @media (max-width: 768px) {
     display: ${({ isOpen }) => (isOpen ? 'flex' : 'none')};
-    position: fixed;
+    position: absolute;
     top: 70px;
     left: 0;
     right: 0;
     background-color: ${theme.colors.background.paper};
     flex-direction: column;
-    align-items: flex-start;
-    padding: ${theme.spacing.md};
+    align-items: stretch;
+    padding: ${theme.spacing.lg};
     box-shadow: ${theme.shadows.md};
+    max-height: calc(100vh - 70px);
+    overflow-y: auto;
+    z-index: ${theme.zIndex.dropdown};
   }
 `;
 
@@ -85,7 +89,9 @@ const NavLink = styled(Link)`
   
   @media (max-width: 768px) {
     margin: ${theme.spacing.xs} 0;
+    padding: ${theme.spacing.md};
     width: 100%;
+    text-align: left;
   }
 `;
 
@@ -105,13 +111,17 @@ const MenuToggle = styled.button`
 const ProfileSection = styled.div`
   display: flex;
   align-items: center;
-  margin-left: ${theme.spacing.xl};
   gap: ${theme.spacing.md};
+  margin-right: ${theme.spacing.xl};
   
   @media (max-width: 768px) {
-    margin-left: 0;
-    margin-top: ${theme.spacing.md};
+    margin-top: 0;
+    margin-right: 0;
+    margin-bottom: ${theme.spacing.lg};
     width: 100%;
+    justify-content: center;
+    border-bottom: 1px solid ${theme.colors.border.light};
+    padding-bottom: ${theme.spacing.lg};
   }
 `;
 
@@ -186,12 +196,14 @@ const DropdownMenu = styled.div`
   
   @media (max-width: 768px) {
     position: absolute;
-    left: 0;
+    top: calc(100% + 10px);
+    left: 50%;
     transform: ${({ isOpen }) => (isOpen 
-      ? 'translateY(0)' 
-      : 'translateY(-10px)')};
-    margin-top: ${theme.spacing.sm};
+      ? 'translateX(-50%) translateY(0)' 
+      : 'translateX(-50%) translateY(-10px)')};
+    margin-top: 0;
     width: 220px;
+    max-width: 220px;
   }
 `;
 
@@ -316,10 +328,21 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
+  const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
   
   const profileDropdownRef = useRef(null);
   const roleDropdownRef = useRef(null);
   const closeProfileDropdownTimer = useRef(null);
+  
+  // Detect mobile view
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileView(window.innerWidth <= 768);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -356,7 +379,8 @@ const Header = () => {
     setIsMenuOpen(!isMenuOpen);
   };
   
-  const toggleProfileDropdown = () => {
+  const toggleProfileDropdown = (e) => {
+    if (e) e.stopPropagation();
     setIsProfileDropdownOpen(!isProfileDropdownOpen);
   };
   
@@ -424,11 +448,18 @@ const Header = () => {
     );
   }
   
-  const handleProfileClick = () => {
-    window.location.href = "/profile";
+  const handleProfileClick = (e) => {
+    // On mobile, toggle dropdown instead of navigating directly
+    if (isMobileView) {
+      toggleProfileDropdown(e);
+    } else {
+      window.location.href = "/profile";
+    }
   };
   
   const handleProfileMouseEnter = () => {
+    if (isMobileView) return; // Skip for mobile devices
+    
     if (closeProfileDropdownTimer.current) {
       clearTimeout(closeProfileDropdownTimer.current);
     }
@@ -436,9 +467,23 @@ const Header = () => {
   };
   
   const handleProfileMouseLeave = () => {
+    if (isMobileView) return; // Skip for mobile devices
+    
     closeProfileDropdownTimer.current = setTimeout(() => {
       setIsProfileDropdownOpen(false);
     }, 100);
+  };
+  
+  const handleProfileMenuItemClick = () => {
+    setIsProfileDropdownOpen(false);
+    setIsMenuOpen(false); // 在移动设备上也关闭主菜单
+  };
+  
+  const handleNavLinkClick = () => {
+    // 关闭所有打开的菜单和下拉列表
+    setIsMenuOpen(false);
+    setIsProfileDropdownOpen(false);
+    setIsRoleDropdownOpen(false);
   };
   
   return (
@@ -455,16 +500,6 @@ const Header = () => {
       {currentUser && (
         <>
           <Nav isOpen={isMenuOpen}>
-            {navLinks.map((link) => (
-              <NavLink
-                key={link.path}
-                to={link.path}
-                active={location.pathname === link.path ? 1 : 0}
-              >
-                {link.label}
-              </NavLink>
-            ))}
-            
             <ProfileSection>
               <ProfileDropdown 
                 ref={profileDropdownRef}
@@ -475,7 +510,7 @@ const Header = () => {
                   onClick={handleProfileClick}
                 >
                   {currentUser.avatarUrl ? (
-                    <img src={currentUser.avatarUrl} alt={currentUser.name} />
+                    <img src={`${API_URL}${currentUser.avatarUrl}`} alt={currentUser.name} />
                   ) : (
                     getInitials(currentUser.name)
                   )}
@@ -508,6 +543,13 @@ const Header = () => {
                     </div>
                   </div>
                   <Divider />
+                  <DropdownItem 
+                    to="/profile" 
+                    onClick={handleProfileMenuItemClick}
+                  >
+                    <FaUser />
+                    Profile
+                  </DropdownItem>
                   <DropdownButton onClick={handleLogout}>
                     <FaSignOutAlt />
                     Logout
@@ -536,6 +578,17 @@ const Header = () => {
                 </div>
               )}
             </ProfileSection>
+            
+            {navLinks.map((link) => (
+              <NavLink
+                key={link.path}
+                to={link.path}
+                active={location.pathname === link.path ? 1 : 0}
+                onClick={handleNavLinkClick}
+              >
+                {link.label}
+              </NavLink>
+            ))}
           </Nav>
         </>
       )}

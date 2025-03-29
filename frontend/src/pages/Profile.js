@@ -18,11 +18,14 @@ import {
   FaTimes 
 } from 'react-icons/fa';
 import QRCode from '../components/common/QRCode';
+import { API_URL } from '../services/api';
 
 const ProfileContainer = styled.div`
   display: grid;
   grid-template-columns: 1fr;
   gap: ${theme.spacing.xl};
+  width: 100%;
+  max-width: 100%;
   
   @media (min-width: 768px) {
     grid-template-columns: 350px 1fr;
@@ -34,6 +37,12 @@ const SidePanel = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${theme.spacing.lg};
+  width: 100%;
+  max-width: 100%;
+  
+  @media (max-width: 768px) {
+    padding: 0 ${theme.spacing.xs};
+  }
 `;
 
 const MainContent = styled.div`
@@ -41,6 +50,7 @@ const MainContent = styled.div`
   flex-direction: column;
   gap: ${theme.spacing.lg};
   width: 100%;
+  max-width: 100%;
 `;
 
 const PageTitle = styled.h1`
@@ -51,8 +61,8 @@ const PageTitle = styled.h1`
 `;
 
 const Avatar = styled.div`
-  width: 150px;
-  height: 150px;
+  width: 120px;
+  height: 120px;
   border-radius: ${theme.radius.full};
   background-color: ${theme.colors.primary.main};
   color: ${theme.colors.primary.contrastText};
@@ -64,6 +74,11 @@ const Avatar = styled.div`
   margin: 0 auto ${theme.spacing.md} auto;
   position: relative;
   overflow: hidden;
+  
+  @media (min-width: 768px) {
+    width: 150px;
+    height: 150px;
+  }
   
   img {
     width: 100%;
@@ -133,6 +148,14 @@ const PointsCard = styled.div`
   padding: ${theme.spacing.lg};
   border-radius: ${theme.radius.lg};
   text-align: center;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 auto;
+  
+  @media (max-width: 768px) {
+    border-radius: ${theme.radius.md};
+    max-width: calc(100vw - ${theme.spacing.md} * 2);
+  }
   
   h3 {
     font-size: ${theme.typography.fontSize.lg};
@@ -190,16 +213,25 @@ const InfoItem = styled.div`
   svg {
     color: ${theme.colors.primary.main};
     margin-right: ${theme.spacing.md};
+    flex-shrink: 0;
+    min-width: 16px;
+  }
+  
+  @media (max-width: 768px) {
+    flex-wrap: wrap;
   }
 `;
 
 const InfoLabel = styled.span`
   font-weight: ${theme.typography.fontWeights.medium};
   width: 120px;
+  flex-shrink: 0;
 `;
 
 const InfoValue = styled.span`
   color: ${theme.colors.text.secondary};
+  word-break: break-word;
+  flex: 1;
 `;
 
 const TabContainer = styled.div`
@@ -257,6 +289,37 @@ const AvatarLoadingOverlay = styled.div`
   @keyframes spin {
     to { transform: rotate(360deg); }
   }
+`;
+
+const PageWrapper = styled.div`
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-y: visible;
+  padding: ${theme.spacing.md};
+  box-sizing: border-box;
+  
+  @media (max-width: 768px) {
+    padding: ${theme.spacing.md} ${theme.spacing.sm};
+  }
+`;
+
+const StyledCard = styled(Card)`
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 auto;
+  border-radius: ${theme.radius.lg};
+  overflow: hidden;
+  
+  @media (max-width: 768px) {
+    border-radius: ${theme.radius.md};
+    max-width: calc(100vw - ${theme.spacing.md} * 2);
+  }
+`;
+
+const ResponsiveQRCode = styled(QRCode)`
+  max-width: 100%;
+  height: auto;
 `;
 
 const Profile = () => {
@@ -411,23 +474,19 @@ const Profile = () => {
   };
   
   const renderUserInfo = () => (
-    <Card style={{ width: '100%' }}>
+    <StyledCard>
       <Card.Header>
         <Card.Title>User Information</Card.Title>
-        <Button variant="text" onClick={() => {
-          if (isEditing) {
-            // 取消编辑，重置表单数据
-            setFormData({
-              name: profile?.name || '',
-              email: profile?.email || '',
-              birthday: profile?.birthday ? profile.birthday.split('T')[0] : '',
-            });
-          }
-          setIsEditing(!isEditing);
-        }}>
-          {isEditing ? <FaTimes /> : <FaEdit />}
-          {isEditing ? 'Cancel' : 'Edit'}
-        </Button>
+        {!isEditing && (
+          <Button 
+            variant="text" 
+            size="sm" 
+            leftIcon={<FaEdit />}
+            onClick={() => setIsEditing(true)}
+          >
+            Edit
+          </Button>
+        )}
       </Card.Header>
       <Card.Body style={{ padding: theme.spacing.lg }}>
         {isEditing ? (
@@ -526,11 +585,11 @@ const Profile = () => {
           </>
         )}
       </Card.Body>
-    </Card>
+    </StyledCard>
   );
   
   const renderChangePassword = () => (
-    <Card style={{ width: '100%' }}>
+    <StyledCard>
       <Card.Header>
         <Card.Title>Change Password</Card.Title>
       </Card.Header>
@@ -574,7 +633,7 @@ const Profile = () => {
           </Button>
         </PasswordForm>
       </Card.Body>
-    </Card>
+    </StyledCard>
   );
   
   if (isLoading) {
@@ -582,18 +641,18 @@ const Profile = () => {
   }
   
   return (
-    <div>
+    <PageWrapper>
       <PageTitle>My Profile</PageTitle>
       
       <ProfileContainer>
         <SidePanel>
-          <Card>
+          <StyledCard>
             <Card.Body style={{ padding: theme.spacing.xl, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <Avatar onClick={handleAvatarClick} style={{ cursor: isUpdatingAvatar ? 'wait' : 'pointer' }}>
                 {avatarPreview ? (
                   <img src={avatarPreview} alt="Avatar preview" />
                 ) : profile?.avatarUrl ? (
-                  <img src={`http://localhost:8000${profile.avatarUrl}`} alt={profile.name} />
+                  <img src={`${API_URL}${profile.avatarUrl}`} alt={profile.name} />
                 ) : (
                   getInitials(profile?.name)
                 )}
@@ -622,25 +681,25 @@ const Profile = () => {
                 <Badge verified={profile?.verified}>{profile?.verified ? 'Verified' : 'Not Verified'}</Badge>
               </UserInfo>
             </Card.Body>
-          </Card>
+          </StyledCard>
           
           <PointsCard>
             <h3>Available Points</h3>
             <div className="points">{profile?.points || 0}</div>
           </PointsCard>
           
-          <Card>
+          <StyledCard>
             <Card.Header>
               <Card.Title>Your User QR Code</Card.Title>
             </Card.Header>
             <Card.Body style={{ display: 'flex', justifyContent: 'center', padding: theme.spacing.lg }}>
               <QRCode 
                 value={profile?.utorid || ''} 
-                size={180}
+                size={Math.min(180, window.innerWidth - 100)}
                 level="H"
               />
             </Card.Body>
-          </Card>
+          </StyledCard>
         </SidePanel>
         
         <MainContent>
@@ -662,7 +721,7 @@ const Profile = () => {
           {activeTab === 'info' ? renderUserInfo() : renderChangePassword()}
         </MainContent>
       </ProfileContainer>
-    </div>
+    </PageWrapper>
   );
 };
 

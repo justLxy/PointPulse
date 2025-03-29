@@ -3,15 +3,35 @@ import styled from '@emotion/styled';
 import { keyframes } from '@emotion/react';
 import theme from '../../styles/theme';
 
-const spin = keyframes`
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-`;
-
 const pulse = keyframes`
   0% { transform: scale(1); opacity: 1; }
   50% { transform: scale(1.1); opacity: 0.8; }
   100% { transform: scale(1); opacity: 1; }
+`;
+
+const drawLine = keyframes`
+  0% { stroke-dashoffset: 1000; }
+  100% { stroke-dashoffset: 0; }
+`;
+
+const beatLine = keyframes`
+  0% { transform: scaleY(1); }
+  30% { transform: scaleY(1.03); }
+  60% { transform: scaleY(0.97); }
+  100% { transform: scaleY(1); }
+`;
+
+const circlePulse = keyframes`
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.2); opacity: 0.8; }
+  75% { transform: scale(0.9); opacity: 0.9; }
+  100% { transform: scale(1); opacity: 1; }
+`;
+
+const circleRhythm = keyframes`
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
 `;
 
 const LoadingContainer = styled.div`
@@ -23,13 +43,50 @@ const LoadingContainer = styled.div`
   min-height: 200px;
 `;
 
-const Spinner = styled.div`
-  width: 50px;
-  height: 50px;
-  border: 4px solid rgba(0, 0, 0, 0.1);
-  border-radius: 50%;
-  border-top-color: ${theme.colors.primary.main};
-  animation: ${spin} 1s linear infinite;
+const LogoContainer = styled.div`
+  width: 150px;
+  height: 80px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const HeartbeatSVG = styled.svg`
+  width: 100%;
+  height: 100%;
+  
+  .heartbeat-line {
+    stroke: #28A9E0;
+    stroke-width: 10;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 0;
+    animation: 
+      ${drawLine} 2s ease-out forwards,
+      ${beatLine} 1.5s ease-in-out infinite;
+    transform-origin: center;
+  }
+  
+  .circle-left {
+    fill: #28A9E0;
+    animation: 
+      ${circlePulse} 0.6s ease-out 0.6s forwards,
+      ${circleRhythm} 2s ease-in-out 1.5s infinite;
+    opacity: 0;
+    transform-origin: center;
+  }
+  
+  .circle-right {
+    fill: #28A9E0;
+    animation: 
+      ${circlePulse} 0.6s ease-out 1.2s forwards,
+      ${circleRhythm} 2s ease-in-out 2s infinite;
+    opacity: 0;
+    transform-origin: center;
+  }
 `;
 
 const LoadingText = styled.div`
@@ -42,7 +99,16 @@ const LoadingText = styled.div`
 const LoadingSpinner = ({ text = "Loading..." }) => {
   return (
     <LoadingContainer>
-      <Spinner />
+      <LogoContainer>
+        <HeartbeatSVG viewBox="0 0 500 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path 
+            className="heartbeat-line"
+            d="M100,100 L180,100 L220,40 L280,160 L320,100 L400,100" 
+          />
+          <circle className="circle-left" cx="100" cy="100" r="20" />
+          <circle className="circle-right" cx="400" cy="100" r="20" />
+        </HeartbeatSVG>
+      </LogoContainer>
       <LoadingText>{text}</LoadingText>
     </LoadingContainer>
   );

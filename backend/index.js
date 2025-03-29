@@ -18,6 +18,9 @@ const port = (() => {
     return num;
 })();
 
+// Configuration
+const FRONTEND_URL = 'http://localhost:3000'; // This can be changed when deployed
+
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
@@ -39,11 +42,9 @@ const { JWT_SECRET } = require("./utils/jwtConfig");
 // Create Express app
 const app = express();
 
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
-
 // Middlewares
 app.use(cors({
-    origin: 'FRONTEND_URL',
+    origin: FRONTEND_URL,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
 }));

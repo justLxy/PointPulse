@@ -1,8 +1,11 @@
 import axios from 'axios';
 
+// API URL configuration - can be changed when deploying
+export const API_URL = 'http://localhost:8000';
+
 // Create an axios instance with a base URL
 const api = axios.create({
-  baseURL: 'http://localhost:8000',
+  baseURL: API_URL,
   // Don't set a default Content-Type - axios will set the appropriate one 
   // including boundaries for multipart/form-data
 });
