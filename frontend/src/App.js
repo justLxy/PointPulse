@@ -25,7 +25,7 @@ import ProcessRedemption from './pages/transactions/ProcessRedemption';
 import Transactions from './pages/transactions/Transactions';
 
 // Import other pages
-import Promotions from './pages/Promotions';
+import Promotions from './pages/promotions/Promotions';
 import Events from './pages/Events';
 import EventDetail from './pages/EventDetail';
 
