@@ -142,8 +142,12 @@ const UserEmail = styled.div`
 `;
 
 const UserRole = styled.div`
+  display: flex;
+  justify-content: center;
+  
   @media (max-width: 768px) {
     margin-bottom: ${theme.spacing.sm};
+    justify-content: flex-start;
   }
 `;
 
@@ -164,6 +168,7 @@ const ActionButtons = styled.div`
 
 const BadgeWrapper = styled.div`
   display: flex;
+  flex-direction: column;
   flex-wrap: wrap;
   gap: ${theme.spacing.xs};
   align-items: center;
@@ -175,6 +180,7 @@ const BadgeWrapper = styled.div`
   @media (max-width: 768px) {
     margin-bottom: ${theme.spacing.sm};
     max-width: 100%;
+    align-items: flex-start;
   }
 `;
 
@@ -442,11 +448,11 @@ const Users = () => {
       
       <Card>
         <TableHeader>
-          <div>User</div>
-          <div>Email</div>
-          <div>Role</div>
-          <div>Status</div>
-          <div>Actions</div>
+          <div style={{ display: 'flex', justifyContent: 'center' }}>User</div>
+          <div style={{ display: 'flex', justifyContent: 'center' }}>Email</div>
+          <div style={{ display: 'flex', justifyContent: 'center' }}>Role</div>
+          <div style={{ display: 'flex', justifyContent: 'center' }}>Status</div>
+          <div style={{ display: 'flex', justifyContent: 'center' }}>Actions</div>
         </TableHeader>
         
         {isLoading ? (
@@ -486,7 +492,7 @@ const Users = () => {
                 </Badge>
               </UserRole>
               
-              <div>
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
                 <MobileLabel>Status:</MobileLabel>
                 {renderUserBadges(user)}
               </div>
@@ -497,7 +503,7 @@ const Users = () => {
                   variant="outlined" 
                   onClick={() => handleViewUser(user)}
                 >
-                  <FaEye />
+                  <FaEye size={15} />
                 </Button>
                 
                 <Button 
@@ -505,7 +511,7 @@ const Users = () => {
                   variant="outlined" 
                   onClick={() => handleEditUser(user)}
                 >
-                  <FaUserEdit />
+                  <FaUserEdit size={15} />
                 </Button>
                 
                 {!user.verified && (
