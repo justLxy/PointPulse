@@ -926,20 +926,54 @@ const Dashboard = () => {
           <FaUser />
           <span>My Profile</span>
         </ShortcutCard>
-        <ShortcutCard to="/promotions">
-          <FaTags />
-          <span>Promotions</span>
-        </ShortcutCard>
-        <ShortcutCard to="/events">
-          <FaCalendarAlt />
-          <span>Events</span>
-        </ShortcutCard>
-        {/* Only show additional shortcuts for cashiers/managers */}
-        {activeRole !== 'regular' && (
-          <ShortcutCard to="/transactions/create">
-            <FaQrcode />
-            <span>Create Transaction</span>
-          </ShortcutCard>
+        
+        {activeRole === 'regular' && (
+          <>
+            <ShortcutCard to="/promotions">
+              <FaTags />
+              <span>Promotions</span>
+            </ShortcutCard>
+            <ShortcutCard to="/events">
+              <FaCalendarAlt />
+              <span>Events</span>
+            </ShortcutCard>
+          </>
+        )}
+        
+        {/* Cashier specific shortcuts */}
+        {activeRole === 'cashier' && (
+          <>
+            <ShortcutCard to="/users/create">
+              <FaUser />
+              <span>Create User</span>
+            </ShortcutCard>
+            <ShortcutCard to="/transactions/process">
+              <FaGift />
+              <span>Process Redemption</span>
+            </ShortcutCard>
+            <ShortcutCard to="/transactions/create">
+              <FaQrcode />
+              <span>Create Transaction</span>
+            </ShortcutCard>
+          </>
+        )}
+        
+        {/* Manager and higher role shortcuts */}
+        {(activeRole === 'manager' || activeRole === 'superuser') && (
+          <>
+            <ShortcutCard to="/promotions">
+              <FaTags />
+              <span>Promotions</span>
+            </ShortcutCard>
+            <ShortcutCard to="/events">
+              <FaCalendarAlt />
+              <span>Events</span>
+            </ShortcutCard>
+            <ShortcutCard to="/transactions/create">
+              <FaQrcode />
+              <span>Create Transaction</span>
+            </ShortcutCard>
+          </>
         )}
       </ShortcutsSection>
       

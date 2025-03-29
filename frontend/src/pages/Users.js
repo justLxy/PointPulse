@@ -65,14 +65,14 @@ const PageInfo = styled.div`
 
 const TableHeader = styled.div`
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 150px 150px;
+  grid-template-columns: 1fr 1fr 1fr 180px 150px;
   padding: ${theme.spacing.md};
   font-weight: ${theme.typography.fontWeights.semiBold};
   background-color: ${theme.colors.background.default};
   border-bottom: 1px solid ${theme.colors.border.light};
   
   @media (max-width: 1024px) {
-    grid-template-columns: 1fr 1fr 1fr 100px;
+    grid-template-columns: 1fr 1fr 1fr 180px;
   }
   
   @media (max-width: 768px) {
@@ -82,7 +82,7 @@ const TableHeader = styled.div`
 
 const TableRow = styled.div`
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 150px 150px;
+  grid-template-columns: 1fr 1fr 1fr 180px 150px;
   padding: ${theme.spacing.md};
   border-bottom: 1px solid ${theme.colors.border.light};
   align-items: center;
@@ -92,7 +92,7 @@ const TableRow = styled.div`
   }
   
   @media (max-width: 1024px) {
-    grid-template-columns: 1fr 1fr 1fr 100px;
+    grid-template-columns: 1fr 1fr 1fr 180px;
   }
   
   @media (max-width: 768px) {
@@ -142,8 +142,12 @@ const UserEmail = styled.div`
 `;
 
 const UserRole = styled.div`
+  display: flex;
+  justify-content: center;
+  
   @media (max-width: 768px) {
     margin-bottom: ${theme.spacing.sm};
+    justify-content: flex-start;
   }
 `;
 
@@ -164,11 +168,19 @@ const ActionButtons = styled.div`
 
 const BadgeWrapper = styled.div`
   display: flex;
-  gap: ${theme.spacing.xs};
+  flex-direction: column;
   flex-wrap: wrap;
+  gap: ${theme.spacing.xs};
+  align-items: center;
+  min-height: 26px; /* Ensure consistent height even when badges are different */
+  
+  /* Create two rows of badges with fixed positions */
+  max-width: 150px;
   
   @media (max-width: 768px) {
     margin-bottom: ${theme.spacing.sm};
+    max-width: 100%;
+    align-items: flex-start;
   }
 `;
 
@@ -274,7 +286,7 @@ const Users = () => {
     return apiParams;
   };
 
-  const { users, totalCount, isLoading, createUser, isCreatingUser, updateUser, isUpdatingUser } = useUsers(getApiParams());
+  const { users, totalCount, isLoading, createUser, isCreatingUser, updateUser, isUpdatingUser, refetch } = useUsers(getApiParams());
   
   // 打印数据用于调试
   React.useEffect(() => {
@@ -316,12 +328,19 @@ const Users = () => {
     
     const userData = { ...editData };
     
+    // 如果分配了任何角色且用户未验证，则自动验证用户
+    if (userData.role && !userData.verified) {
+      userData.verified = true;
+    }
+    
     updateUser(
       { userId: selectedUser.id, userData },
       {
         onSuccess: () => {
           setEditModalOpen(false);
           setSelectedUser(null);
+          // 成功后立即刷新用户列表
+          refetch();
         },
       }
     );
@@ -348,18 +367,24 @@ const Users = () => {
   // Render badge for user status
   const renderUserBadges = (user) => (
     <BadgeWrapper>
-      {user.verified ? (
-        <Badge style={{ backgroundColor: '#27ae60', color: 'white' }}>Verified</Badge>
-      ) : (
-        <Badge style={{ backgroundColor: '#e74c3c', color: 'white' }}>Unverified</Badge>
-      )}
+      <div style={{ display: 'flex', gap: theme.spacing.xs, marginBottom: '4px' }}>
+        {user.verified ? (
+          <Badge style={{ backgroundColor: '#27ae60', color: 'white' }}>Verified</Badge>
+        ) : (
+          <Badge style={{ backgroundColor: '#e74c3c', color: 'white' }}>Unverified</Badge>
+        )}
+        
+        {user.lastLogin ? (
+          <Badge style={{ backgroundColor: '#27ae60', color: 'white' }}>Active</Badge>
+        ) : (
+          <Badge style={{ backgroundColor: '#e74c3c', color: 'white' }}>Inactive</Badge>
+        )}
+      </div>
       
-      {user.suspicious && <Badge style={{ backgroundColor: '#f39c12', color: 'white' }}>Suspicious</Badge>}
-      
-      {user.lastLogin ? (
-        <Badge style={{ backgroundColor: '#27ae60', color: 'white' }}>Active</Badge>
-      ) : (
-        <Badge style={{ backgroundColor: '#e74c3c', color: 'white' }}>Inactive</Badge>
+      {user.suspicious && (
+        <div>
+          <Badge style={{ backgroundColor: '#e74c3c', color: 'white' }}>Suspicious</Badge>
+        </div>
       )}
     </BadgeWrapper>
   );
@@ -423,11 +448,11 @@ const Users = () => {
       
       <Card>
         <TableHeader>
-          <div>User</div>
-          <div>Email</div>
-          <div>Role</div>
-          <div>Status</div>
-          <div>Actions</div>
+          <div style={{ display: 'flex', justifyContent: 'center' }}>User</div>
+          <div style={{ display: 'flex', justifyContent: 'center' }}>Email</div>
+          <div style={{ display: 'flex', justifyContent: 'center' }}>Role</div>
+          <div style={{ display: 'flex', justifyContent: 'center' }}>Status</div>
+          <div style={{ display: 'flex', justifyContent: 'center' }}>Actions</div>
         </TableHeader>
         
         {isLoading ? (
@@ -467,7 +492,7 @@ const Users = () => {
                 </Badge>
               </UserRole>
               
-              <div>
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
                 <MobileLabel>Status:</MobileLabel>
                 {renderUserBadges(user)}
               </div>
@@ -478,7 +503,7 @@ const Users = () => {
                   variant="outlined" 
                   onClick={() => handleViewUser(user)}
                 >
-                  <FaEye />
+                  <FaEye size={15} />
                 </Button>
                 
                 <Button 
@@ -486,7 +511,7 @@ const Users = () => {
                   variant="outlined" 
                   onClick={() => handleEditUser(user)}
                 >
-                  <FaUserEdit />
+                  <FaUserEdit size={15} />
                 </Button>
                 
                 {!user.verified && (
@@ -498,11 +523,12 @@ const Users = () => {
                       updateUser(
                         { 
                           userId: user.id, 
-                          userData: { verified: true } 
+                          userData: { verified: "true" } 
                         },
                         {
                           onSuccess: () => {
-                            // 可以在这里显示成功消息
+                            // 成功后立即刷新用户列表
+                            refetch();
                           },
                         }
                       );
@@ -518,7 +544,7 @@ const Users = () => {
                     size="small" 
                     variant={user.suspicious ? "success" : "danger"}
                     style={{ 
-                      color: user.suspicious ? 'white' : 'white', 
+                      color: 'white', 
                       borderColor: user.suspicious ? '#27ae60' : '#e74c3c',
                       backgroundColor: user.suspicious ? '#27ae60' : '#e74c3c'
                     }}
@@ -530,7 +556,8 @@ const Users = () => {
                         },
                         {
                           onSuccess: () => {
-                            // 成功更新状态
+                            // 成功后立即刷新用户列表
+                            refetch();
                           },
                         }
                       );
@@ -681,7 +708,7 @@ const Users = () => {
                 onChange={(e) => setEditData((prev) => ({ ...prev, suspicious: e.target.value === 'true' }))}
               >
                 <option value="false">Normal</option>
-                <option value="true">Suspicious</option>
+                <option value="true" style={{ color: '#e74c3c' }}>Suspicious</option>
               </Select>
             )}
             
@@ -704,6 +731,20 @@ const Users = () => {
                 </>
               )}
             </Select>
+            
+            {!editData.verified && editData.role && (
+              <div style={{ 
+                backgroundColor: '#3498db', 
+                color: 'white', 
+                padding: theme.spacing.md, 
+                borderRadius: theme.radius.md,
+                marginTop: theme.spacing.sm,
+                marginBottom: theme.spacing.md,
+                fontSize: theme.typography.fontSize.sm
+              }}>
+                Note: Assigning any role will automatically verify this user.
+              </div>
+            )}
           </ModalForm>
           
           <ModalActions>
@@ -747,7 +788,8 @@ const Users = () => {
                 <p><strong>Last Login:</strong> {selectedUser.lastLogin ? new Date(selectedUser.lastLogin).toLocaleString() : 'Never'}</p>
                 <p><strong>Verified:</strong> {selectedUser.verified ? 'Yes' : 'No'}</p>
                 {selectedUser.role === 'cashier' && (
-                  <p><strong>Suspicious:</strong> {selectedUser.suspicious ? 'Yes' : 'No'}</p>
+                  <p><strong>Suspicious:</strong> {selectedUser.suspicious ? 
+                    <span style={{ color: '#e74c3c', fontWeight: 'bold' }}>Yes</span> : 'No'}</p>
                 )}
               </div>
               

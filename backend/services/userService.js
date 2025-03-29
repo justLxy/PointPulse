@@ -134,6 +134,7 @@ const getUsers = async (filters = {}, page = 1, limit = 10) => {
             createdAt: true,
             lastLogin: true,
             verified: true,
+            suspicious: true,
             avatarUrl: true
         },
         orderBy: {
@@ -155,7 +156,8 @@ const getUserByCashier = async (userId) => {
             utorid: true,
             name: true,
             points: true,
-            verified: true
+            verified: true,
+            suspicious: true
         }
     });
 
@@ -206,6 +208,7 @@ const getUserByManager = async (userId) => {
             createdAt: true,
             lastLogin: true,
             verified: true,
+            suspicious: true,
             avatarUrl: true
         }
     });
@@ -257,6 +260,7 @@ const getCurrentUser = async (userId) => {
             createdAt: true,
             lastLogin: true,
             verified: true,
+            suspicious: true,
             avatarUrl: true
         }
     });

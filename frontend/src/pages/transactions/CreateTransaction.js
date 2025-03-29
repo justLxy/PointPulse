@@ -295,9 +295,27 @@ const CreateTransaction = () => {
     setSearchLoading(true);
     
     try {
-      const userData = await UserService.getUser(utorid);
-      setUser(userData);
+      // 先通过 utorid 搜索用户列表
+      const usersData = await UserService.getUsers({ name: utorid });
+      
+      if (usersData && usersData.results && usersData.results.length > 0) {
+        // 找到匹配的用户
+        const matchingUser = usersData.results.find(u => u.utorid.toLowerCase() === utorid.toLowerCase());
+        
+        if (matchingUser) {
+          // 获取用户详细信息
+          const userData = await UserService.getUser(matchingUser.id);
+          setUser(userData);
+        } else {
+          setError('User not found. Please check the UTORid and try again.');
+          setUser(null);
+        }
+      } else {
+        setError('User not found. Please check the UTORid and try again.');
+        setUser(null);
+      }
     } catch (err) {
+      console.error('Search user error:', err);
       setError('User not found or you do not have permission to view this user');
       setUser(null);
     } finally {
@@ -306,6 +324,12 @@ const CreateTransaction = () => {
   };
   
   const handlePromotionToggle = (promotion) => {
+    // 如果促销活动有最低消费要求，并且当前金额低于该要求，则不允许选择
+    if (promotion.minSpending && parseFloat(amount || 0) < promotion.minSpending) {
+      toast.error(`This promotion requires a minimum spending of $${promotion.minSpending.toFixed(2)}.`);
+      return;
+    }
+    
     setSelectedPromotions((prevSelected) => {
       // If already selected, remove it
       if (prevSelected.some(p => p.id === promotion.id)) {
@@ -372,12 +396,12 @@ const CreateTransaction = () => {
     setIsSubmitting(true);
     
     try {
-      const response = await TransactionService.createPurchase(
-        user.utorid,
-        parseFloat(amount),
-        selectedPromotions.map(p => p.id),
-        remark
-      );
+      const response = await TransactionService.createPurchase({
+        utorid: user.utorid,
+        spent: parseFloat(amount),
+        promotionIds: selectedPromotions.map(p => p.id),
+        remark: remark
+      });
       
       setTransaction(response);
       setStep(2);
@@ -386,7 +410,8 @@ const CreateTransaction = () => {
       queryClient.invalidateQueries({ queryKey: ['user', user.id] });
       queryClient.invalidateQueries({ queryKey: ['allTransactions'] });
     } catch (err) {
-      setError(err.message || 'Failed to create transaction');
+      console.error('Transaction creation error:', err);
+      setError(err.message || 'Failed to create transaction. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -464,7 +489,36 @@ const CreateTransaction = () => {
               min="0" 
               placeholder="Enter purchase amount" 
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={(e) => {
+                const newAmount = e.target.value;
+                setAmount(newAmount);
+                
+                // 如果有已选的促销活动，检查它们是否仍然符合条件
+                if (selectedPromotions.length > 0) {
+                  const validPromotions = selectedPromotions.filter(
+                    promo => !promo.minSpending || parseFloat(newAmount || 0) >= promo.minSpending
+                  );
+                  
+                  // 自动取消不符合条件的促销活动
+                  if (validPromotions.length !== selectedPromotions.length) {
+                    setSelectedPromotions(validPromotions);
+                  }
+                }
+              }}
+              onBlur={() => {
+                // 检查已选促销活动是否满足最低消费要求
+                if (amount && selectedPromotions.length > 0) {
+                  const validPromotions = selectedPromotions.filter(
+                    promo => !promo.minSpending || parseFloat(amount) >= promo.minSpending
+                  );
+                  
+                  // 如果有不符合条件的促销活动，取消选择它们并显示提示
+                  if (validPromotions.length !== selectedPromotions.length) {
+                    setSelectedPromotions(validPromotions);
+                    toast.error('Some promotions were deselected because they require higher spending.');
+                  }
+                }
+              }}
               disabled={!user}
               leftIcon={<FaDollarSign size={16} />}
             />
@@ -485,26 +539,40 @@ const CreateTransaction = () => {
               </PromotionsTitle>
               
               {user && user.promotions && user.promotions.length > 0 ? (
-                user.promotions.map((promotion) => (
-                  <PromotionItem 
-                    key={promotion.id} 
-                    isSelected={selectedPromotions.some(p => p.id === promotion.id)}
-                    onClick={() => handlePromotionToggle(promotion)}
-                  >
-                    <PromotionIcon>
-                      <FaTag />
-                    </PromotionIcon>
-                    <PromotionInfo>
-                      <h4>{promotion.name}</h4>
-                      {promotion.minSpending && (
-                        <p>Min. Spend: ${promotion.minSpending.toFixed(2)}</p>
-                      )}
-                    </PromotionInfo>
-                    <PromotionValue>
-                      {promotion.rate ? `${promotion.rate}×` : `+${promotion.points}`}
-                    </PromotionValue>
-                  </PromotionItem>
-                ))
+                user.promotions.map((promotion) => {
+                  // 判断促销活动是否满足最低消费要求
+                  const isEligible = !promotion.minSpending || parseFloat(amount || 0) >= promotion.minSpending;
+                  
+                  return (
+                    <PromotionItem 
+                      key={promotion.id} 
+                      isSelected={selectedPromotions.some(p => p.id === promotion.id)}
+                      onClick={() => handlePromotionToggle(promotion)}
+                      style={{
+                        opacity: isEligible ? 1 : 0.6,
+                        cursor: isEligible ? 'pointer' : 'not-allowed'
+                      }}
+                    >
+                      <PromotionIcon>
+                        <FaTag />
+                      </PromotionIcon>
+                      <PromotionInfo>
+                        <h4>{promotion.name}</h4>
+                        {promotion.minSpending && (
+                          <p style={{ 
+                            color: isEligible ? theme.colors.text.secondary : theme.colors.error.main 
+                          }}>
+                            Min. Spend: ${promotion.minSpending.toFixed(2)}
+                            {!isEligible && ' (not eligible)'}
+                          </p>
+                        )}
+                      </PromotionInfo>
+                      <PromotionValue>
+                        {promotion.rate ? `${promotion.rate}×` : `+${promotion.points}`}
+                      </PromotionValue>
+                    </PromotionItem>
+                  );
+                })
               ) : (
                 <p>No promotions available for this user</p>
               )}
