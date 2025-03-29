@@ -33,6 +33,19 @@ const PageTitle = styled.h1`
   margin-bottom: ${theme.spacing.lg};
 `;
 
+const PageHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: ${theme.spacing.lg};
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: ${theme.spacing.md};
+  }
+`;
+
 const FilterSection = styled.div`
   display: flex;
   flex-wrap: wrap;
@@ -542,7 +555,14 @@ const Events = () => {
   
   return (
     <div>
-      <PageTitle>Events</PageTitle>
+      <PageHeader>
+        <PageTitle>Events</PageTitle>
+        {isManager && (
+          <Button onClick={() => setCreateModalOpen(true)}>
+            <FaPlus /> Create Event
+          </Button>
+        )}
+      </PageHeader>
       
       <FilterSection>
         <FilterInput>
@@ -601,12 +621,6 @@ const Events = () => {
             <option value="all">Show Full Events</option>
           </Select>
         </FilterInput>
-        
-        {isManager && (
-          <Button onClick={() => setCreateModalOpen(true)}>
-            <FaPlus /> Create Event
-          </Button>
-        )}
       </FilterSection>
       
       {isLoading ? (
@@ -742,43 +756,40 @@ const Events = () => {
                 })}
               </EventsGrid>
               
-              {/* Update pagination to show filtered count */}
-              {filteredCount > 0 && (
-                <PageControls>
+              <PageControls>
+                <PageInfo>
+                  Showing {startIndex} to {Math.min(endIndex, totalCount)} of {totalCount} events
+                  {!isManager && filteredCount < totalCount && (
+                    <span style={{ marginLeft: theme.spacing.sm, fontSize: theme.typography.fontSize.xs, color: theme.colors.text.hint }}>
+                      (Only showing published events)
+                    </span>
+                  )}
+                </PageInfo>
+                
+                <Pagination>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => handleFilterChange('page', Math.max(1, filters.page - 1))}
+                    disabled={filters.page === 1}
+                  >
+                    Previous
+                  </Button>
+                  
                   <PageInfo>
-                    Showing {Math.min(filteredCount, startIndex)} to {Math.min(endIndex, filteredCount)} of {filteredCount} events
-                    {!isManager && filteredCount < totalCount && (
-                      <span style={{ marginLeft: theme.spacing.sm, fontSize: theme.typography.fontSize.xs, color: theme.colors.text.hint }}>
-                        (Only showing published events)
-                      </span>
-                    )}
+                    Page {filters.page} of {totalPages > 0 ? totalPages : 1}
                   </PageInfo>
                   
-                  <Pagination>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={() => handleFilterChange('page', Math.max(1, filters.page - 1))}
-                      disabled={filters.page === 1}
-                    >
-                      Previous
-                    </Button>
-                    
-                    <PageInfo>
-                      Page {filters.page} of {Math.ceil(filteredCount / filters.limit)}
-                    </PageInfo>
-                    
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={() => handleFilterChange('page', Math.min(Math.ceil(filteredCount / filters.limit), filters.page + 1))}
-                      disabled={filters.page === Math.ceil(filteredCount / filters.limit)}
-                    >
-                      Next
-                    </Button>
-                  </Pagination>
-                </PageControls>
-              )}
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => handleFilterChange('page', filters.page + 1)}
+                    disabled={filters.page >= totalPages}
+                  >
+                    Next
+                  </Button>
+                </Pagination>
+              </PageControls>
             </>
           ) : (
             <EmptyState>

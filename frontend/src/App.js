@@ -18,6 +18,7 @@ import Profile from './pages/Profile';
 import Dashboard from './pages/Dashboard';
 import Users from './pages/Users';
 import CreateUser from './pages/users/CreateUser';
+import UserTransactions from './pages/UserTransactions';
 
 // Import transaction pages
 import CreateTransaction from './pages/transactions/CreateTransaction';
@@ -116,6 +117,16 @@ const App = () => {
                 <ProtectedRoute>
                   <Layout>
                     <Profile />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/user-transactions"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <UserTransactions />
                   </Layout>
                 </ProtectedRoute>
               }

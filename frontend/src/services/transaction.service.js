@@ -56,19 +56,17 @@ const TransactionService = {
     try {
       console.log('Fetching transactions with params:', params);
       
-      // 确保布尔值正确转换为字符串
       const cleanParams = {};
       for (const [key, value] of Object.entries(params)) {
-        // 跳过空字符串和null/undefined
-        if (value === '' || value === null || value === undefined) {
-          continue;
-        }
-        
-        // 布尔值转换为字符串
-        if (typeof value === 'boolean') {
-          cleanParams[key] = value.toString();
+        // Allow relatedId=null to pass through
+        if (key === 'relatedId' && value === null) {
+           cleanParams[key] = null; // Keep null for serializer
+        } else if (value === '' || value === null || value === undefined) {
+          continue; // Skip other null/undefined/empty values
+        } else if (typeof value === 'boolean') {
+          cleanParams[key] = value.toString(); // Keep boolean conversion
         } else {
-          cleanParams[key] = value;
+          cleanParams[key] = value; // Keep other values
         }
       }
       
@@ -79,12 +77,21 @@ const TransactionService = {
         paramsSerializer: params => {
           return Object.entries(params)
             .map(([key, value]) => {
-              // 确保布尔值正确序列化
+              // Explicitly handle null for relatedId by sending key=null
+              if (key === 'relatedId' && value === null) {
+                return `${encodeURIComponent(key)}=null`; 
+              }
+              // Handle boolean serialization
               if (typeof value === 'boolean') {
                 return `${encodeURIComponent(key)}=${encodeURIComponent(value.toString())}`;
               }
-              return `${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+              // Standard serialization for other types (excluding nulls not handled above)
+              if (value !== null && value !== undefined) {
+                 return `${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+              }
+              return ''; // Skip other null/undefined values if they somehow got here
             })
+            .filter(p => p !== '') // Remove empty parameters
             .join('&');
         }
       });

@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import TransactionService from '../services/transaction.service';
 import { useAuth } from '../contexts/AuthContext';
+import UserService from '../services/user.service';
 
 export const useTransactions = (params = {}) => {
   const queryClient = useQueryClient();
@@ -70,6 +71,9 @@ export const useTransactions = (params = {}) => {
     onSuccess: () => {
       toast.success('Redemption processed successfully');
       queryClient.invalidateQueries({ queryKey: ['allTransactions'] });
+      // Also invalidate userTransactions queries to refresh user dashboard and transactions list
+      queryClient.invalidateQueries({ queryKey: ['userTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['userProfile'] });
     },
     onError: (error) => {
       toast.error(error.message || 'Failed to process redemption');
@@ -83,6 +87,36 @@ export const useTransactions = (params = {}) => {
       return data;
     } catch (error) {
       toast.error(error.message || 'Failed to fetch transaction');
+      throw error;
+    }
+  };
+  
+  // Fetch transaction details including related user information
+  const fetchTransactionDetails = async (transactionId) => {
+    try {
+      const transaction = await TransactionService.getTransactionById(transactionId);
+      
+      // Enhance transaction with related user info
+      if (transaction.relatedId) {
+        try {
+          const relatedUser = await UserService.getUserById(transaction.relatedId);
+          return {
+            ...transaction,
+            relatedUser: {
+              utorid: relatedUser.utorid,
+              name: relatedUser.name,
+              role: relatedUser.role
+            }
+          };
+        } catch (error) {
+          console.warn(`Could not fetch related user for transaction ${transactionId}:`, error);
+          return transaction;
+        }
+      }
+      
+      return transaction;
+    } catch (error) {
+      console.error(`Error fetching transaction ${transactionId}:`, error);
       throw error;
     }
   };
@@ -110,6 +144,9 @@ export const useTransactions = (params = {}) => {
       markAsSuspicious: markAsSuspiciousMutation.mutate,
       isMarkingAsSuspicious: markAsSuspiciousMutation.isPending,
     } : {}),
+    
+    // New functions
+    fetchTransactionDetails,
   };
 };
 

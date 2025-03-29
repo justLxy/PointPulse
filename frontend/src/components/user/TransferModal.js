@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styled from '@emotion/styled';
 import useUserTransactions from '../../hooks/useUserTransactions';
 import Modal from '../common/Modal';
 import Button from '../common/Button';
 import Input from '../common/Input';
+import Badge from '../common/Badge';
 import theme from '../../styles/theme';
-import { FaUser, FaExchangeAlt, FaCheck } from 'react-icons/fa';
+import { FaUser, FaExchangeAlt, FaCheck, FaSearch, FaCoins } from 'react-icons/fa';
+import UserService from '../../services/user.service';
+import { useAuth } from '../../contexts/AuthContext';
 
 const TransferOptions = styled.div`
   display: grid;
@@ -111,11 +114,66 @@ const ErrorMessage = styled.div`
   border-radius: ${theme.radius.sm};
 `;
 
+const SearchContainer = styled.div`
+  display: flex;
+  gap: ${theme.spacing.sm};
+  margin-bottom: ${theme.spacing.md};
+  align-items: flex-start;
+  position: relative;
+`;
+
+const UserSection = styled.div`
+  margin-bottom: ${theme.spacing.lg};
+  padding: ${theme.spacing.lg};
+  background-color: ${theme.colors.background.default};
+  border-radius: ${theme.radius.lg};
+  border: 1px solid ${theme.colors.border.light};
+`;
+
+const UserInfo = styled.div`
+  display: flex;
+  align-items: center;
+  margin-top: ${theme.spacing.xs};
+`;
+
+const UserInfoText = styled.div`
+  h3 {
+    margin: 0;
+    font-size: ${theme.typography.fontSize.lg};
+    font-weight: ${theme.typography.fontWeights.semiBold};
+  }
+  
+  p {
+    margin: ${theme.spacing.xs} 0 0;
+    color: ${theme.colors.text.secondary};
+    font-size: ${theme.typography.fontSize.sm};
+    display: flex;
+    align-items: center;
+    gap: ${theme.spacing.xs};
+  }
+`;
+
+const Avatar = styled.div`
+  width: 48px;
+  height: 48px;
+  border-radius: ${theme.radius.full};
+  background-color: ${theme.colors.primary.main};
+  color: ${theme.colors.primary.contrastText};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: ${theme.typography.fontWeights.bold};
+  margin-right: ${theme.spacing.md};
+`;
+
 const TransferModal = ({ isOpen, onClose, availablePoints = 0 }) => {
+  const { currentUser } = useAuth();
   const [step, setStep] = useState(1);
   const [selectedAmount, setSelectedAmount] = useState(null);
   const [customAmount, setCustomAmount] = useState('');
-  const [receiverId, setReceiverId] = useState('');
+  const [receiverUtorid, setReceiverUtorid] = useState('');
+  const [foundReceiver, setFoundReceiver] = useState(null);
+  const [isSearching, setIsSearching] = useState(false);
   const [remark, setRemark] = useState('');
   const [error, setError] = useState('');
   const [transferId, setTransferId] = useState(null);
@@ -125,11 +183,25 @@ const TransferModal = ({ isOpen, onClose, availablePoints = 0 }) => {
   // Predefined amounts for quick selection
   const presetAmounts = [100, 200, 500, 1000, 2000, 5000];
   
+  // 当用户输入UTORid时，自动搜索用户
+  useEffect(() => {
+    const searchTimeout = setTimeout(() => {
+      if (receiverUtorid.trim().length >= 3) {
+        handleSearchUser();
+      } else if (receiverUtorid.trim().length === 0) {
+        setFoundReceiver(null);
+      }
+    }, 300); // 300ms防抖
+    
+    return () => clearTimeout(searchTimeout);
+  }, [receiverUtorid]);
+  
   const resetForm = () => {
     setStep(1);
     setSelectedAmount(null);
     setCustomAmount('');
-    setReceiverId('');
+    setReceiverUtorid('');
+    setFoundReceiver(null);
     setRemark('');
     setError('');
     setTransferId(null);
@@ -180,12 +252,51 @@ const TransferModal = ({ isOpen, onClose, availablePoints = 0 }) => {
   };
   
   const validateReceiver = () => {
-    if (!receiverId.trim()) {
-      setError('Please enter a valid UTORid');
+    if (!foundReceiver) {
+      setError('Please search for a valid user first');
       return false;
     }
     
     return true;
+  };
+  
+  const handleSearchUser = async () => {
+    if (!receiverUtorid.trim()) {
+      return;
+    }
+    
+    // Check if user is trying to transfer to themselves
+    if (receiverUtorid.toLowerCase() === currentUser.utorid.toLowerCase()) {
+      setError('You cannot transfer points to yourself');
+      setFoundReceiver(null);
+      return;
+    }
+    
+    setIsSearching(true);
+    setError('');
+    
+    try {
+      const user = await UserService.searchUserByUTORid(receiverUtorid);
+      if (user) {
+        // Double check that the user isn't transferring to themselves
+        if (user.id === currentUser.id) {
+          setError('You cannot transfer points to yourself');
+          setFoundReceiver(null);
+          return;
+        }
+        setFoundReceiver(user);
+      } else {
+        setFoundReceiver(null);
+        if (receiverUtorid.trim().length >= 5) {
+          setError('User not found. Please check the UTORid');
+        }
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to search for user');
+      setFoundReceiver(null);
+    } finally {
+      setIsSearching(false);
+    }
   };
   
   const handleProceed = () => {
@@ -202,19 +313,28 @@ const TransferModal = ({ isOpen, onClose, availablePoints = 0 }) => {
       
       const amount = getTransferAmount();
       
-      const response = await transferPoints({
-        userId: receiverId,
+      // 先关闭模态框，再调用转账函数
+      handleClose();
+      
+      // 调用转账函数
+      transferPoints({
+        userId: foundReceiver.id,
         amount,
         remark,
       });
-      
-      if (response && response.id) {
-        setTransferId(response.id);
-        setStep(3);
-      }
     } catch (err) {
       setError(err.message || 'Failed to transfer points');
     }
+  };
+  
+  const getInitials = (name) => {
+    if (!name) return 'U';
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
   };
   
   const renderStep1 = () => (
@@ -251,12 +371,12 @@ const TransferModal = ({ isOpen, onClose, availablePoints = 0 }) => {
       </CustomOption>
       
       <Button 
-        fullWidth 
-        onClick={handleProceed} 
+        onClick={handleProceed}
         disabled={!getTransferAmount() || getTransferAmount() > availablePoints}
+        fullWidth
         style={{ marginTop: theme.spacing.lg }}
       >
-        Proceed
+        Continue
       </Button>
     </>
   );
@@ -264,41 +384,64 @@ const TransferModal = ({ isOpen, onClose, availablePoints = 0 }) => {
   const renderStep2 = () => (
     <>
       <TransferInstructions>
-        You're about to transfer {getTransferAmount()} points to another user.
+        Enter the UTORid of the user you want to transfer {getTransferAmount()} points to.
       </TransferInstructions>
       
       {error && <ErrorMessage>{error}</ErrorMessage>}
       
-      <Input
-        label="Recipient's UTORid"
-        value={receiverId}
-        onChange={(e) => setReceiverId(e.target.value)}
-        placeholder="Enter UTORid"
-        required
-      />
+      <SearchContainer>
+        <Input
+          label="Recipient UTORid"
+          value={receiverUtorid}
+          onChange={(e) => setReceiverUtorid(e.target.value)}
+          placeholder="Enter recipient's UTORid"
+          style={{ flex: 1 }}
+        />
+      </SearchContainer>
+      
+      {isSearching && <div style={{ textAlign: 'center', margin: '10px 0' }}>Searching...</div>}
+      
+      {foundReceiver && (
+        <UserSection>
+          <UserInfo>
+            <Avatar>{getInitials(foundReceiver.name)}</Avatar>
+            <UserInfoText>
+              <h3>{foundReceiver.name}</h3>
+              <p>
+                {foundReceiver.utorid}
+                <Badge verified={foundReceiver.verified}>
+                  {foundReceiver.verified ? 'Verified' : 'Not Verified'}
+                </Badge>
+              </p>
+              <p>Current Points: {foundReceiver.points || 0}</p>
+            </UserInfoText>
+          </UserInfo>
+        </UserSection>
+      )}
       
       <Input
-        label="Add a note (optional)"
+        label="Remark (Optional)"
         value={remark}
         onChange={(e) => setRemark(e.target.value)}
-        placeholder="e.g., Thanks for helping with the project"
+        placeholder="Add a note about this transfer"
       />
       
-      <div style={{ marginTop: theme.spacing.lg, display: 'flex', gap: theme.spacing.md }}>
+      <div style={{ display: 'flex', gap: theme.spacing.md, marginTop: theme.spacing.lg }}>
         <Button 
-          variant="outlined" 
+          variant="outlined"
           onClick={() => setStep(1)}
           style={{ flex: 1 }}
-          disabled={isTransferringPoints}
         >
           Back
         </Button>
+        
         <Button 
-          style={{ flex: 1 }} 
           onClick={handleTransfer}
+          disabled={!foundReceiver || isTransferringPoints}
           loading={isTransferringPoints}
+          style={{ flex: 1 }}
         >
-          Confirm Transfer
+          Transfer Points
         </Button>
       </div>
     </>
@@ -310,35 +453,30 @@ const TransferModal = ({ isOpen, onClose, availablePoints = 0 }) => {
         <FaCheck />
       </SuccessIcon>
       
-      <h3>Transfer Successful!</h3>
-      <p>You have successfully transferred points to {receiverId}</p>
+      <h2>Transfer Successful!</h2>
+      <p>You have successfully transferred {getTransferAmount()} points to {foundReceiver?.name || 'the recipient'}.</p>
       
       <TransferInfo>
-        <p>Transfer ID: <strong>#{transferId}</strong></p>
-        <p>Amount: <strong>{getTransferAmount()} points</strong></p>
-        <p>Recipient: <strong>{receiverId}</strong></p>
+        <p><strong>Transaction ID:</strong> {transferId}</p>
+        <p><strong>Amount:</strong> {getTransferAmount()} points</p>
+        <p><strong>Recipient:</strong> {foundReceiver?.name} ({foundReceiver?.utorid})</p>
+        {remark && <p><strong>Remark:</strong> {remark}</p>}
       </TransferInfo>
       
       <Button 
-        fullWidth 
-        variant="outlined" 
         onClick={handleClose}
         style={{ marginTop: theme.spacing.lg }}
       >
-        Done
+        Close
       </Button>
     </TransferSuccessContainer>
   );
   
   return (
-    <Modal
-      isOpen={isOpen}
+    <Modal 
+      isOpen={isOpen} 
       onClose={handleClose}
-      title={
-        step === 3
-          ? "Transfer Successful"
-          : "Transfer Points"
-      }
+      title={step === 3 ? "Transfer Complete" : "Transfer Points"}
       size="medium"
     >
       {step === 1 && renderStep1()}

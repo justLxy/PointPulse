@@ -11,6 +11,7 @@ import {
   FaBars,
   FaTimes,
   FaChevronDown,
+  FaExchangeAlt,
 } from 'react-icons/fa';
 
 const HeaderContainer = styled.header`
@@ -432,6 +433,7 @@ const Header = () => {
     { path: '/', label: 'Dashboard' },
     { path: '/promotions', label: 'Promotions' },
     { path: '/events', label: 'Events' },
+    { path: '/user-transactions', label: 'Transactions' },
   ];
   
   if (activeRole === 'cashier') {
@@ -445,7 +447,7 @@ const Header = () => {
   if (activeRole === 'manager' || activeRole === 'superuser') {
     navLinks.push(
       { path: '/users', label: 'Users' },
-      { path: '/transactions', label: 'Transactions' }
+      { path: '/transactions', label: 'All Transactions' }
     );
   }
   
@@ -550,6 +552,13 @@ const Header = () => {
                   >
                     <FaUser />
                     Profile
+                  </DropdownItem>
+                  <DropdownItem 
+                    to="/user-transactions" 
+                    onClick={handleProfileMenuItemClick}
+                  >
+                    <FaExchangeAlt />
+                    My Transactions
                   </DropdownItem>
                   <DropdownButton onClick={handleLogout}>
                     <FaSignOutAlt />

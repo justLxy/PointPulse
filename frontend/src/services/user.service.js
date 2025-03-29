@@ -169,6 +169,35 @@ const UserService = {
       throw error.response ? error.response.data : new Error('Failed to fetch transactions');
     }
   },
+
+  // Search for a user by UTORid
+  searchUserByUTORid: async (utorid) => {
+    try {
+      const response = await api.get('/users', { 
+        params: { name: utorid },
+        paramsSerializer: {
+          serialize: (params) => {
+            const result = new URLSearchParams();
+            Object.entries(params).forEach(([key, value]) => {
+              if (value !== undefined && value !== null) {
+                result.append(key, value);
+              }
+            });
+            return result.toString();
+          }
+        }
+      });
+      
+      // 从返回的结果中找到完全匹配 UTORid 的用户
+      const exactMatch = response.data.results.find(
+        user => user.utorid.toLowerCase() === utorid.toLowerCase()
+      );
+      
+      return exactMatch || null;
+    } catch (error) {
+      throw error.response ? error.response.data : new Error('Failed to search user');
+    }
+  },
 };
 
 export default UserService; 
