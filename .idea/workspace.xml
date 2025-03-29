@@ -5,57 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="905b8885-b565-4a74-b7b7-a48df9f79310" name="Changes" comment="Update">
-      <change afterPath="$PROJECT_DIR$/frontend/package-lock.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/public/logo.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/public/manifest.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/components/common/Badge.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/components/common/Button.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/components/common/Card.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/components/common/Input.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/components/common/LoadingSpinner.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/components/common/Modal.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/components/common/QRCode.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/components/common/Select.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/components/common/Table.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/components/layout/Footer.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/components/layout/Header.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/components/layout/Layout.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/components/user/RedemptionModal.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/components/user/TransferModal.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/contexts/AuthContext.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/hooks/useEvents.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/hooks/usePromotions.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/hooks/useTransactions.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/hooks/useUserProfile.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/hooks/useUserTransactions.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/hooks/useUsers.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/pages/Dashboard.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/pages/EventDetail.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/pages/Events.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/pages/Profile.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/pages/Promotions.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/pages/Users.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/pages/auth/Login.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/pages/auth/PasswordReset.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/pages/auth/PasswordResetConfirmation.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/pages/transactions/CreateTransaction.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/pages/transactions/ProcessRedemption.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/pages/transactions/Transactions.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/services/api.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/services/auth.service.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/services/event.service.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/services/promotion.service.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/services/transaction.service.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/services/user.service.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/styles/GlobalStyles.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/styles/theme.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/index.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/prisma/seed.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/prisma/seed.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/services/userService.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/services/userService.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/public/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/public/index.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/App.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/App.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/Dashboard.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/Dashboard.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -77,6 +28,9 @@
     &quot;accountId&quot;: &quot;4fca2361-85c3-4acd-bd4f-4fb0324b5cba&quot;
   }
 }</component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="CurrentFile" />
+  </component>
   <component name="ProjectColorInfo">{
   &quot;customColor&quot;: &quot;&quot;,
   &quot;associatedIndex&quot;: 8
@@ -86,21 +40,21 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "main",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "npm.seed.executor": "Run",
-    "settings.editor.selected.configurable": "preferences.pluginManager",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;npm.seed.executor&quot;: &quot;Run&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/frontend/src/components/layout" />
@@ -144,8 +98,18 @@
       <workItem from="1743201999101" duration="25000" />
       <workItem from="1743204236156" duration="147000" />
       <workItem from="1743214081334" duration="58000" />
-      <workItem from="1743215452832" duration="9222000" />
+      <workItem from="1743215452832" duration="9354000" />
+      <workItem from="1743267845127" duration="3574000" />
     </task>
+    <task id="LOCAL-00001" summary="Update">
+      <option name="closed" value="true" />
+      <created>1743229823082</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1743229823082</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

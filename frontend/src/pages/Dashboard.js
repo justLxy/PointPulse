@@ -694,7 +694,7 @@ const Dashboard = () => {
   const { activeRole } = useAuth();
   const { profile, isLoading: isProfileLoading } = useUserProfile();
   const { transactions, isLoading: isTransactionsLoading } = useUserTransactions({ limit: 5 });
-  const { promotions, isLoading: isPromotionsLoading } = usePromotions({ active: true, limit: 3 });
+  const { promotions, isLoading: isPromotionsLoading } = usePromotions({ started: true, ended: false, limit: 3 });
   const { events, isLoading: isEventsLoading } = useEvents({ started: false, ended: false, limit: 3 });
   const [isRedeemModalOpen, setIsRedeemModalOpen] = useState(false);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);

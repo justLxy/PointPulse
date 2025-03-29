@@ -13,23 +13,54 @@ const UserService = {
 
   // Update current user profile
   updateProfile: async (userData) => {
-    const formData = new FormData();
-    
-    // Add fields to formData
-    if (userData.name) formData.append('name', userData.name);
-    if (userData.email) formData.append('email', userData.email);
-    if (userData.birthday) formData.append('birthday', userData.birthday);
-    if (userData.avatar) formData.append('avatar', userData.avatar);
-    
     try {
+      const formData = new FormData();
+      
+      // Add fields to formData
+      if (userData.name) formData.append('name', userData.name);
+      if (userData.email) formData.append('email', userData.email);
+      if (userData.birthday) formData.append('birthday', userData.birthday);
+      
+      // Handle avatar file specifically
+      if (userData.avatar && userData.avatar instanceof File) {
+        formData.append('avatar', userData.avatar);
+        console.log('Appending avatar file:', userData.avatar.name, userData.avatar.type);
+      }
+      
+      // Log the FormData contents for debugging
+      for (let [key, value] of formData.entries()) {
+        console.log(`FormData: ${key}:`, value instanceof File ? `File: ${value.name}` : value);
+      }
+      
       const response = await api.patch('/users/me', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
-        },
+        }
       });
       return response.data;
     } catch (error) {
+      console.error('Profile update error:', error);
       throw error.response ? error.response.data : new Error('Failed to update profile');
+    }
+  },
+
+  // Update user avatar only
+  updateAvatar: async (avatarFile) => {
+    try {
+      const formData = new FormData();
+      formData.append('avatar', avatarFile);
+      
+      console.log('Updating avatar with file:', avatarFile.name, avatarFile.type, avatarFile.size);
+      
+      const response = await api.patch('/users/me', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Avatar update error:', error);
+      throw error.response ? error.response.data : new Error('Failed to update avatar');
     }
   },
 

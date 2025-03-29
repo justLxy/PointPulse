@@ -234,9 +234,43 @@ const Tab = styled.button`
   }
 `;
 
+const AvatarLoadingOverlay = styled.div`
+  position: absolute;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: ${theme.radius.full};
+  z-index: 10;
+  
+  &::after {
+    content: '';
+    width: 24px;
+    height: 24px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+  }
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+`;
+
 const Profile = () => {
   const { currentUser } = useAuth();
-  const { profile, isLoading, updateProfile, isUpdating, updatePassword, isUpdatingPassword } = useUserProfile();
+  const { 
+    profile, 
+    isLoading, 
+    updateProfile, 
+    isUpdating, 
+    updatePassword, 
+    isUpdatingPassword,
+    updateAvatar,
+    isUpdatingAvatar
+  } = useUserProfile();
   const [activeTab, setActiveTab] = useState('info');
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -252,7 +286,6 @@ const Profile = () => {
   const [passwordError, setPasswordError] = useState('');
   const avatarInputRef = useRef(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
-  const [avatarFile, setAvatarFile] = useState(null);
   
   // Initialize form data when profile is loaded
   if (!isLoading && profile && !formData.name) {
@@ -264,19 +297,33 @@ const Profile = () => {
   }
   
   const handleAvatarClick = () => {
-    avatarInputRef.current.click();
+    if (!isUpdatingAvatar) {
+      avatarInputRef.current.click();
+    }
   };
   
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setAvatarFile(file);
+      console.log('Avatar file selected:', file.name, file.type, file.size);
       
+      // 显示本地预览
       const reader = new FileReader();
       reader.onload = () => {
         setAvatarPreview(reader.result);
       };
       reader.readAsDataURL(file);
+      
+      // 直接上传头像文件，不需要等待用户点击保存按钮
+      updateAvatar(file, {
+        onSuccess: () => {
+          console.log('Avatar updated successfully');
+          setAvatarPreview(null); // 清除预览，使用服务器返回的URL
+        },
+        onError: () => {
+          setAvatarPreview(null); // 出错时也清除预览
+        }
+      });
     }
   };
   
@@ -294,13 +341,14 @@ const Profile = () => {
     e.preventDefault();
     
     const updateData = { ...formData };
-    if (avatarFile) {
-      updateData.avatar = avatarFile;
-    }
+    
+    // 因为现在头像是单独上传的，所以在提交表单时不再包含头像文件
+    // 只有在编辑模式下用户手动选择了头像但尚未上传时才包含头像
+    // 通常这种情况不会发生，因为选择头像后会立即上传
     
     updateProfile(updateData, {
       onSuccess: () => {
-        // 保存成功后返回只读模式
+        // Stay in view mode
         setIsEditing(false);
       }
     });
@@ -539,35 +587,39 @@ const Profile = () => {
       
       <ProfileContainer>
         <SidePanel>
-          <Card elevation={2}>
-            <Card.Body>
-              <Avatar>
-                {avatarPreview || profile?.avatarUrl ? (
-                  <img
-                    src={avatarPreview || profile.avatarUrl}
-                    alt={profile?.name}
-                  />
+          <Card>
+            <Card.Body style={{ padding: theme.spacing.xl, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <Avatar onClick={handleAvatarClick} style={{ cursor: isUpdatingAvatar ? 'wait' : 'pointer' }}>
+                {avatarPreview ? (
+                  <img src={avatarPreview} alt="Avatar preview" />
+                ) : profile?.avatarUrl ? (
+                  <img src={`http://localhost:8000${profile.avatarUrl}`} alt={profile.name} />
                 ) : (
                   getInitials(profile?.name)
                 )}
-                <AvatarOverlay onClick={handleAvatarClick}>
-                  <AvatarEdit>Change Photo</AvatarEdit>
-                </AvatarOverlay>
+                
+                {isUpdatingAvatar ? (
+                  <AvatarLoadingOverlay />
+                ) : (
+                  <AvatarOverlay>
+                    <AvatarEdit>Change Photo</AvatarEdit>
+                  </AvatarOverlay>
+                )}
+                
                 <input
                   type="file"
                   ref={avatarInputRef}
                   onChange={handleAvatarChange}
                   style={{ display: 'none' }}
                   accept="image/*"
+                  disabled={isUpdatingAvatar}
                 />
               </Avatar>
               
               <UserInfo>
                 <h2>{profile?.name}</h2>
                 <p>{profile?.utorid}</p>
-                <Badge verified={profile?.verified}>
-                  {profile?.verified ? 'Verified' : 'Pending Verification'}
-                </Badge>
+                <Badge verified={profile?.verified}>{profile?.verified ? 'Verified' : 'Not Verified'}</Badge>
               </UserInfo>
             </Card.Body>
           </Card>
@@ -577,31 +629,37 @@ const Profile = () => {
             <div className="points">{profile?.points || 0}</div>
           </PointsCard>
           
-          <QRCode
-            value={profile?.utorid || ''}
-            label="Your User QR Code"
-          />
+          <Card>
+            <Card.Header>
+              <Card.Title>Your User QR Code</Card.Title>
+            </Card.Header>
+            <Card.Body style={{ display: 'flex', justifyContent: 'center', padding: theme.spacing.lg }}>
+              <QRCode 
+                value={profile?.utorid || ''} 
+                size={180}
+                level="H"
+              />
+            </Card.Body>
+          </Card>
         </SidePanel>
         
         <MainContent>
-          <div>
-            <TabContainer>
-              <Tab
-                active={activeTab === 'info'}
-                onClick={() => setActiveTab('info')}
-              >
-                User Information
-              </Tab>
-              <Tab
-                active={activeTab === 'password'}
-                onClick={() => setActiveTab('password')}
-              >
-                Change Password
-              </Tab>
-            </TabContainer>
-            
-            {activeTab === 'info' ? renderUserInfo() : renderChangePassword()}
-          </div>
+          <TabContainer>
+            <Tab
+              active={activeTab === 'info'}
+              onClick={() => setActiveTab('info')}
+            >
+              User Information
+            </Tab>
+            <Tab
+              active={activeTab === 'password'}
+              onClick={() => setActiveTab('password')}
+            >
+              Change Password
+            </Tab>
+          </TabContainer>
+          
+          {activeTab === 'info' ? renderUserInfo() : renderChangePassword()}
         </MainContent>
       </ProfileContainer>
     </div>

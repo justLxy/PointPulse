@@ -39,9 +39,11 @@ const { JWT_SECRET } = require("./utils/jwtConfig");
 // Create Express app
 const app = express();
 
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
+
 // Middlewares
 app.use(cors({
-    origin: 'http://localhost:3000', // React 前端IP
+    origin: 'FRONTEND_URL',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
 }));

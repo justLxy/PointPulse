@@ -37,6 +37,20 @@ export const useUserProfile = () => {
     },
   });
   
+  const updateAvatarMutation = useMutation({
+    mutationFn: UserService.updateAvatar,
+    onSuccess: (data) => {
+      toast.success('Avatar updated successfully');
+      // Update auth context with the latest user data
+      updateCurrentUser(data);
+      // Invalidate user profile cache
+      queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to update avatar');
+    },
+  });
+  
   const updatePasswordMutation = useMutation({
     mutationFn: ({ oldPassword, newPassword }) => {
       return AuthService.updatePassword(oldPassword, newPassword);
@@ -56,6 +70,8 @@ export const useUserProfile = () => {
     refetch,
     updateProfile: updateProfileMutation.mutate,
     isUpdating: updateProfileMutation.isPending,
+    updateAvatar: updateAvatarMutation.mutate,
+    isUpdatingAvatar: updateAvatarMutation.isPending,
     updatePassword: updatePasswordMutation.mutate,
     isUpdatingPassword: updatePasswordMutation.isPending,
   };
