@@ -1,19 +1,61 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
   <component name="ChangeListManager">
-    <list default="true" id="905b8885-b565-4a74-b7b7-a48df9f79310" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/frontend/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/eslint.config.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/index.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/package-lock.json" afterDir="false" />
+    <list default="true" id="905b8885-b565-4a74-b7b7-a48df9f79310" name="Changes" comment="Update">
+      <change afterPath="$PROJECT_DIR$/frontend/package-lock.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/public/logo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/public/manifest.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/components/common/Badge.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/components/common/Button.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/components/common/Card.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/components/common/Input.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/components/common/LoadingSpinner.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/components/common/Modal.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/components/common/QRCode.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/components/common/Select.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/components/common/Table.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/components/layout/Footer.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/components/layout/Header.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/components/layout/Layout.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/components/user/RedemptionModal.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/components/user/TransferModal.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/contexts/AuthContext.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/hooks/useEvents.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/hooks/usePromotions.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/hooks/useTransactions.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/hooks/useUserProfile.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/hooks/useUserTransactions.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/hooks/useUsers.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/pages/Dashboard.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/pages/EventDetail.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/pages/Events.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/pages/Profile.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/pages/Promotions.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/pages/Users.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/pages/auth/Login.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/pages/auth/PasswordReset.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/pages/auth/PasswordResetConfirmation.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/pages/transactions/CreateTransaction.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/pages/transactions/ProcessRedemption.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/pages/transactions/Transactions.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/services/api.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/services/auth.service.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/services/event.service.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/services/promotion.service.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/services/transaction.service.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/services/user.service.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/styles/GlobalStyles.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/styles/theme.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/prisma/seed.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/prisma/seed.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/services/userService.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/services/userService.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/public/vite.svg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/App.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/App.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/App.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/assets/react.svg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/index.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/index.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/main.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/vite.config.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/public/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/public/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/App.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/App.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -44,16 +86,26 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;npm.seed.executor&quot;: &quot;Run&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "main",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "npm.seed.executor": "Run",
+    "settings.editor.selected.configurable": "preferences.pluginManager",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/frontend/src/components/layout" />
+    </key>
+  </component>
   <component name="RunManager">
     <configuration name="seed" type="js.build_tools.npm" temporary="true" nameIsGenerated="true">
       <package-json value="$PROJECT_DIR$/backend/package.json" />
@@ -91,10 +143,16 @@
       <workItem from="1743201938008" duration="44000" />
       <workItem from="1743201999101" duration="25000" />
       <workItem from="1743204236156" duration="147000" />
+      <workItem from="1743214081334" duration="58000" />
+      <workItem from="1743215452832" duration="9222000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Update" />
+    <option name="LAST_COMMIT_MESSAGE" value="Update" />
   </component>
 </project>

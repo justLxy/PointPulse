@@ -551,10 +551,6 @@ const updateCurrentUser = async (userId, updateData, avatarUrl = null) => {
             console.log('Email validation failed: Email already in use');
             throw new Error('Email already in use');
         }
-        
-        // Set verified to false when email is updated
-        cleanUpdateData.verified = false;
-        console.log('Setting verified to false due to email update');
     }
 
     // Validate birthday if present
