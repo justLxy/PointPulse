@@ -112,6 +112,15 @@ const getEvents = async (req, res) => {
             console.log('Added manager-specific filter - published:', req.query.published);
         }
 
+        // 添加对组织者的支持，让组织者也能看到他们负责的未发布活动
+        const includeMyOrganizedEvents = req.query.includeMyOrganizedEvents === 'true';
+        console.log('Include my organized events:', includeMyOrganizedEvents);
+        
+        if (includeMyOrganizedEvents) {
+            filters.userId = req.auth.id; // 用于查找用户是组织者的活动
+            console.log('Added filter for user organized events, userId:', req.auth.id);
+        }
+
         // Check for conflicting parameters
         if (filters.started === 'true' && filters.ended === 'true') {
             console.log('Conflicting parameters: both started and ended are true');
@@ -129,7 +138,8 @@ const getEvents = async (req, res) => {
                 filters,
                 isManager,
                 page,
-                limit
+                limit,
+                includeMyOrganizedEvents
             );
             
             console.log('Events retrieved successfully. Count:', result.count);
@@ -164,6 +174,7 @@ const getEvent = async (req, res) => {
     console.log('URL:', req.originalUrl);
     console.log('Method:', req.method);
     console.log('Params:', JSON.stringify(req.params, null, 2));
+    console.log('Query:', JSON.stringify(req.query, null, 2));
     console.log('Auth user:', JSON.stringify(req.auth, null, 2));
     
     try {
@@ -205,28 +216,35 @@ const getEvent = async (req, res) => {
             organizerCount: event.organizers.length
         }, null, 2));
 
-        // 如果不是管理员，且事件未发布，且用户不是组织者，则返回404
-        if (!isManager && !event.published) {
-            const isOrganizer = event.organizers.some(org => org.id === userId);
-            console.log('Event is not published, checking if user is organizer:', isOrganizer);
-            
-            if (!isOrganizer) {
-                console.log('User is not authorized to view unpublished event');
+        // 判断用户是否是组织者
+        const isOrganizer = event.organizers.some(org => org.id === userId);
+        console.log('Is user an organizer:', isOrganizer);
+
+        // 获取includeAsOrganizer参数
+        const includeAsOrganizer = req.query.includeAsOrganizer === 'true';
+        console.log('Include as organizer:', includeAsOrganizer);
+
+        // 如果事件未发布，非管理员和非组织者且不是特别请求组织者视图的用户不能查看
+        if (!isManager && !event.published && !isOrganizer) {
+            if (!includeAsOrganizer) {
+                console.log('Event is not published and user is not authorized to view it');
+                console.log('===== GET EVENT REQUEST END (403) =====\n\n');
+                return res.status(403).json({ error: 'This event is not published yet. Only managers and organizers can view unpublished events.' });
+            } else {
+                // 如果用户请求包含组织者视图，但实际上不是组织者
+                console.log('User requested organizer view but is not an organizer');
                 console.log('===== GET EVENT REQUEST END (404) =====\n\n');
                 return res.status(404).json({ error: 'Event not found' });
             }
         }
-
-        // Check if user is an organizer
-        const isOrganizer = event.organizers.some(org => org.id === userId);
-        console.log('Is user an organizer:', isOrganizer);
 
         try {
             console.log('Calling eventService.getEvent');
             const eventDetails = await eventService.getEvent(
                 eventId,
                 isManager,
-                isOrganizer
+                isOrganizer,
+                includeAsOrganizer
             );
 
             console.log('Event details retrieved successfully');

@@ -533,15 +533,23 @@ const Events = () => {
     if (!selectedEvent) return;
     
     // Format data for API
-    const formattedData = {
+    let formattedData = {
       ...eventData,
       capacity: eventData.capacity ? parseInt(eventData.capacity) : null,
-      points: eventData.points ? parseInt(eventData.points) : 0,
     };
     
-    // Only include published if it's true and not already published
-    if (isManager && eventData.published && !selectedEvent.published) {
-      formattedData.published = true;
+    // 只有管理员才能更新积分和发布状态
+    if (isManager) {
+      formattedData.points = eventData.points ? parseInt(eventData.points) : 0;
+      
+      // 只包含发布状态如果它被改变而且用户是管理员
+      if (eventData.published && !selectedEvent.published) {
+        formattedData.published = true;
+      }
+    } else {
+      // 确保删除受限字段，防止后端拒绝请求
+      delete formattedData.points;
+      delete formattedData.published;
     }
     
     updateEvent(
@@ -918,16 +926,20 @@ const Events = () => {
                 placeholder="Max number of attendees (optional)"
                 helperText="Leave empty for no limit"
               />
-              
-              <Input
-                label="Points"
-                type="number"
-                value={eventData.points}
-                onChange={(e) => handleFormChange('points', e.target.value)}
-                placeholder="Points to award to attendees"
-                required
-              />
             </FormGroup>
+            
+            {isManager && (
+              <FormGroup>
+                <Input
+                  label="Points"
+                  type="number"
+                  value={eventData.points}
+                  onChange={(e) => handleFormChange('points', e.target.value)}
+                  placeholder="Points to award to attendees"
+                  required
+                />
+              </FormGroup>
+            )}
             
             {isManager && (
               <div style={{ 
@@ -1032,16 +1044,20 @@ const Events = () => {
                 placeholder="Max number of attendees (optional)"
                 helperText="Leave empty for no limit"
               />
-              
-              <Input
-                label="Points"
-                type="number"
-                value={eventData.points}
-                onChange={(e) => handleFormChange('points', e.target.value)}
-                placeholder="Points to award to attendees"
-                required
-              />
             </FormGroup>
+            
+            {isManager && (
+              <FormGroup>
+                <Input
+                  label="Points"
+                  type="number"
+                  value={eventData.points}
+                  onChange={(e) => handleFormChange('points', e.target.value)}
+                  placeholder="Points to award to attendees"
+                  required
+                />
+              </FormGroup>
+            )}
             
             {isManager && (
               <div style={{ 

@@ -101,7 +101,7 @@ export const useEvents = (params = {}) => {
   });
   
   const addOrganizerMutation = useMutation({
-    mutationFn: ({ eventId, userId }) => EventService.addOrganizer(eventId, userId),
+    mutationFn: ({ eventId, utorid }) => EventService.addOrganizer(eventId, utorid),
     onSuccess: (_, variables) => {
       toast.success('Organizer added successfully');
       queryClient.invalidateQueries({ queryKey: ['event', variables.eventId] });
@@ -123,7 +123,7 @@ export const useEvents = (params = {}) => {
   });
   
   const addGuestMutation = useMutation({
-    mutationFn: ({ eventId, userId }) => EventService.addGuest(eventId, userId),
+    mutationFn: ({ eventId, utorid }) => EventService.addGuest(eventId, utorid),
     onSuccess: (_, variables) => {
       toast.success('Guest added successfully');
       queryClient.invalidateQueries({ queryKey: ['event', variables.eventId] });
@@ -155,7 +155,8 @@ export const useEvents = (params = {}) => {
     },
   });
   
-  return {
+  // 定义基本返回值，所有用户都可使用
+  const baseReturn = {
     events: data?.results || [],
     totalCount: data?.count || 0,
     isLoading,
@@ -167,12 +168,17 @@ export const useEvents = (params = {}) => {
     isRsvping: rsvpToEventMutation.isPending,
     cancelRsvp: cancelRsvpMutation.mutate,
     isCancellingRsvp: cancelRsvpMutation.isPending,
-    // Only expose manager functions if the user is a manager
-    ...(isManager ? {
+    // 添加updateEvent，所有用户都可以调用
+    updateEvent: updateEventMutation.mutate,
+    isUpdating: updateEventMutation.isPending,
+  };
+  
+  // 仅当用户是管理员时添加管理员特有功能
+  if (isManager) {
+    return {
+      ...baseReturn,
       createEvent: createEventMutation.mutate,
       isCreating: createEventMutation.isPending,
-      updateEvent: updateEventMutation.mutate,
-      isUpdating: updateEventMutation.isPending,
       deleteEvent: deleteEventMutation.mutate,
       isDeleting: deleteEventMutation.isPending,
       addOrganizer: addOrganizerMutation.mutate,
@@ -185,7 +191,18 @@ export const useEvents = (params = {}) => {
       isRemovingGuest: removeGuestMutation.isPending,
       awardPoints: awardPointsMutation.mutate,
       isAwardingPoints: awardPointsMutation.isPending,
-    } : {}),
+    };
+  }
+  
+  // 非管理员也需要有添加/移除嘉宾功能（如果是组织者）
+  return {
+    ...baseReturn,
+    addGuest: addGuestMutation.mutate,
+    isAddingGuest: addGuestMutation.isPending,
+    removeGuest: removeGuestMutation.mutate,
+    isRemovingGuest: removeGuestMutation.isPending,
+    awardPoints: awardPointsMutation.mutate,
+    isAwardingPoints: awardPointsMutation.isPending,
   };
 };
 

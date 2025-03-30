@@ -24,6 +24,7 @@ import {
   FaArrowLeft,
   FaUserCog,
   FaUserMinus,
+  FaGlobe,
 } from 'react-icons/fa';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { toast } from 'react-hot-toast';
@@ -250,6 +251,19 @@ const EmptyState = styled.div`
   color: ${theme.colors.text.secondary};
 `;
 
+const FormGroup = styled.div`
+  display: flex;
+  gap: ${theme.spacing.md};
+  
+  & > * {
+    flex: 1;
+  }
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
+`;
+
 const SummaryCard = styled(Card)`
   position: sticky;
   top: ${theme.spacing.lg}; // Sticks to the top when scrolling
@@ -444,9 +458,24 @@ const EventDetail = () => {
   const [addOrganizerModalOpen, setAddOrganizerModalOpen] = useState(false);
   const [addGuestModalOpen, setAddGuestModalOpen] = useState(false);
   const [awardPointsModalOpen, setAwardPointsModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState(null);
+  const [selectedUtorid, setSelectedUtorid] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [pointsAmount, setPointsAmount] = useState('');
+  
+  // Form state for editing event
+  const [eventData, setEventData] = useState({
+    name: '',
+    description: '',
+    location: '',
+    capacity: '',
+    points: '',
+    startTime: '',
+    endTime: '',
+    published: false,
+  });
   
   // Fetch event details
   const { 
@@ -462,6 +491,9 @@ const EventDetail = () => {
     isCancellingRsvp,
     isAwardingPoints,
     updateEvent,
+    deleteEvent,
+    isUpdating,
+    isDeleting,
   } = useEvents();
   
   const { data: event, isLoading, error, refetch } = getEvent(eventId);
@@ -553,14 +585,15 @@ const EventDetail = () => {
   
   // Handle add organizer
   const handleAddOrganizer = () => {
-    if (!selectedUserId) return;
+    if (!selectedUtorid) return;
     
     addOrganizer(
-      { eventId, userId: selectedUserId },
+      { eventId, utorid: selectedUtorid },
       {
         onSuccess: () => {
           setAddOrganizerModalOpen(false);
           setSelectedUserId(null);
+          setSelectedUtorid(null);
           refetch();
         },
       }
@@ -581,14 +614,15 @@ const EventDetail = () => {
   
   // Handle add guest
   const handleAddGuest = () => {
-    if (!selectedUserId) return;
+    if (!selectedUtorid) return;
     
     addGuest(
-      { eventId, userId: selectedUserId },
+      { eventId, utorid: selectedUtorid },
       {
         onSuccess: () => {
           setAddGuestModalOpen(false);
           setSelectedUserId(null);
+          setSelectedUtorid(null);
           refetch();
         },
       }
@@ -625,12 +659,93 @@ const EventDetail = () => {
     );
   };
   
+  // Set up event for editing
+  const handleEditEvent = () => {
+    if (!event) return;
+    
+    setEventData({
+      name: event.name || '',
+      description: event.description || '',
+      location: event.location || '',
+      capacity: event.capacity || '',
+      points: event.points || '',
+      startTime: event.startTime ? new Date(event.startTime).toISOString().slice(0, 16) : '',
+      endTime: event.endTime ? new Date(event.endTime).toISOString().slice(0, 16) : '',
+      published: event.published || false,
+    });
+    
+    setEditModalOpen(true);
+  };
+  
+  // Update event
+  const handleUpdateEvent = () => {
+    if (!event) return;
+    
+    // Format data for API
+    let formattedData = {
+      ...eventData,
+      capacity: eventData.capacity ? parseInt(eventData.capacity) : null,
+    };
+    
+    // 只有管理员才能更新积分和发布状态
+    if (isManager) {
+      formattedData.points = eventData.points ? parseInt(eventData.points) : 0;
+      
+      // 只包含发布状态如果它被改变而且用户是管理员
+      if (eventData.published && !event.published) {
+        formattedData.published = true;
+      }
+    } else {
+      // 确保删除受限字段，防止后端拒绝请求
+      delete formattedData.points;
+      delete formattedData.published;
+    }
+    
+    updateEvent(
+      { id: eventId, data: formattedData },
+      {
+        onSuccess: () => {
+          setEditModalOpen(false);
+          refetch();
+          toast.success('Event updated successfully!');
+        },
+      }
+    );
+  };
+  
+  // Set up event for deletion
+  const handleDeleteEventClick = () => {
+    setDeleteModalOpen(true);
+  };
+  
+  // Delete event
+  const handleDeleteEvent = () => {
+    deleteEvent(eventId, {
+      onSuccess: () => {
+        navigate('/events');
+        toast.success('Event deleted successfully!');
+      },
+    });
+  };
+  
+  // Handle form changes for event editing
+  const handleFormChange = (key, value) => {
+    setEventData((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
+  
   // Handle award points
   const handleAwardPoints = () => {
     if (!selectedUserId || !pointsAmount) return;
     
-    const points = parseInt(pointsAmount);
-    if (isNaN(points) || points <= 0) return;
+    // 确保转换为整数
+    const points = Math.floor(Number(pointsAmount));
+    if (isNaN(points) || points <= 0) {
+      toast.error("Points must be a positive number");
+      return;
+    }
     
     awardPoints(
       { eventId, userId: selectedUserId, points },
@@ -647,8 +762,12 @@ const EventDetail = () => {
   
   // Award points to all guests
   const handleAwardPointsToAll = () => {
-    const points = parseInt(pointsAmount);
-    if (isNaN(points) || points <= 0) return;
+    // 确保转换为整数
+    const points = Math.floor(Number(pointsAmount));
+    if (isNaN(points) || points <= 0) {
+      toast.error("Points must be a positive number");
+      return;
+    }
     
     awardPoints(
       { eventId, points },
@@ -725,34 +844,6 @@ const EventDetail = () => {
         </div>
         
         <PageActionsContainer>
-          {canEditEvent() && (
-            <Link to={`/events/${eventId}/edit`}>
-              <Button size="small">
-                <FaEdit /> Edit Event
-              </Button>
-            </Link>
-          )}
-          
-          {isManager && !event.published && (
-            <Button 
-              variant="outlined" 
-              size="small"
-              onClick={handlePublishEvent}
-            >
-              Publish Event
-            </Button>
-          )}
-          
-          {isManager && (
-            <Button 
-              variant="outlined" 
-              color="danger" 
-              size="small"
-            >
-              <FaTrash /> Delete Event
-            </Button>
-          )}
-          
           {eventStatus.text === 'Upcoming' && !isOrganizer && (
             attending ? (
               <Button 
@@ -771,6 +862,35 @@ const EventDetail = () => {
                 RSVP to Event
               </Button>
             )
+          )}
+          
+          {canEditEvent() && (
+            <div style={{ display: 'flex', gap: theme.spacing.sm }}>
+              <Button 
+                variant="outlined"
+                onClick={handleEditEvent}
+              >
+                <FaEdit /> Edit Event
+              </Button>
+              
+              {isManager && (
+                <Button 
+                  variant="outlined" 
+                  color="error"
+                  onClick={handleDeleteEventClick}
+                >
+                  <FaTrash /> Delete Event
+                </Button>
+              )}
+              
+              {isManager && !event.published && (
+                <Button 
+                  onClick={handlePublishEvent}
+                >
+                  <FaGlobe /> Publish Event
+                </Button>
+              )}
+            </div>
           )}
         </PageActionsContainer>
       </PageHeader>
@@ -934,6 +1054,7 @@ const EventDetail = () => {
                                     size="tiny" 
                                     onClick={() => {
                                       setSelectedUserId(guest.id);
+                                      setSelectedUtorid(guest.utorid);
                                       setAwardPointsModalOpen(true);
                                     }}
                                   >
@@ -1067,6 +1188,7 @@ const EventDetail = () => {
         onClose={() => {
           setAddOrganizerModalOpen(false);
           setSelectedUserId(null);
+          setSelectedUtorid(null);
           setSearchQuery('');
         }}
         title="Add Organizer"
@@ -1085,7 +1207,13 @@ const EventDetail = () => {
               <div>
                 <h4>Select a user:</h4>
                 {users.map(user => (
-                  <AttendeeRow key={user.id} onClick={() => setSelectedUserId(user.id)}>
+                  <AttendeeRow 
+                    key={user.id} 
+                    onClick={() => {
+                      setSelectedUserId(user.id);
+                      setSelectedUtorid(user.utorid);
+                    }}
+                  >
                     <AttendeeInfo>
                       <AttendeeName>{user.name}</AttendeeName>
                       <AttendeeSubtext>{user.utorid}</AttendeeSubtext>
@@ -1093,7 +1221,10 @@ const EventDetail = () => {
                     <input 
                       type="radio" 
                       checked={selectedUserId === user.id}
-                      onChange={() => setSelectedUserId(user.id)}
+                      onChange={() => {
+                        setSelectedUserId(user.id);
+                        setSelectedUtorid(user.utorid);
+                      }}
                     />
                   </AttendeeRow>
                 ))}
@@ -1109,6 +1240,7 @@ const EventDetail = () => {
               onClick={() => {
                 setAddOrganizerModalOpen(false);
                 setSelectedUserId(null);
+                setSelectedUtorid(null);
                 setSearchQuery('');
               }}
             >
@@ -1116,7 +1248,7 @@ const EventDetail = () => {
             </Button>
             <Button
               onClick={handleAddOrganizer}
-              disabled={!selectedUserId}
+              disabled={!selectedUtorid}
             >
               Add Organizer
             </Button>
@@ -1130,6 +1262,7 @@ const EventDetail = () => {
         onClose={() => {
           setAddGuestModalOpen(false);
           setSelectedUserId(null);
+          setSelectedUtorid(null);
           setSearchQuery('');
         }}
         title="Add Guest"
@@ -1148,7 +1281,13 @@ const EventDetail = () => {
               <div>
                 <h4>Select a user:</h4>
                 {users.map(user => (
-                  <AttendeeRow key={user.id} onClick={() => setSelectedUserId(user.id)}>
+                  <AttendeeRow 
+                    key={user.id} 
+                    onClick={() => {
+                      setSelectedUserId(user.id);
+                      setSelectedUtorid(user.utorid);
+                    }}
+                  >
                     <AttendeeInfo>
                       <AttendeeName>{user.name}</AttendeeName>
                       <AttendeeSubtext>{user.utorid}</AttendeeSubtext>
@@ -1156,7 +1295,10 @@ const EventDetail = () => {
                     <input 
                       type="radio" 
                       checked={selectedUserId === user.id}
-                      onChange={() => setSelectedUserId(user.id)}
+                      onChange={() => {
+                        setSelectedUserId(user.id);
+                        setSelectedUtorid(user.utorid);
+                      }}
                     />
                   </AttendeeRow>
                 ))}
@@ -1172,6 +1314,7 @@ const EventDetail = () => {
               onClick={() => {
                 setAddGuestModalOpen(false);
                 setSelectedUserId(null);
+                setSelectedUtorid(null);
                 setSearchQuery('');
               }}
             >
@@ -1179,7 +1322,7 @@ const EventDetail = () => {
             </Button>
             <Button
               onClick={handleAddGuest}
-              disabled={!selectedUserId}
+              disabled={!selectedUtorid}
             >
               Add Guest
             </Button>
@@ -1204,12 +1347,19 @@ const EventDetail = () => {
               label="Points Amount"
               type="number"
               value={pointsAmount}
-              onChange={(e) => setPointsAmount(e.target.value)}
+              onChange={(e) => {
+                // 确保只能输入正整数
+                const value = e.target.value;
+                if (value === '' || /^[1-9]\d*$/.test(value)) {
+                  setPointsAmount(value);
+                }
+              }}
               placeholder="Enter points amount"
               min="1"
+              step="1"
               max={event.points}
               required
-              helperText={`Available points: ${event.points - (event.pointsAwarded || 0)}`}
+              helperText={`Available points: ${event.pointsRemain !== undefined ? event.pointsRemain : (event.points || 0)}`}
             />
             
             {selectedUserId && (
@@ -1238,11 +1388,197 @@ const EventDetail = () => {
               Cancel
             </Button>
             <Button
-              onClick={selectedUserId ? handleAwardPoints : handleAwardPointsToAll}
-              disabled={!pointsAmount || parseInt(pointsAmount) <= 0}
+              onClick={() => {
+                // 额外验证积分值
+                const pointsNum = Number(pointsAmount);
+                if (isNaN(pointsNum) || pointsNum <= 0) {
+                  toast.error("Points must be a positive number");
+                  return;
+                }
+                
+                if (selectedUserId) {
+                  handleAwardPoints();
+                } else {
+                  handleAwardPointsToAll();
+                }
+              }}
+              disabled={!pointsAmount || Number(pointsAmount) <= 0}
               loading={isAwardingPoints}
             >
               Award Points
+            </Button>
+          </ModalActions>
+        </ModalContent>
+      </Modal>
+      
+      {/* Edit Event Modal */}
+      <Modal
+        isOpen={editModalOpen}
+        onClose={() => {
+          setEditModalOpen(false);
+        }}
+        title={`Edit Event: ${event?.name || ''}`}
+        size="large"
+      >
+        <ModalContent>
+          <ModalForm>
+            <Input
+              label="Event Name"
+              value={eventData.name}
+              onChange={(e) => handleFormChange('name', e.target.value)}
+              placeholder="Enter event name"
+              required
+            />
+            
+            <Input
+              label="Description"
+              value={eventData.description}
+              onChange={(e) => handleFormChange('description', e.target.value)}
+              placeholder="Enter event description"
+              multiline
+              rows={3}
+              required
+            />
+            
+            <Input
+              label="Location"
+              value={eventData.location}
+              onChange={(e) => handleFormChange('location', e.target.value)}
+              placeholder="Enter event location"
+              required
+            />
+            
+            <FormGroup>
+              <Input
+                label="Start Time"
+                type="datetime-local"
+                value={eventData.startTime}
+                onChange={(e) => handleFormChange('startTime', e.target.value)}
+                required
+              />
+              
+              <Input
+                label="End Time"
+                type="datetime-local"
+                value={eventData.endTime}
+                onChange={(e) => handleFormChange('endTime', e.target.value)}
+                required
+              />
+            </FormGroup>
+            
+            <FormGroup>
+              <Input
+                label="Capacity"
+                type="number"
+                value={eventData.capacity}
+                onChange={(e) => handleFormChange('capacity', e.target.value)}
+                placeholder="Max number of attendees (optional)"
+                helperText="Leave empty for no limit"
+              />
+            </FormGroup>
+            
+            {isManager && (
+              <FormGroup>
+                <Input
+                  label="Points"
+                  type="number"
+                  value={eventData.points}
+                  onChange={(e) => handleFormChange('points', e.target.value)}
+                  placeholder="Points to award to attendees"
+                  required
+                />
+              </FormGroup>
+            )}
+            
+            {isManager && (
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                marginTop: theme.spacing.sm,
+                padding: theme.spacing.sm,
+                backgroundColor: theme.colors.background.default,
+                borderRadius: theme.radius.md
+              }}>
+                <input
+                  type="checkbox"
+                  id="published"
+                  checked={eventData.published}
+                  onChange={(e) => handleFormChange('published', e.target.checked)}
+                  style={{ marginRight: theme.spacing.sm }}
+                  disabled={event?.published} // Disable if already published
+                />
+                <label htmlFor="published" style={{ 
+                  fontSize: theme.typography.fontSize.sm,
+                  display: 'flex',
+                  alignItems: 'center',
+                  cursor: event?.published ? 'not-allowed' : 'pointer'
+                }}>
+                  {event?.published ? (
+                    <>
+                      <span style={{ 
+                        color: theme.colors.success.main, 
+                        marginRight: theme.spacing.xs 
+                      }}>✓</span> 
+                      This event is published and visible to users
+                    </>
+                  ) : (
+                    <>Publish this event and make it visible to users</>
+                  )}
+                </label>
+              </div>
+            )}
+          </ModalForm>
+          
+          <ModalActions>
+            <Button
+              variant="outlined"
+              onClick={() => {
+                setEditModalOpen(false);
+              }}
+              disabled={isUpdating}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpdateEvent}
+              loading={isUpdating}
+            >
+              Update Event
+            </Button>
+          </ModalActions>
+        </ModalContent>
+      </Modal>
+      
+      {/* Delete Event Confirmation Modal */}
+      <Modal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+        }}
+        title="Delete Event"
+        size="small"
+      >
+        <ModalContent>
+          <p>Are you sure you want to delete this event?</p>
+          <p><strong>{event?.name}</strong></p>
+          <p>This action cannot be undone and will remove all RSVPs.</p>
+          
+          <ModalActions>
+            <Button
+              variant="outlined"
+              onClick={() => {
+                setDeleteModalOpen(false);
+              }}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              color="error"
+              onClick={handleDeleteEvent}
+              loading={isDeleting}
+            >
+              Delete
             </Button>
           </ModalActions>
         </ModalContent>

@@ -37,7 +37,9 @@ const EventService = {
   // Get all events (Regular+)
   getEvents: async (params = {}) => {
     try {
-      const response = await api.get('/events', { params });
+      // 添加includeUnpublished参数，确保组织者能看到自己负责的未发布活动
+      const apiParams = { ...params, includeMyOrganizedEvents: true };
+      const response = await api.get('/events', { params: apiParams });
       return response.data;
     } catch (error) {
       if (error.response) {
@@ -69,7 +71,10 @@ const EventService = {
   // Get a specific event (Regular+)
   getEvent: async (eventId) => {
     try {
-      const response = await api.get(`/events/${eventId}`);
+      // 默认告知后端我们想看到自己组织的活动，即使未发布
+      const response = await api.get(`/events/${eventId}`, {
+        params: { includeAsOrganizer: true }
+      });
       return response.data;
     } catch (error) {
       if (error.response) {
@@ -84,7 +89,10 @@ const EventService = {
         }
         
         if (status === 403) {
-          throw new Error('Event is not published. You do not have permission to view this event.');
+          if (data.error && data.error.includes('not published')) {
+            throw new Error('This event is not published yet. Only managers and organizers can view unpublished events.');
+          }
+          throw new Error('You do not have permission to view this event.');
         }
         
         if (status === 404) {
@@ -167,9 +175,10 @@ const EventService = {
   },
 
   // Add an organizer to an event (Manager+)
-  addOrganizer: async (eventId, userId) => {
+  addOrganizer: async (eventId, utorid) => {
     try {
-      const response = await api.post(`/events/${eventId}/organizers`, { userId });
+      // 后端期望接收 utorid 字符串
+      const response = await api.post(`/events/${eventId}/organizers`, { utorid });
       return response.data;
     } catch (error) {
       if (error.response) {
@@ -180,8 +189,8 @@ const EventService = {
             throw new Error('Invalid event ID');
           }
           
-          if (data.error && data.error.includes('userId is required')) {
-            throw new Error('User ID is required');
+          if (data.error && data.error.includes('UTORid is required')) {
+            throw new Error('UTORid is required');
           }
           
           if (data.error && data.error.includes('already an organizer')) {
@@ -255,9 +264,10 @@ const EventService = {
   },
 
   // Add a guest to an event (Manager+ or Organizer)
-  addGuest: async (eventId, userId) => {
+  addGuest: async (eventId, utorid) => {
     try {
-      const response = await api.post(`/events/${eventId}/guests`, { userId });
+      // 后端期望接收 utorid 字符串
+      const response = await api.post(`/events/${eventId}/guests`, { utorid });
       return response.data;
     } catch (error) {
       if (error.response) {
@@ -268,16 +278,12 @@ const EventService = {
             throw new Error('Invalid event ID');
           }
           
-          if (data.error && data.error.includes('userId is required')) {
-            throw new Error('User ID is required');
-          }
-          
-          if (data.error && data.error.includes('capacity')) {
-            throw new Error('Cannot add guest: Event has reached maximum capacity');
+          if (data.error && data.error.includes('UTORid is required')) {
+            throw new Error('UTORid is required');
           }
           
           if (data.error && data.error.includes('already a guest')) {
-            throw new Error('This user is already a guest of this event');
+            throw new Error('User is already a guest for this event');
           }
           
           throw new Error(data.error || 'Invalid request to add guest');
@@ -296,7 +302,7 @@ const EventService = {
         }
         
         if (status === 409) {
-          throw new Error('This user is an organizer of this event and cannot be added as a guest');
+          throw new Error('User is already an organizer of this event and cannot be added as a guest');
         }
         
         throw new Error(data.error || 'Failed to add guest');
@@ -429,7 +435,21 @@ const EventService = {
   // Award points to attendees (Manager+ or Organizer)
   awardPoints: async (eventId, userId = null, points) => {
     try {
-      const data = userId ? { userId, points } : { points };
+      // 确保points是整数
+      const pointsValue = Math.floor(Number(points));
+      
+      // 验证积分值
+      if (isNaN(pointsValue) || pointsValue <= 0) {
+        throw new Error('Points amount must be a positive number');
+      }
+      
+      // 明确使用整数类型
+      const data = userId ? 
+        { type: 'event', userId, amount: pointsValue } : 
+        { type: 'event', amount: pointsValue };
+      
+      console.log('Sending award points request:', data);
+      
       const response = await api.post(`/events/${eventId}/transactions`, data);
       return response.data;
     } catch (error) {

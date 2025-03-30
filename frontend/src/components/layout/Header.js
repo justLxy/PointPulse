@@ -560,10 +560,13 @@ const Header = () => {
                     <FaExchangeAlt />
                     My Transactions
                   </DropdownItem>
-                  <DropdownButton onClick={handleLogout}>
+                  <DropdownItem 
+                    to="#" 
+                    onClick={handleLogout}
+                  >
                     <FaSignOutAlt />
                     Logout
-                  </DropdownButton>
+                  </DropdownItem>
                 </DropdownMenu>
               </ProfileDropdown>
               
