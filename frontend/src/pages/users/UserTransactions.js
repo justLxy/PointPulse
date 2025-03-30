@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import styled from '@emotion/styled';
 import { css } from '@emotion/react';
-import useUserTransactions from '../hooks/useUserTransactions';
-import Card from '../components/common/Card';
-import Button from '../components/common/Button';
-import Input from '../components/common/Input';
-import Select from '../components/common/Select';
-import theme from '../styles/theme';
+import useUserTransactions from '../../hooks/useUserTransactions';
+import Card from '../../components/common/Card';
+import Button from '../../components/common/Button';
+import Input from '../../components/common/Input';
+import Select from '../../components/common/Select';
+import theme from '../../styles/theme';
 import {
   FaSearch,
   FaPlus,
@@ -19,7 +19,7 @@ import {
   FaChevronLeft,
   FaInfoCircle
 } from 'react-icons/fa';
-import LoadingSpinner from '../components/common/LoadingSpinner';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 const PageTitle = styled.h1`
   font-size: ${theme.typography.fontSize['3xl']};

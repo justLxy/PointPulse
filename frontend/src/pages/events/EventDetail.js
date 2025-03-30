@@ -1,16 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import styled from '@emotion/styled';
-import { useEvents } from '../hooks/useEvents';
-import { useUsers } from '../hooks/useUsers';
-import { useAuth } from '../contexts/AuthContext';
-import Card from '../components/common/Card';
-import Button from '../components/common/Button';
-import Input from '../components/common/Input';
-import Select from '../components/common/Select';
-import Modal from '../components/common/Modal';
-import Badge from '../components/common/Badge';
-import theme from '../styles/theme';
+import { useEvents } from '../../hooks/useEvents';
+import { useUsers } from '../../hooks/useUsers';
+import { useAuth } from '../../contexts/AuthContext';
+import Card from '../../components/common/Card';
+import Button from '../../components/common/Button';
+import Input from '../../components/common/Input';
+import Select from '../../components/common/Select';
+import Modal from '../../components/common/Modal';
+import Badge from '../../components/common/Badge';
+import theme from '../../styles/theme';
 import { 
   FaCalendarAlt, 
   FaMapMarkerAlt, 
@@ -26,7 +26,7 @@ import {
   FaUserMinus,
   FaGlobe,
 } from 'react-icons/fa';
-import LoadingSpinner from '../components/common/LoadingSpinner';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { toast } from 'react-hot-toast';
 
 const PageHeader = styled.div`

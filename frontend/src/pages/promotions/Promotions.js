@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import styled from '@emotion/styled';
-import { usePromotions } from '../hooks/usePromotions';
-import { useAuth } from '../contexts/AuthContext';
-import Card from '../components/common/Card';
-import Button from '../components/common/Button';
-import Input from '../components/common/Input';
-import Select from '../components/common/Select';
-import Modal from '../components/common/Modal';
-import Badge from '../components/common/Badge';
-import theme from '../styles/theme';
+import { usePromotions } from '../../hooks/usePromotions';
+import { useAuth } from '../../contexts/AuthContext';
+import Card from '../../components/common/Card';
+import Button from '../../components/common/Button';
+import Input from '../../components/common/Input';
+import Select from '../../components/common/Select';
+import Modal from '../../components/common/Modal';
+import Badge from '../../components/common/Badge';
+import theme from '../../styles/theme';
 import { FaPlus, FaEdit, FaTrash, FaCalendarAlt, FaPercent, FaTags, FaCoins, FaFilter } from 'react-icons/fa';
-import LoadingSpinner from '../components/common/LoadingSpinner';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 const PageTitle = styled.h1`
   font-size: ${theme.typography.fontSize['3xl']};

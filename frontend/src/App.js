@@ -14,11 +14,11 @@ import PasswordReset from './pages/auth/PasswordReset';
 import AccountActivation from './pages/auth/AccountActivation';
 
 // Import user pages
-import Profile from './pages/Profile';
+import Profile from './pages/users/Profile';
 import Dashboard from './pages/Dashboard';
-import Users from './pages/Users';
+import Users from './pages/users/Users';
 import CreateUser from './pages/users/CreateUser';
-import UserTransactions from './pages/UserTransactions';
+import UserTransactions from './pages/users/UserTransactions';
 
 // Import transaction pages
 import CreateTransaction from './pages/transactions/CreateTransaction';
@@ -27,9 +27,9 @@ import Transactions from './pages/transactions/Transactions';
 import CreateAdjustment from './pages/transactions/CreateAdjustment';
 
 // Import other pages
-import Promotions from './pages/Promotions';
-import Events from './pages/Events';
-import EventDetail from './pages/EventDetail';
+import Promotions from './pages/promotions/Promotions';
+import Events from './pages/events/Events';
+import EventDetail from './pages/events/EventDetail';
 
 // Create a query client
 const queryClient = new QueryClient({

@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import styled from '@emotion/styled';
-import { useUsers } from '../hooks/useUsers';
-import Card from '../components/common/Card';
-import Button from '../components/common/Button';
-import Input from '../components/common/Input';
-import Select from '../components/common/Select';
-import Modal from '../components/common/Modal';
-import Badge from '../components/common/Badge';
-import { useAuth } from '../contexts/AuthContext';
-import theme from '../styles/theme';
+import { useUsers } from '../../hooks/useUsers';
+import Card from '../../components/common/Card';
+import Button from '../../components/common/Button';
+import Input from '../../components/common/Input';
+import Select from '../../components/common/Select';
+import Modal from '../../components/common/Modal';
+import Badge from '../../components/common/Badge';
+import { useAuth } from '../../contexts/AuthContext';
+import theme from '../../styles/theme';
 import { FaSearch, FaUserPlus, FaEye, FaUserEdit, FaCheck, FaUserTag, FaUserTimes, FaExclamationTriangle } from 'react-icons/fa';
-import LoadingSpinner from '../components/common/LoadingSpinner';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 import React from 'react';
 
 const PageTitle = styled.h1`
