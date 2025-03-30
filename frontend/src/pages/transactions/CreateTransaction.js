@@ -386,6 +386,9 @@ const CreateTransaction = () => {
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ['user', user.id] });
       queryClient.invalidateQueries({ queryKey: ['allTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['userTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     } catch (err) {
       console.error('Transaction creation error:', err);
       setError(err.message || 'Failed to create transaction. Please try again.');

@@ -14,7 +14,7 @@ const TableContainer = styled(Card)`
 
 const TableHeader = styled.div`
   display: grid;
-  grid-template-columns: 80px 1fr 1fr 150px 120px 150px;
+  grid-template-columns: 80px 1fr 1fr 150px 150px;
   padding: ${theme.spacing.md};
   font-weight: ${theme.typography.fontWeights.semiBold};
   background-color: ${theme.colors.background.default};
@@ -93,11 +93,10 @@ const TransactionList = ({
   totalPages,
   filters,
   handleFilterChange,
-  formatDate,
-  formatTime,
   getTransactionIcon,
   getRelatedDescription,
   isSuperuser,
+  isManager,
   handleViewTransaction,
   handleMarkAsSuspiciousClick,
   handleApproveTransactionClick
@@ -127,7 +126,6 @@ const TransactionList = ({
             <div>ID</div>
             <div>User</div>
             <div>Amount</div>
-            <div>Date</div>
             <div>Actions</div>
           </TableHeader>
           
@@ -135,11 +133,10 @@ const TransactionList = ({
             <TransactionItem 
               key={transaction.id}
               transaction={transaction}
-              formatDate={formatDate}
-              formatTime={formatTime}
               getTransactionIcon={getTransactionIcon}
               getRelatedDescription={getRelatedDescription}
               isSuperuser={isSuperuser}
+              isManager={isManager}
               handleViewTransaction={handleViewTransaction}
               handleMarkAsSuspiciousClick={handleMarkAsSuspiciousClick}
               handleApproveTransactionClick={handleApproveTransactionClick}

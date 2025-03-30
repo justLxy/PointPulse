@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled from '@emotion/styled';
 import Input from '../common/Input';
 import Select from '../common/Select';
 import theme from '../../styles/theme';
-import { FaSearch, FaFilter } from 'react-icons/fa';
+import { FaSearch } from 'react-icons/fa';
 
 const PageHeader = styled.div`
   display: flex;
@@ -33,23 +33,26 @@ const FilterContainer = styled.div`
   box-shadow: ${theme.shadows.md};
 `;
 
-const FilterSection = styled.div`
-  display: flex;
-  flex-wrap: wrap;
+const FilterGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: ${theme.spacing.md};
   
   @media (max-width: 768px) {
-    flex-direction: column;
+    grid-template-columns: 1fr;
   }
 `;
 
-const FilterInput = styled.div`
-  flex: 1;
-  min-width: 200px;
-  
-  @media (max-width: 768px) {
-    width: 100%;
-  }
+const FilterGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
+const FilterLabel = styled.label`
+  font-size: ${theme.typography.fontSize.sm};
+  font-weight: ${theme.typography.fontWeights.medium};
+  color: ${theme.colors.text.secondary};
+  margin-bottom: ${theme.spacing.xs};
 `;
 
 const EnhancedInput = styled(Input)`
@@ -57,6 +60,13 @@ const EnhancedInput = styled(Input)`
   
   input {
     padding: ${theme.spacing.sm} ${theme.spacing.md};
+    border: 1px solid ${theme.colors.border.light};
+    transition: all 0.2s ease;
+    
+    &:focus {
+      border-color: ${theme.colors.primary.main};
+      box-shadow: 0 0 0 2px ${theme.colors.primary.light};
+    }
   }
 `;
 
@@ -65,6 +75,13 @@ const EnhancedSelect = styled(Select)`
   
   select {
     padding: ${theme.spacing.sm} ${theme.spacing.md};
+    border: 1px solid ${theme.colors.border.light};
+    transition: all 0.2s ease;
+    
+    &:focus {
+      border-color: ${theme.colors.primary.main};
+      box-shadow: 0 0 0 2px ${theme.colors.primary.light};
+    }
   }
 `;
 
@@ -72,6 +89,7 @@ const TransactionFilters = ({
   filters, 
   handleFilterChange, 
   isSuperuser,
+  isManager,
   title = "Transactions"
 }) => {
   return (
@@ -81,19 +99,32 @@ const TransactionFilters = ({
       </PageHeader>
       
       <FilterContainer>
-        <FilterSection>
-          {isSuperuser && (
-            <FilterInput>
+        <FilterGrid>
+          {isManager && (
+            <FilterGroup>
+              <FilterLabel>User</FilterLabel>
               <EnhancedInput
-                placeholder="Search by ID or description"
-                value={filters.search || ''}
-                onChange={(e) => handleFilterChange('search', e.target.value)}
+                placeholder="Search by utorid or name"
+                value={filters.name || ''}
+                onChange={(e) => handleFilterChange('name', e.target.value)}
                 leftIcon={<FaSearch size={16} />}
               />
-            </FilterInput>
+            </FilterGroup>
           )}
           
-          <FilterInput>
+          {isManager && (
+            <FilterGroup>
+              <FilterLabel>Created By</FilterLabel>
+              <EnhancedInput
+                placeholder="Creator's username"
+                value={filters.createdBy || ''}
+                onChange={(e) => handleFilterChange('createdBy', e.target.value)}
+              />
+            </FilterGroup>
+          )}
+          
+          <FilterGroup>
+            <FilterLabel>Transaction Type</FilterLabel>
             <EnhancedSelect
               value={filters.type || ''}
               onChange={(e) => handleFilterChange('type', e.target.value)}
@@ -105,9 +136,32 @@ const TransactionFilters = ({
               <option value="adjustment">Adjustment</option>
               <option value="event">Event</option>
             </EnhancedSelect>
-          </FilterInput>
+          </FilterGroup>
           
-          <FilterInput>
+          {filters.type && (
+            <FilterGroup>
+              <FilterLabel>Related ID</FilterLabel>
+              <EnhancedInput
+                placeholder="Related ID"
+                value={filters.relatedId || ''}
+                onChange={(e) => handleFilterChange('relatedId', e.target.value)}
+                type="number"
+              />
+            </FilterGroup>
+          )}
+          
+          <FilterGroup>
+            <FilterLabel>Promotion</FilterLabel>
+            <EnhancedInput
+              placeholder="Promotion ID"
+              value={filters.promotionId || ''}
+              onChange={(e) => handleFilterChange('promotionId', e.target.value)}
+              type="number"
+            />
+          </FilterGroup>
+          
+          <FilterGroup>
+            <FilterLabel>Amount Filter</FilterLabel>
             <EnhancedSelect
               value={filters.operator || 'gte'}
               onChange={(e) => handleFilterChange('operator', e.target.value)}
@@ -115,19 +169,21 @@ const TransactionFilters = ({
               <option value="gte">Greater than or equal</option>
               <option value="lte">Less than or equal</option>
             </EnhancedSelect>
-          </FilterInput>
+          </FilterGroup>
           
-          <FilterInput>
+          <FilterGroup>
+            <FilterLabel>Points Amount</FilterLabel>
             <EnhancedInput
               placeholder="Amount"
               value={filters.amount || ''}
               onChange={(e) => handleFilterChange('amount', e.target.value)}
               type="number"
             />
-          </FilterInput>
+          </FilterGroup>
           
-          {isSuperuser && (
-            <FilterInput>
+          {isManager && (
+            <FilterGroup>
+              <FilterLabel>Transaction Status</FilterLabel>
               <EnhancedSelect
                 value={filters.suspicious || ''}
                 onChange={(e) => handleFilterChange('suspicious', e.target.value)}
@@ -136,38 +192,12 @@ const TransactionFilters = ({
                 <option value="true">Suspicious Only</option>
                 <option value="false">Normal Only</option>
               </EnhancedSelect>
-            </FilterInput>
+            </FilterGroup>
           )}
-          
-          {isSuperuser && (
-            <FilterInput>
-              <EnhancedSelect
-                value={filters.status || ''}
-                onChange={(e) => handleFilterChange('status', e.target.value)}
-              >
-                <option value="">All Statuses</option>
-                <option value="pending">Pending</option>
-                <option value="approved">Approved</option>
-                <option value="rejected">Rejected</option>
-              </EnhancedSelect>
-            </FilterInput>
-          )}
-          
-          <FilterInput>
-            <EnhancedSelect
-              value={filters.sortBy || 'createdAt:desc'}
-              onChange={(e) => handleFilterChange('sortBy', e.target.value)}
-            >
-              <option value="createdAt:desc">Newest First</option>
-              <option value="createdAt:asc">Oldest First</option>
-              <option value="amount:desc">Highest Amount</option>
-              <option value="amount:asc">Lowest Amount</option>
-            </EnhancedSelect>
-          </FilterInput>
-        </FilterSection>
+        </FilterGrid>
       </FilterContainer>
     </>
   );
 };
 
-export default TransactionFilters; 
+export default TransactionFilters;

@@ -151,7 +151,7 @@ export const ViewTransactionModal = ({
               </TypeBadge>
               
               {transaction.suspicious && (
-                <Badge color="error" style={{ marginLeft: theme.spacing.sm }}>Suspicious</Badge>
+                <Badge color="error" style={{ backgroundColor: '#e74c3c', marginLeft: theme.spacing.sm }}>Suspicious</Badge>
               )}
               
               {transaction.type === 'redemption' && transaction.status && (
@@ -178,17 +178,24 @@ export const ViewTransactionModal = ({
             </DetailValue>
           </DetailRow>
           
-          <DetailRow>
-            <DetailLabel>Date & Time</DetailLabel>
-            <DetailValue>
-              {formatDate(transaction.createdAt)} at {formatTime(transaction.createdAt)}
-            </DetailValue>
-          </DetailRow>
-          
+          {transaction.type === 'purchase' && transaction.spent && (
+            <DetailRow>
+              <DetailLabel>Spent</DetailLabel>
+              <DetailValue>${transaction.spent}</DetailValue>
+            </DetailRow>
+          )}
+
           <DetailRow>
             <DetailLabel>User</DetailLabel>
-            <DetailValue>{transaction.userName || transaction.userEmail || 'Unknown User'}</DetailValue>
+            <DetailValue>{transaction.userName || transaction.userEmail || transaction.utorid || 'Unknown User'}</DetailValue>
           </DetailRow>
+          
+          {transaction.promotionIds && transaction.promotionIds.length > 0 && (
+            <DetailRow>
+              <DetailLabel>Promotion IDs</DetailLabel>
+              <DetailValue>{transaction.promotionIds.join(', ')}</DetailValue>
+            </DetailRow>
+          )}
           
           {transaction.relatedPromotion && (
             <DetailRow>
@@ -201,6 +208,18 @@ export const ViewTransactionModal = ({
             <DetailRow>
               <DetailLabel>Event</DetailLabel>
               <DetailValue>{transaction.relatedEvent.name || transaction.relatedEvent.id}</DetailValue>
+            </DetailRow>
+          )}
+          
+          <DetailRow>
+            <DetailLabel>Created By</DetailLabel>
+            <DetailValue>{transaction.createdBy || 'System'}</DetailValue>
+          </DetailRow>
+          
+          {transaction.remark && (
+            <DetailRow>
+              <DetailLabel>Remark</DetailLabel>
+              <DetailValue>{transaction.remark}</DetailValue>
             </DetailRow>
           )}
           
@@ -253,10 +272,17 @@ export const MarkSuspiciousModal = ({
           <strong>Confirm Action</strong>
           <p>
             Are you sure you want to {isCurrentlySuspicious ? 'clear the suspicious flag for' : 'mark as suspicious'} transaction #{transaction.id}?
-            {isCurrentlySuspicious 
-              ? " This will credit the points back to the user's account." 
-              : " This will deduct the points from the user's account."
-            }
+            {transaction.type === 'purchase' && (
+              <>
+                {isCurrentlySuspicious 
+                  ? " This will credit the points back to the user's account." 
+                  : " This will deduct the points from the user's account."
+                }
+              </>
+            )}
+            {transaction.type === 'redemption' && (
+              <> Note: Marking processed redemptions as suspicious will not affect the user's points balance.</>
+            )}
           </p>
         </WarningBox>
         
@@ -310,7 +336,7 @@ export const ApproveRedemptionModal = ({
         
         <DetailRow>
           <DetailLabel>User</DetailLabel>
-          <DetailValue>{transaction.userName || transaction.userEmail || 'Unknown User'}</DetailValue>
+          <DetailValue>{transaction.userName || transaction.userEmail || transaction.utorid || 'Unknown User'}</DetailValue>
         </DetailRow>
         
         <DetailRow>

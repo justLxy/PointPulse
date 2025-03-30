@@ -14,14 +14,18 @@ import {
 const Transactions = () => {
   const { activeRole } = useAuth();
   const isSuperuser = activeRole === 'superuser';
+  const isManager = activeRole === 'manager' || activeRole === 'superuser';
   
   // State for filters and pagination
   const [filters, setFilters] = useState({
-    search: '',
+    name: '',
+    createdBy: '',
     type: '',
+    relatedId: '',
+    promotionId: '',
+    amount: '',
+    operator: 'gte',
     suspicious: '',
-    status: '',
-    sortBy: 'createdAt:desc',
     page: 1,
     limit: 10,
   });
@@ -181,6 +185,7 @@ const Transactions = () => {
         filters={filters}
         handleFilterChange={handleFilterChange}
         isSuperuser={isSuperuser}
+        isManager={isManager}
           />
       
       <TransactionList 
@@ -192,11 +197,10 @@ const Transactions = () => {
         totalPages={totalPages}
         filters={filters}
         handleFilterChange={handleFilterChange}
-        formatDate={formatDate}
-        formatTime={formatTime}
         getTransactionIcon={getTransactionIcon}
         getRelatedDescription={getRelatedDescription}
         isSuperuser={isSuperuser}
+        isManager={isManager}
         handleViewTransaction={handleViewTransaction}
         handleMarkAsSuspiciousClick={handleMarkAsSuspiciousClick}
         handleApproveTransactionClick={handleApproveTransactionClick}

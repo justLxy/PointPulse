@@ -59,6 +59,10 @@ export const useTransactions = (params = {}) => {
     onSuccess: () => {
       toast.success('Transaction status updated successfully');
       queryClient.invalidateQueries({ queryKey: ['allTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['userTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
     },
     onError: (error) => {
       toast.error(error.message || 'Failed to update transaction status');

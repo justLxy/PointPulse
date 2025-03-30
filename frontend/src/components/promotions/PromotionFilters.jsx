@@ -3,7 +3,7 @@ import styled from '@emotion/styled';
 import Input from '../common/Input';
 import Button from '../common/Button';
 import Select from '../common/Select';
-import { FaFilter, FaPlus, FaSearch } from 'react-icons/fa';
+import { FaPlus, FaSearch } from 'react-icons/fa';
 import theme from '../../styles/theme';
 
 const FilterContainer = styled.div`
@@ -24,11 +24,6 @@ const FilterHeader = styled.div`
     font-weight: ${theme.typography.fontWeights.bold};
     color: ${theme.colors.text.primary};
     margin: 0;
-  }
-
-  svg {
-    margin-right: ${theme.spacing.sm};
-    color: ${theme.colors.primary.main};
   }
 `;
 
@@ -89,11 +84,6 @@ const EnhancedSelect = styled(Select)`
 const PromotionFilters = ({ filters, onFilterChange, isManager, onCreateClick }) => {
   return (
     <FilterContainer>
-      <FilterHeader>
-        <FaFilter />
-        <h2>Promotions</h2>
-      </FilterHeader>
-      
       <FilterSection>
         <FilterInput>
           <EnhancedInput

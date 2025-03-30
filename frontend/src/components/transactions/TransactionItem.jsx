@@ -14,7 +14,7 @@ import {
 
 const TableRow = styled.div`
   display: grid;
-  grid-template-columns: 80px 1fr 1fr 150px 120px 150px;
+  grid-template-columns: 80px 1fr 1fr 150px 150px;
   padding: ${theme.spacing.md};
   border-bottom: 1px solid ${theme.colors.border.light};
   align-items: center;
@@ -123,15 +123,6 @@ const TransactionAmount = styled.div`
   color: ${({ positive }) => positive ? theme.colors.success.main : theme.colors.error.main};
 `;
 
-const TransactionDate = styled.div`
-  font-size: ${theme.typography.fontSize.sm};
-  color: ${theme.colors.text.secondary};
-  
-  @media (max-width: 768px) {
-    margin-bottom: ${theme.spacing.sm};
-  }
-`;
-
 const ActionButtons = styled.div`
   display: flex;
   gap: ${theme.spacing.sm};
@@ -145,11 +136,10 @@ const ActionButtons = styled.div`
 
 const TransactionItem = ({ 
   transaction, 
-  formatDate, 
-  formatTime, 
   getTransactionIcon, 
   getRelatedDescription, 
-  isSuperuser, 
+  isSuperuser,
+  isManager,
   handleViewTransaction, 
   handleMarkAsSuspiciousClick, 
   handleApproveTransactionClick 
@@ -210,17 +200,6 @@ const TransactionItem = ({
         {isPositive ? '+' : '-'} {Math.abs(transaction.amount)} points
       </TransactionAmount>
       
-      <TransactionDate>
-        <MobileLabel>Date:</MobileLabel>
-        <div>{formatDate(transaction.createdAt)}</div>
-        <div>{formatTime(transaction.createdAt)}</div>
-        {!transaction.createdAt && (
-          <div style={{ color: theme.colors.text.secondary, fontStyle: 'italic' }}>
-            Date unavailable
-          </div>
-        )}
-      </TransactionDate>
-      
       <ActionButtons>
         <Button size="small" variant="outlined" onClick={() => handleViewTransaction(transaction)}>
           <FaEye />
@@ -237,7 +216,7 @@ const TransactionItem = ({
           </Button>
         )}
         
-        {isSuperuser && (
+        {isManager && (
           <Button 
             size="small" 
             variant="outlined" 
