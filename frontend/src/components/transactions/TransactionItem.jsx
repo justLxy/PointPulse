@@ -184,7 +184,7 @@ const TransactionItem = ({
           <TransactionType>{formatTransactionType(transaction.type)}</TransactionType>
         </div>
         {transaction.suspicious && (
-          <Badge color="error">Suspicious</Badge>
+          <Badge color="error" style={{ backgroundColor: '#e74c3c' }}>Suspicious</Badge>
         )}
         {transaction.type === 'redemption' && transaction.status === 'pending' && (
           <Badge color="warning">Pending</Badge>
@@ -199,7 +199,7 @@ const TransactionItem = ({
       
       <TransactionUser>
         <MobileLabel>User:</MobileLabel>
-        <div>{transaction.userName || transaction.userEmail || 'Unknown User'}</div>
+        <div>{transaction.userName || transaction.userEmail || transaction.utorid || 'Unknown User'}</div>
         <div style={{ fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary }}>
           {getRelatedDescription(transaction)}
         </div>
@@ -214,6 +214,11 @@ const TransactionItem = ({
         <MobileLabel>Date:</MobileLabel>
         <div>{formatDate(transaction.createdAt)}</div>
         <div>{formatTime(transaction.createdAt)}</div>
+        {!transaction.createdAt && (
+          <div style={{ color: theme.colors.text.secondary, fontStyle: 'italic' }}>
+            Date unavailable
+          </div>
+        )}
       </TransactionDate>
       
       <ActionButtons>
@@ -232,12 +237,17 @@ const TransactionItem = ({
           </Button>
         )}
         
-        {isSuperuser && !transaction.suspicious && (
+        {isSuperuser && (
           <Button 
             size="small" 
             variant="outlined" 
-            color="error"
+            color={transaction.suspicious ? "success" : "error"}
             onClick={() => handleMarkAsSuspiciousClick(transaction)}
+            title={transaction.suspicious ? "Clear suspicious flag" : "Mark as suspicious"}
+            style={{
+              borderColor: transaction.suspicious ? '#27ae60' : '#e74c3c',
+              color: transaction.suspicious ? '#27ae60' : '#e74c3c'
+            }}
           >
             <FaExclamationTriangle />
           </Button>

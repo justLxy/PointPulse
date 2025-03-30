@@ -236,11 +236,15 @@ export const MarkSuspiciousModal = ({
 }) => {
   if (!transaction) return null;
   
+  const isCurrentlySuspicious = transaction.suspicious;
+  const newSuspiciousStatus = !isCurrentlySuspicious;
+  const actionText = isCurrentlySuspicious ? "Clear Suspicious Flag" : "Mark as Suspicious";
+  
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Mark Transaction as Suspicious"
+      title={actionText}
       size="small"
     >
       <ModalContent>
@@ -248,27 +252,33 @@ export const MarkSuspiciousModal = ({
           <FaExclamationTriangle />
           <strong>Confirm Action</strong>
           <p>
-            Are you sure you want to mark transaction <strong>{transaction.id}</strong> as suspicious?
-          </p>
-          <p>
-            This action will flag the transaction for further review and may trigger additional verification processes.
+            Are you sure you want to {isCurrentlySuspicious ? 'clear the suspicious flag for' : 'mark as suspicious'} transaction #{transaction.id}?
+            {isCurrentlySuspicious 
+              ? " This will credit the points back to the user's account." 
+              : " This will deduct the points from the user's account."
+            }
           </p>
         </WarningBox>
         
         <ModalActions>
-          <Button
-            variant="outlined"
+          <Button 
+            variant="outlined" 
             onClick={onClose}
             disabled={isMarkingAsSuspicious}
           >
             Cancel
           </Button>
-          <Button
-            color="error"
-            onClick={handleMarkAsSuspicious}
+          <Button 
+            color={isCurrentlySuspicious ? "success" : "error"} 
+            onClick={() => handleMarkAsSuspicious(newSuspiciousStatus)}
             loading={isMarkingAsSuspicious}
+            style={{
+              borderColor: isCurrentlySuspicious ? '#27ae60' : '#e74c3c',
+              backgroundColor: isCurrentlySuspicious ? '#27ae60' : '#e74c3c',
+              color: 'white'
+            }}
           >
-            Mark as Suspicious
+            {actionText}
           </Button>
         </ModalActions>
       </ModalContent>

@@ -1,17 +1,15 @@
 import { useState } from 'react';
 import styled from '@emotion/styled';
 import { useUsers } from '../../hooks/useUsers';
-import Card from '../../components/common/Card';
-import Button from '../../components/common/Button';
-import Input from '../../components/common/Input';
-import Select from '../../components/common/Select';
-import Modal from '../../components/common/Modal';
 import Badge from '../../components/common/Badge';
 import { useAuth } from '../../contexts/AuthContext';
 import theme from '../../styles/theme';
-import { FaSearch, FaUserPlus, FaEye, FaUserEdit, FaCheck, FaUserTag, FaUserTimes, FaExclamationTriangle } from 'react-icons/fa';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
 import React from 'react';
+
+// Import the new components
+import UserFilters from '../../components/user/UserFilters';
+import UserList from '../../components/user/UserList';
+import UserModals from '../../components/user/UserModals';
 
 const PageTitle = styled.h1`
   font-size: ${theme.typography.fontSize['3xl']};
@@ -166,24 +164,6 @@ const ActionButtons = styled.div`
   }
 `;
 
-const BadgeWrapper = styled.div`
-  display: flex;
-  flex-direction: column;
-  flex-wrap: wrap;
-  gap: ${theme.spacing.xs};
-  align-items: center;
-  min-height: 26px; /* Ensure consistent height even when badges are different */
-  
-  /* Create two rows of badges with fixed positions */
-  max-width: 150px;
-  
-  @media (max-width: 768px) {
-    margin-bottom: ${theme.spacing.sm};
-    max-width: 100%;
-    align-items: flex-start;
-  }
-`;
-
 const ModalContent = styled.div`
   display: flex;
   flex-direction: column;
@@ -212,26 +192,50 @@ const EmptyState = styled.div`
   color: ${theme.colors.text.secondary};
 `;
 
-const Users = () => {
-  const { activeRole } = useAuth();
-  const isSuperuser = activeRole === 'superuser';
+const BadgeWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  gap: ${theme.spacing.xs};
+  align-items: center;
+  min-height: 26px;
+  max-width: 150px;
   
-  // State for filters and pagination
+  @media (max-width: 768px) {
+    margin-bottom: ${theme.spacing.sm};
+    max-width: 100%;
+    align-items: flex-start;
+  }
+`;
+
+const Users = () => {
+  const { currentUser } = useAuth();
+  const isSuperuser = currentUser?.role === 'superuser';
+  const isManager = currentUser?.role === 'manager' || currentUser?.role === 'superuser';
+  
+  // API and state
+  const {
+    users,
+    totalCount,
+    isLoading,
+    error,
+    refetch,
+    createUser,
+    updateUser,
+    isCreatingUser,
+    isUpdatingUser,
+  } = useUsers();
+  
+  // State for filters and modals
   const [filters, setFilters] = useState({
-    name: '',
+    search: '',
     role: '',
     verified: '',
-    activated: '',
+    suspicious: '',
     page: 1,
     limit: 10,
   });
   
-  // 调试响应
-  React.useEffect(() => {
-    console.log(`User filters changed: `, filters);
-  }, [filters]);
-  
-  // Modals state
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [viewUserDetails, setViewUserDetails] = useState(false);
@@ -251,6 +255,11 @@ const Users = () => {
     email: '',
   });
   
+  // 调试响应
+  React.useEffect(() => {
+    console.log(`User filters changed: `, filters);
+  }, [filters]);
+  
   // Get users with current filters
   const getApiParams = () => {
     const apiParams = {
@@ -258,9 +267,9 @@ const Users = () => {
       limit: filters.limit,
     };
 
-    // 只有当name有内容时才添加
-    if (filters.name) {
-      apiParams.name = filters.name;
+    // 只有当search有内容时才添加
+    if (filters.search) {
+      apiParams.name = filters.search;
     }
 
     // 只有当选择了具体角色时才添加
@@ -269,16 +278,16 @@ const Users = () => {
     }
 
     // 转换字符串为布尔值，只有当有明确选择时才添加
-    if (filters.verified === 'true') {
+    if (filters.verified === 'verified') {
       apiParams.verified = true;
-    } else if (filters.verified === 'false') {
+    } else if (filters.verified === 'unverified') {
       apiParams.verified = false;
     }
 
     // 转换字符串为布尔值，只有当有明确选择时才添加
-    if (filters.activated === 'true') {
+    if (filters.active === 'active') {
       apiParams.activated = true;
-    } else if (filters.activated === 'false') {
+    } else if (filters.active === 'inactive') {
       apiParams.activated = false;
     }
 
@@ -286,17 +295,12 @@ const Users = () => {
     return apiParams;
   };
 
-  const { users, totalCount, isLoading, createUser, isCreatingUser, updateUser, isUpdatingUser, refetch } = useUsers(getApiParams());
+  const { users: filteredUsers, totalCount: filteredTotalCount, isLoading: filteredIsLoading, createUser: filteredCreateUser, isCreatingUser: filteredIsCreatingUser, updateUser: filteredUpdateUser, isUpdatingUser: filteredIsUpdatingUser, refetch: filteredRefetch } = useUsers(getApiParams());
   
   // 打印数据用于调试
   React.useEffect(() => {
-    console.log('Users data:', { users, totalCount });
-  }, [users, totalCount]);
-  
-  // Calculate pagination
-  const totalPages = Math.ceil(totalCount / filters.limit);
-  const startIndex = (filters.page - 1) * filters.limit + 1;
-  const endIndex = Math.min(startIndex + filters.limit - 1, totalCount);
+    console.log('Users data:', { users: filteredUsers, totalCount: filteredTotalCount });
+  }, [filteredUsers, filteredTotalCount]);
   
   // Handle filter changes
   const handleFilterChange = (key, value) => {
@@ -364,6 +368,26 @@ const Users = () => {
     setViewUserDetails(true);
   };
   
+  // Toggle suspicious flag for cashiers
+  const handleToggleSuspicious = (user) => {
+    if (!user || user.role !== 'cashier') return;
+    
+    const newSuspiciousStatus = !user.suspicious;
+    const userData = {
+      suspicious: newSuspiciousStatus
+    };
+    
+    updateUser(
+      { userId: user.id, userData },
+      {
+        onSuccess: () => {
+          // Refresh user list after update
+          refetch();
+        },
+      }
+    );
+  };
+  
   // Render badge for user status
   const renderUserBadges = (user) => (
     <BadgeWrapper>
@@ -391,443 +415,58 @@ const Users = () => {
   
   return (
     <div>
-      <PageTitle>User Management</PageTitle>
+      {/* User Filters Component */}
+      <UserFilters
+        isSuperuser={isSuperuser}
+        isManager={isManager}
+        filters={filters}
+        onFilterChange={handleFilterChange}
+        onCreateClick={() => setCreateModalOpen(true)}
+      />
       
-      <FilterSection>
-        <SearchInput>
-          <Input
-            placeholder="Search by name or utorid"
-            value={filters.name}
-            onChange={(e) => handleFilterChange('name', e.target.value)}
-            leftIcon={<FaSearch />}
-          />
-        </SearchInput>
+      {/* User List Component */}
+      <UserList
+        users={users}
+        totalCount={totalCount}
+        isLoading={isLoading}
+        isSuperuser={isSuperuser}
+        isManager={isManager}
+        filters={filters}
+        onFilterChange={handleFilterChange}
+        onViewUser={handleViewUser}
+        onEditUser={handleEditUser}
+        renderUserBadges={renderUserBadges}
+        onToggleSuspicious={handleToggleSuspicious}
+      />
+      
+      {/* User Modals Component */}
+      <UserModals
+        // Create modal props
+        createModalOpen={createModalOpen}
+        setCreateModalOpen={setCreateModalOpen}
+        newUser={newUser}
+        setNewUser={setNewUser}
+        handleCreateUser={handleCreateUser}
+        isCreatingUser={isCreatingUser}
         
-        <FilterInput>
-          <Select
-            value={filters.role}
-            onChange={(e) => handleFilterChange('role', e.target.value)}
-            placeholder="Role"
-          >
-            <option value="">All Roles</option>
-            <option value="regular">Regular</option>
-            <option value="cashier">Cashier</option>
-            <option value="manager">Manager</option>
-            <option value="superuser">Superuser</option>
-          </Select>
-        </FilterInput>
+        // Edit modal props
+        editModalOpen={editModalOpen}
+        setEditModalOpen={setEditModalOpen}
+        selectedUser={selectedUser}
+        setSelectedUser={setSelectedUser}
+        editData={editData}
+        setEditData={setEditData}
+        handleUpdateUser={handleUpdateUser}
+        isUpdatingUser={isUpdatingUser}
         
-        <FilterInput>
-          <Select
-            value={filters.verified}
-            onChange={(e) => handleFilterChange('verified', e.target.value)}
-            placeholder="Verification"
-          >
-            <option value="">All Verification</option>
-            <option value="true">Verified</option>
-            <option value="false">Unverified</option>
-          </Select>
-        </FilterInput>
+        // View details modal props
+        viewUserDetails={viewUserDetails}
+        setViewUserDetails={setViewUserDetails}
         
-        <FilterInput>
-          <Select
-            value={filters.activated}
-            onChange={(e) => handleFilterChange('activated', e.target.value)}
-            placeholder="Activity"
-          >
-            <option value="">All Activity</option>
-            <option value="true">Active</option>
-            <option value="false">Inactive</option>
-          </Select>
-        </FilterInput>
-        
-        <Button onClick={() => setCreateModalOpen(true)}>
-          <FaUserPlus /> Create User
-        </Button>
-      </FilterSection>
-      
-      <Card>
-        <TableHeader>
-          <div style={{ display: 'flex', justifyContent: 'center' }}>User</div>
-          <div style={{ display: 'flex', justifyContent: 'center' }}>Email</div>
-          <div style={{ display: 'flex', justifyContent: 'center' }}>Role</div>
-          <div style={{ display: 'flex', justifyContent: 'center' }}>Status</div>
-          <div style={{ display: 'flex', justifyContent: 'center' }}>Actions</div>
-        </TableHeader>
-        
-        {isLoading ? (
-          <LoadingSpinner text="Loading users..." />
-        ) : users && users.length > 0 ? (
-          users.map((user) => (
-            <TableRow key={user.id}>
-              <UserDetails>
-                <div>
-                  <MobileLabel>User:</MobileLabel>
-                  <UserName>{user.name}</UserName>
-                  <UserUtorid>{user.utorid}</UserUtorid>
-                </div>
-              </UserDetails>
-              
-              <UserEmail>
-                <MobileLabel>Email:</MobileLabel>
-                {user.email}
-              </UserEmail>
-              
-              <UserRole>
-                <MobileLabel>Role:</MobileLabel>
-                <Badge 
-                  style={{ 
-                    backgroundColor: 
-                      user.role === 'superuser'
-                        ? '#3498db'  // 蓝色
-                        : user.role === 'manager'
-                        ? '#2ecc71'  // 绿色
-                        : user.role === 'cashier'
-                        ? '#f39c12'  // 橙色
-                        : '#95a5a6', // 灰色
-                    color: 'white'
-                  }}
-                >
-                  {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                </Badge>
-              </UserRole>
-              
-              <div style={{ display: 'flex', justifyContent: 'center' }}>
-                <MobileLabel>Status:</MobileLabel>
-                {renderUserBadges(user)}
-              </div>
-              
-              <ActionButtons>
-                <Button 
-                  size="small" 
-                  variant="outlined" 
-                  onClick={() => handleViewUser(user)}
-                >
-                  <FaEye size={15} />
-                </Button>
-                
-                <Button 
-                  size="small" 
-                  variant="outlined" 
-                  onClick={() => handleEditUser(user)}
-                >
-                  <FaUserEdit size={15} />
-                </Button>
-                
-                {!user.verified && (
-                  <Button 
-                    size="small" 
-                    variant="outlined" 
-                    style={{ color: '#27ae60', borderColor: '#27ae60' }}
-                    onClick={() => {
-                      updateUser(
-                        { 
-                          userId: user.id, 
-                          userData: { verified: "true" } 
-                        },
-                        {
-                          onSuccess: () => {
-                            // 成功后立即刷新用户列表
-                            refetch();
-                          },
-                        }
-                      );
-                    }}
-                    title="Verify User"
-                  >
-                    <FaCheck />
-                  </Button>
-                )}
-
-                {user.role === 'cashier' && (
-                  <Button 
-                    size="small" 
-                    variant={user.suspicious ? "success" : "danger"}
-                    style={{ 
-                      color: 'white', 
-                      borderColor: user.suspicious ? '#27ae60' : '#e74c3c',
-                      backgroundColor: user.suspicious ? '#27ae60' : '#e74c3c'
-                    }}
-                    onClick={() => {
-                      updateUser(
-                        { 
-                          userId: user.id, 
-                          userData: { suspicious: !user.suspicious } 
-                        },
-                        {
-                          onSuccess: () => {
-                            // 成功后立即刷新用户列表
-                            refetch();
-                          },
-                        }
-                      );
-                    }}
-                    title={user.suspicious ? "Clear Suspicious Flag" : "Mark as Suspicious"}
-                  >
-                    <FaExclamationTriangle />
-                  </Button>
-                )}
-              </ActionButtons>
-            </TableRow>
-          ))
-        ) : (
-          <EmptyState>No users found</EmptyState>
-        )}
-      </Card>
-      
-      {totalCount > 0 && (
-        <PageControls>
-          <PageInfo>
-            Showing {startIndex} to {endIndex} of {totalCount} users
-          </PageInfo>
-          
-          <Pagination>
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={() => handleFilterChange('page', Math.max(1, filters.page - 1))}
-              disabled={filters.page === 1}
-            >
-              Previous
-            </Button>
-            
-            <PageInfo>
-              Page {filters.page} of {totalPages}
-            </PageInfo>
-            
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={() => handleFilterChange('page', Math.min(totalPages, filters.page + 1))}
-              disabled={filters.page === totalPages}
-            >
-              Next
-            </Button>
-          </Pagination>
-        </PageControls>
-      )}
-      
-      {/* Create User Modal */}
-      <Modal
-        isOpen={createModalOpen}
-        onClose={() => setCreateModalOpen(false)}
-        title="Create New User"
-        size="medium"
-      >
-        <ModalContent>
-          <ModalForm>
-            <Input
-              label="UTORid"
-              value={newUser.utorid}
-              onChange={(e) => setNewUser((prev) => ({ ...prev, utorid: e.target.value }))}
-              placeholder="Enter UTORid"
-              helperText="Unique, Alphanumeric, 8 characters"
-              required
-            />
-            
-            <Input
-              label="Name"
-              value={newUser.name}
-              onChange={(e) => setNewUser((prev) => ({ ...prev, name: e.target.value }))}
-              placeholder="Enter full name"
-              helperText="1-50 characters"
-              required
-            />
-            
-            <Input
-              label="Email"
-              value={newUser.email}
-              onChange={(e) => setNewUser((prev) => ({ ...prev, email: e.target.value }))}
-              placeholder="Enter email address"
-              helperText="Valid University of Toronto email"
-              required
-            />
-          </ModalForm>
-          
-          <ModalActions>
-            <Button
-              variant="outlined"
-              onClick={() => setCreateModalOpen(false)}
-              disabled={isCreatingUser}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleCreateUser}
-              loading={isCreatingUser}
-            >
-              Create User
-            </Button>
-          </ModalActions>
-        </ModalContent>
-      </Modal>
-      
-      {/* Edit User Modal */}
-      <Modal
-        isOpen={editModalOpen}
-        onClose={() => setEditModalOpen(false)}
-        title={`Edit User: ${selectedUser?.name || ''}`}
-        size="medium"
-      >
-        <ModalContent>
-          <ModalForm>
-            <Input
-              label="Email"
-              value={editData.email || ''}
-              onChange={(e) => setEditData((prev) => ({ ...prev, email: e.target.value }))}
-              placeholder="Enter email address"
-              helperText="Valid University of Toronto email"
-            />
-            
-            {!editData.verified && (
-              <Button
-                fullWidth
-                onClick={() => setEditData((prev) => ({ ...prev, verified: true }))}
-                style={{ marginBottom: theme.spacing.md }}
-              >
-                Verify User
-              </Button>
-            )}
-            
-            {editData.verified && (
-              <div style={{ 
-                backgroundColor: '#27ae60', 
-                color: 'white', 
-                padding: theme.spacing.md, 
-                borderRadius: theme.radius.md,
-                marginBottom: theme.spacing.md 
-              }}>
-                User is verified. Verification cannot be revoked.
-              </div>
-            )}
-            
-            {(selectedUser?.role === 'cashier' || editData.role === 'cashier') && (
-              <Select
-                label="Cashier Status"
-                value={editData.suspicious.toString()}
-                onChange={(e) => setEditData((prev) => ({ ...prev, suspicious: e.target.value === 'true' }))}
-              >
-                <option value="false">Normal</option>
-                <option value="true" style={{ color: '#e74c3c' }}>Suspicious</option>
-              </Select>
-            )}
-            
-            <Select
-              label="Role"
-              value={editData.role}
-              onChange={(e) => setEditData((prev) => ({ ...prev, role: e.target.value }))}
-            >
-              {isSuperuser ? (
-                <>
-                  <option value="regular">Regular User</option>
-                  <option value="cashier">Cashier</option>
-                  <option value="manager">Manager</option>
-                  <option value="superuser">Superuser</option>
-                </>
-              ) : (
-                <>
-                  <option value="regular">Regular User</option>
-                  <option value="cashier">Cashier</option>
-                </>
-              )}
-            </Select>
-            
-            {!editData.verified && editData.role && (
-              <div style={{ 
-                backgroundColor: '#3498db', 
-                color: 'white', 
-                padding: theme.spacing.md, 
-                borderRadius: theme.radius.md,
-                marginTop: theme.spacing.sm,
-                marginBottom: theme.spacing.md,
-                fontSize: theme.typography.fontSize.sm
-              }}>
-                Note: Assigning any role will automatically verify this user.
-              </div>
-            )}
-          </ModalForm>
-          
-          <ModalActions>
-            <Button
-              variant="outlined"
-              onClick={() => setEditModalOpen(false)}
-              disabled={isUpdatingUser}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleUpdateUser}
-              loading={isUpdatingUser}
-            >
-              Update User
-            </Button>
-          </ModalActions>
-        </ModalContent>
-      </Modal>
-      
-      {/* View User Details Modal */}
-      <Modal
-        isOpen={viewUserDetails}
-        onClose={() => {
-          setViewUserDetails(false);
-        }}
-        title="User Details"
-        size="medium"
-      >
-        {selectedUser && (
-          <ModalContent>
-            <div>
-              <h3>Account Information</h3>
-              <div style={{ marginTop: theme.spacing.md }}>
-                <p><strong>UTORid:</strong> {selectedUser.utorid}</p>
-                <p><strong>Name:</strong> {selectedUser.name}</p>
-                <p><strong>Email:</strong> {selectedUser.email}</p>
-                <p><strong>Role:</strong> {selectedUser.role.charAt(0).toUpperCase() + selectedUser.role.slice(1)}</p>
-                <p><strong>Points Balance:</strong> {selectedUser.points || 0}</p>
-                <p><strong>Created At:</strong> {new Date(selectedUser.createdAt).toLocaleString()}</p>
-                <p><strong>Last Login:</strong> {selectedUser.lastLogin ? new Date(selectedUser.lastLogin).toLocaleString() : 'Never'}</p>
-                <p><strong>Verified:</strong> {selectedUser.verified ? 'Yes' : 'No'}</p>
-                {selectedUser.role === 'cashier' && (
-                  <p><strong>Suspicious:</strong> {selectedUser.suspicious ? 
-                    <span style={{ color: '#e74c3c', fontWeight: 'bold' }}>Yes</span> : 'No'}</p>
-                )}
-              </div>
-              
-              {selectedUser.promotions && selectedUser.promotions.length > 0 && (
-                <div style={{ marginTop: theme.spacing.lg }}>
-                  <h3>Available One-time Promotions</h3>
-                  <ul>
-                    {selectedUser.promotions.map((promo) => (
-                      <li key={promo.id}>{promo.name} - {promo.points} points</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-            
-            <ModalActions>
-              <Button
-                onClick={() => {
-                  setViewUserDetails(false);
-                  handleEditUser(selectedUser);
-                }}
-                style={{ flex: 1 }}
-              >
-                Edit User
-              </Button>
-              <Button
-                variant="outlined"
-                onClick={() => {
-                  setViewUserDetails(false);
-                }}
-                style={{ flex: 1 }}
-              >
-                Close
-              </Button>
-            </ModalActions>
-          </ModalContent>
-        )}
-      </Modal>
+        // Permissions
+        isSuperuser={isSuperuser}
+        isManager={isManager}
+      />
     </div>
   );
 };

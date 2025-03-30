@@ -129,14 +129,22 @@ const Transactions = () => {
   };
   
   // Mark transaction as suspicious
-  const handleMarkAsSuspicious = () => {
+  const handleMarkAsSuspicious = (newSuspiciousStatus) => {
     if (!selectedTransaction) return;
     
-    markAsSuspicious(selectedTransaction.id, {
-      onSuccess: () => {
-        setSuspiciousModalOpen(false);
-      },
-    });
+    markAsSuspicious(
+      { 
+        transactionId: selectedTransaction.id, 
+        suspicious: newSuspiciousStatus
+      }, 
+      {
+        onSuccess: () => {
+          setSuspiciousModalOpen(false);
+          // Optionally refetch transactions list after successful update
+          refetch(); 
+        },
+      }
+    );
   };
   
   // Approve redemption transaction
@@ -144,7 +152,7 @@ const Transactions = () => {
     if (!selectedTransaction) return;
     
     approveRedemption(selectedTransaction.id, {
-      onSuccess: () => {
+        onSuccess: () => {
         setApproveModalOpen(false);
       },
     });
@@ -159,6 +167,7 @@ const Transactions = () => {
     approveRedemption,
     isMarkingAsSuspicious,
     isApprovingRedemption,
+    refetch,
   } = useTransactions(filters);
   
   // Calculate table pagination values
@@ -172,7 +181,7 @@ const Transactions = () => {
         filters={filters}
         handleFilterChange={handleFilterChange}
         isSuperuser={isSuperuser}
-      />
+          />
       
       <TransactionList 
         isLoading={isLoading}
