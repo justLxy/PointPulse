@@ -11,7 +11,7 @@ import LoadingSpinner from './components/common/LoadingSpinner';
 // Import authentication pages
 import Login from './pages/auth/Login';
 import PasswordReset from './pages/auth/PasswordReset';
-import PasswordResetConfirmation from './pages/auth/PasswordResetConfirmation';
+import AccountActivation from './pages/auth/AccountActivation';
 
 // Import user pages
 import Profile from './pages/Profile';
@@ -99,7 +99,7 @@ const App = () => {
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/password-reset" element={<PasswordReset />} />
-            <Route path="/password-reset/:resetToken" element={<PasswordResetConfirmation />} />
+            <Route path="/account-activation" element={<AccountActivation />} />
             
             {/* Protected Routes */}
             <Route
