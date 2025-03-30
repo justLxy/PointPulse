@@ -325,24 +325,42 @@ const UserService = {
         const { status, data } = error.response;
         
         if (status === 400) {
-          if (data.message && data.message.includes('amount')) {
-            throw new Error('Invalid amount. Minimum redemption amount is 100 points.');
+          if (data.error === 'No transaction data provided') {
+            throw new Error('No transaction data provided');
           }
-          if (data.message && data.message.includes('balance')) {
+          
+          if (data.error === 'Transaction type must be "redemption"') {
+            throw new Error('Transaction type must be "redemption"');
+          }
+          
+          if (data.error === 'Amount must be a positive number') {
+            throw new Error('Amount must be a positive number');
+          }
+          
+          if (data.error === 'Insufficient points') {
             throw new Error('Insufficient points. You do not have enough points for this redemption.');
           }
-          throw new Error(data.message || 'Invalid redemption request. Please check your inputs.');
+          
+          throw new Error(data.error || 'Invalid redemption request. Please check your inputs.');
         }
         
         if (status === 403) {
-          throw new Error('You are not authorized to create redemption requests.');
+          if (data.error === 'User is not verified') {
+            throw new Error('You must be verified to create redemption requests.');
+          }
+          
+          throw new Error(data.error || 'You are not authorized to create redemption requests.');
         }
         
-        if (status === 429) {
-          throw new Error('You have too many pending redemption requests. Please wait for existing requests to be processed.');
+        if (status === 404) {
+          if (data.error === 'User not found') {
+            throw new Error('User account not found or has been deactivated.');
+          }
+          
+          throw new Error(data.error || 'Failed to create redemption');
         }
         
-        throw new Error(data.message || 'Failed to create redemption');
+        throw new Error(data.error || 'Failed to create redemption');
       }
       
       throw new Error('Network error: Could not connect to server');

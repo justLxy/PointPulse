@@ -78,25 +78,46 @@ const TransactionService = {
         const { status, data } = error.response;
         
         if (status === 400) {
-          if (data.message && data.message.includes('already processed')) {
+          if (data.error === 'Invalid transaction ID') {
+            throw new Error('Invalid transaction ID');
+          }
+          
+          if (data.error === 'No data provided') {
+            throw new Error('No data provided');
+          }
+          
+          if (data.error === 'Processed status must be true') {
+            throw new Error('Processed status must be true');
+          }
+          
+          if (data.error === 'Transaction is not a redemption') {
+            throw new Error('Transaction is not a redemption');
+          }
+          
+          if (data.error === 'Transaction has already been processed') {
             throw new Error('This redemption has already been processed.');
           }
-          throw new Error(data.message || 'Invalid redemption processing request.');
+          
+          throw new Error(data.error || 'Invalid redemption processing request.');
         }
         
         if (status === 403) {
-          throw new Error('You do not have permission to process redemptions.');
+          if (data.error === 'Unauthorized to process redemptions') {
+            throw new Error('You do not have permission to process redemptions.');
+          }
+          
+          throw new Error(data.error || 'Unauthorized action');
         }
         
         if (status === 404) {
-          throw new Error('Redemption transaction not found.');
+          if (data.error === 'Transaction not found') {
+            throw new Error('Redemption transaction not found.');
+          }
+          
+          throw new Error(data.error || 'Not found');
         }
         
-        if (status === 409) {
-          throw new Error('The transaction status has changed. Please refresh and try again.');
-        }
-        
-        throw new Error(data.message || 'Failed to process redemption');
+        throw new Error(data.error || 'Failed to process redemption');
       }
       
       throw new Error('Network error: Could not connect to server');
