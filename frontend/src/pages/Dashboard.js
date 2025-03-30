@@ -328,9 +328,12 @@ const PromotionHeader = styled.div`
   color: ${({ type }) => 
     type === 'automatic' 
       ? theme.colors.accent.contrastText 
-      : theme.colors.primary.dark};
+      : 'white'};
+  font-weight: ${({ type }) => 
+    type === 'automatic' 
+      ? theme.typography.fontWeights.medium
+      : theme.typography.fontWeights.semiBold};
   padding: ${theme.spacing.xs} ${theme.spacing.md};
-  font-weight: ${theme.typography.fontWeights.medium};
   font-size: ${theme.typography.fontSize.sm};
   display: flex;
   justify-content: space-between;

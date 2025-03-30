@@ -670,16 +670,15 @@ const Events = () => {
         <LoadingSpinner text="Loading events..." />
       ) : events && Array.isArray(events) && events.length > 0 ? (
         (() => {
-          // Filter events for regular users to see only published events
-          const filteredEvents = events.filter(event => isManager || event.published);
+          // For managers, we might need to display the number of events after frontend filtering
+          // But for regular users, no additional filtering is needed since the backend handles it
+          const displayedEvents = events;
+          const filteredCount = displayedEvents.length;
           
-          // Calculate how many events are visible after filtering
-          const filteredCount = filteredEvents.length;
-          
-          return filteredEvents.length > 0 ? (
+          return displayedEvents.length > 0 ? (
             <>
               <EventsGrid>
-                {filteredEvents.map((event) => {
+                {displayedEvents.map((event) => {
                   if (!event) return null; // Skip null/undefined events
                   
                   const { month, day } = getEventCardDate(event.startTime);
@@ -806,7 +805,7 @@ const Events = () => {
               <PageControls>
                 <PageInfo>
                   Showing {startIndex} to {Math.min(endIndex, totalCount)} of {totalCount} events
-                  {!isManager && filteredCount < totalCount && (
+                  {!isManager && (
                     <span style={{ marginLeft: theme.spacing.sm, fontSize: theme.typography.fontSize.xs, color: theme.colors.text.hint }}>
                       (Only showing published events)
                     </span>
