@@ -24,6 +24,7 @@ import UserTransactions from './pages/UserTransactions';
 import CreateTransaction from './pages/transactions/CreateTransaction';
 import ProcessRedemption from './pages/transactions/ProcessRedemption';
 import Transactions from './pages/transactions/Transactions';
+import CreateAdjustment from './pages/transactions/CreateAdjustment';
 
 // Import other pages
 import Promotions from './pages/Promotions';
@@ -187,6 +188,16 @@ const App = () => {
                 <ProtectedRoute allowedRoles={['cashier', 'manager', 'superuser']}>
                   <Layout>
                     <ProcessRedemption />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/transactions/adjustment"
+              element={
+                <ProtectedRoute allowedRoles={['manager', 'superuser']}>
+                  <Layout>
+                    <CreateAdjustment />
                   </Layout>
                 </ProtectedRoute>
               }

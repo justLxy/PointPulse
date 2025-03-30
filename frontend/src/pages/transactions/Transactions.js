@@ -453,6 +453,16 @@ const Transactions = () => {
     <div>
       <PageTitle>All Transactions</PageTitle>
       
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: theme.spacing.md }}>
+        <Button 
+          as="a" 
+          href="/transactions/adjustment" 
+          style={{ marginLeft: theme.spacing.sm }}
+        >
+          <FaExchangeAlt style={{ marginRight: theme.spacing.xs }} /> Create Adjustment
+        </Button>
+      </div>
+      
       <FilterSection>
         <SearchInput>
           <Input

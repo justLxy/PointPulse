@@ -6,12 +6,13 @@ import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
 import Select from '../../components/common/Select';
 import Badge from '../../components/common/Badge';
+import SuccessPage from '../../components/common/SuccessPage';
 import TransactionService from '../../services/transaction.service';
 import PromotionService from '../../services/promotion.service';
 import UserService from '../../services/user.service';
 import theme from '../../styles/theme';
 import { toast } from 'react-hot-toast';
-import { FaUser, FaDollarSign, FaTag, FaClipboard, FaSearch, FaCheckCircle } from 'react-icons/fa';
+import { FaUser, FaDollarSign, FaTag, FaClipboard, FaSearch, FaCheckCircle, FaMoneyBillWave, FaReceipt } from 'react-icons/fa';
 
 const PageTitle = styled.h1`
   font-size: ${theme.typography.fontSize['3xl']};
@@ -218,30 +219,6 @@ const LoadingOverlay = styled.div`
   justify-content: center;
   z-index: 1000;
   backdrop-filter: blur(2px);
-`;
-
-const SuccessContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: ${theme.spacing.xl};
-  
-  svg {
-    font-size: 48px;
-    color: ${theme.colors.success.main};
-    margin-bottom: ${theme.spacing.lg};
-  }
-  
-  h2 {
-    margin: 0 0 ${theme.spacing.sm};
-    font-size: ${theme.typography.fontSize['2xl']};
-  }
-  
-  p {
-    color: ${theme.colors.text.secondary};
-    margin-bottom: ${theme.spacing.xl};
-  }
 `;
 
 const ErrorMessage = styled.div`
@@ -626,44 +603,35 @@ const CreateTransaction = () => {
   );
   
   const renderStep2 = () => (
-    <Card>
-      <Card.Body>
-        <SuccessContainer>
-          <FaCheckCircle />
-          <h2>Transaction Completed!</h2>
-          <p>The purchase transaction has been successfully processed</p>
-          
-          <div style={{ textAlign: 'left', width: '100%', maxWidth: '400px', margin: '0 auto' }}>
-            <SummaryItem>
-              <div className="label">Transaction ID</div>
-              <div className="value">#{transaction?.id}</div>
-            </SummaryItem>
-            <SummaryItem>
-              <div className="label">Customer</div>
-              <div className="value">{user?.name}</div>
-            </SummaryItem>
-            <SummaryItem>
-              <div className="label">Amount</div>
-              <div className="value">${parseFloat(amount).toFixed(2)}</div>
-            </SummaryItem>
-            <SummaryItem>
-              <div className="label">Points Earned</div>
-              <div className="value">
-                <PointsEarned>
-                  {transaction?.earned || calculateEarnedPoints()} points
-                </PointsEarned>
-              </div>
-            </SummaryItem>
-          </div>
-          
-          <div style={{ display: 'flex', gap: theme.spacing.md, marginTop: theme.spacing.xl }}>
-            <Button variant="outlined" onClick={handleReset}>
-              New Transaction
-            </Button>
-          </div>
-        </SuccessContainer>
-      </Card.Body>
-    </Card>
+    <SuccessPage
+      title="Transaction Completed!"
+      description="The purchase transaction has been successfully processed"
+      cardTitle="Transaction Details"
+      details={[
+        { 
+          icon: <FaReceipt />, 
+          label: "Transaction ID", 
+          value: `#${transaction?.id}` 
+        },
+        { 
+          icon: <FaUser />, 
+          label: "Customer", 
+          value: user?.name 
+        },
+        { 
+          icon: <FaDollarSign />, 
+          label: "Amount", 
+          value: `$${parseFloat(amount).toFixed(2)}` 
+        },
+      ]}
+      total={{
+        label: "Points Earned",
+        value: `${transaction?.earned || calculateEarnedPoints()} points`,
+        isPositive: true
+      }}
+      buttonText="New Transaction"
+      onButtonClick={handleReset}
+    />
   );
   
   return (

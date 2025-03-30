@@ -145,9 +145,16 @@ const PendingRedemptionsSection = styled.div`
   margin-top: ${theme.spacing.xl};
 `;
 
+const PendingRedemptionsHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: ${theme.spacing.md};
+`;
+
 const PendingRedemptionsTitle = styled.h2`
   font-size: ${theme.typography.fontSize.xl};
-  margin-bottom: ${theme.spacing.md};
+  margin-bottom: 0;
 `;
 
 const RedemptionsList = styled.div`
@@ -221,6 +228,26 @@ const NoRedemptions = styled.div`
   color: ${theme.colors.text.secondary};
 `;
 
+// 分页相关样式
+const PageControls = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: ${theme.spacing.xl};
+  margin-bottom: ${theme.spacing.md};
+`;
+
+const Pagination = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${theme.spacing.md};
+`;
+
+const PageInfo = styled.div`
+  color: ${theme.colors.text.secondary};
+  font-size: ${theme.typography.fontSize.sm};
+`;
+
 const ProcessRedemption = () => {
   const [redemptionId, setRedemptionId] = useState('');
   const [result, setResult] = useState(null);
@@ -229,29 +256,42 @@ const ProcessRedemption = () => {
   const [isLoadingPending, setIsLoadingPending] = useState(false);
   const [processingError, setProcessingError] = useState(null); // Separate error state for processing
   const [processingIds, setProcessingIds] = useState([]); // Track which redemptions are being processed
+  const [page, setPage] = useState(1); // 当前页码
+  const [limit, setLimit] = useState(10); // 每页显示数量
+  const [totalCount, setTotalCount] = useState(0); // 总记录数
   
   const { getTransaction, processRedemption, isProcessing } = useTransactions();
+  
+  // 计算总页数
+  const totalPages = Math.ceil(totalCount / limit);
+  
+  // 计算当前显示的记录范围
+  const startIndex = (page - 1) * limit + 1;
+  const endIndex = Math.min(page * limit, totalCount);
   
   // Fetch pending redemptions on load
   useEffect(() => {
     fetchPendingRedemptions();
-  }, []);
+  }, [page, limit]); // 当页码或每页数量变化时重新获取数据
   
   const fetchPendingRedemptions = async () => {
     // Instead of clearing the list immediately, keep showing existing items while loading
     setIsLoadingPending(true);
     
     try {
-      console.log('Fetching pending redemptions...');
+      console.log(`Fetching pending redemptions for page ${page}...`);
       // Add a random parameter to ensure we get fresh data
       const response = await TransactionService.getAllTransactions({
         type: 'redemption',
         relatedId: null, // Filter for transactions where relatedId is null
-        _cache: Date.now() // Add cache busting parameter
+        _cache: Date.now(), // Add cache busting parameter
+        page: page, // 添加页码参数
+        limit: limit // 添加每页数量参数
       });
       
       const results = response.results || [];
-      console.log(`Fetched ${results.length} pending redemptions`);
+      setTotalCount(response.count || 0); // 设置总记录数
+      console.log(`Fetched ${results.length} pending redemptions out of ${response.count} total`);
       
       // Update the redemptions list without a visible flash
       setPendingRedemptions(results);
@@ -259,6 +299,20 @@ const ProcessRedemption = () => {
     } catch (error) {
       console.error('Failed to fetch pending redemptions:', error);
       setIsLoadingPending(false);
+    }
+  };
+  
+  // 切换到上一页
+  const handlePreviousPage = () => {
+    if (page > 1) {
+      setPage(page - 1);
+    }
+  };
+  
+  // 切换到下一页
+  const handleNextPage = () => {
+    if (page < totalPages) {
+      setPage(page + 1);
     }
   };
   
@@ -515,17 +569,9 @@ const ProcessRedemption = () => {
       
       {/* New section for pending redemptions */}
       <PendingRedemptionsSection>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing.md }}>
+        <PendingRedemptionsHeader>
           <PendingRedemptionsTitle>Pending Redemption Requests</PendingRedemptionsTitle>
-          <Button 
-            variant="outlined" 
-            onClick={fetchPendingRedemptions}
-            loading={isLoadingPending}
-            size="small"
-          >
-            Refresh List
-          </Button>
-        </div>
+        </PendingRedemptionsHeader>
         
         {/* Display processing error specifically for the list */}
         {processingError && (
@@ -581,6 +627,39 @@ const ProcessRedemption = () => {
           <NoRedemptions>
             <p>No pending redemption requests found.</p>
           </NoRedemptions>
+        )}
+        
+        {/* 添加分页控制 */}
+        {totalCount > 0 && (
+          <PageControls>
+            <PageInfo>
+              Showing {startIndex} to {endIndex} of {totalCount} redemption requests
+            </PageInfo>
+            
+            <Pagination>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={handlePreviousPage}
+                disabled={page === 1}
+              >
+                Previous
+              </Button>
+              
+              <PageInfo>
+                Page {page} of {totalPages}
+              </PageInfo>
+              
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={handleNextPage}
+                disabled={page === totalPages}
+              >
+                Next
+              </Button>
+            </Pagination>
+          </PageControls>
         )}
       </PendingRedemptionsSection>
     </div>

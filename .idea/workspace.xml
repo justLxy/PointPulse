@@ -4,9 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="905b8885-b565-4a74-b7b7-a48df9f79310" name="Changes" comment="Debug">
+    <list default="true" id="905b8885-b565-4a74-b7b7-a48df9f79310" name="Changes" comment="Transactions Feature Improvement">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/UserTransactions.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/UserTransactions.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/App.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/App.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/components/user/RedemptionModal.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/user/RedemptionModal.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/transactions/CreateTransaction.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/transactions/CreateTransaction.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/transactions/ProcessRedemption.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/transactions/ProcessRedemption.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/transactions/Transactions.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/transactions/Transactions.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/users/CreateUser.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/users/CreateUser.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -116,7 +121,7 @@
       <workItem from="1743215452832" duration="9354000" />
       <workItem from="1743267845127" duration="21610000" />
       <workItem from="1743296034074" duration="48000" />
-      <workItem from="1743296107148" duration="1183000" />
+      <workItem from="1743296107148" duration="3390000" />
     </task>
     <task id="LOCAL-00001" summary="Update">
       <option name="closed" value="true" />
@@ -198,7 +203,15 @@
       <option name="project" value="LOCAL" />
       <updated>1743293035961</updated>
     </task>
-    <option name="localTasksCounter" value="11" />
+    <task id="LOCAL-00011" summary="Transactions Feature Improvement">
+      <option name="closed" value="true" />
+      <created>1743297639755</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1743297639755</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -212,6 +225,7 @@
     <MESSAGE value="Create Transaction Improvement" />
     <MESSAGE value="Transaction &amp; Redemption Function Improvement" />
     <MESSAGE value="Debug" />
-    <option name="LAST_COMMIT_MESSAGE" value="Debug" />
+    <MESSAGE value="Transactions Feature Improvement" />
+    <option name="LAST_COMMIT_MESSAGE" value="Transactions Feature Improvement" />
   </component>
 </project>
