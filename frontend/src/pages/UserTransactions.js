@@ -66,31 +66,49 @@ const PageInfo = styled.div`
   font-size: ${theme.typography.fontSize.sm};
 `;
 
-const TransactionItem = styled.div`
-  display: flex;
-  align-items: center;
-  padding: ${theme.spacing.md} 0;
+const TableHeader = styled.div`
+  display: grid;
+  grid-template-columns: 80px 1fr 1fr 150px;
+  padding: ${theme.spacing.md};
+  font-weight: ${theme.typography.fontWeights.semiBold};
+  background-color: ${theme.colors.background.default};
   border-bottom: 1px solid ${theme.colors.border.light};
   
-  &:last-of-type {
-    border-bottom: none;
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
+
+const TableRow = styled.div`
+  display: grid;
+  grid-template-columns: 80px 1fr 1fr 150px;
+  padding: ${theme.spacing.md};
+  border-bottom: 1px solid ${theme.colors.border.light};
+  align-items: center;
+  
+  &:hover {
+    background-color: ${theme.colors.background.default};
   }
   
   @media (max-width: 768px) {
-    flex-wrap: wrap;
+    display: flex;
+    flex-direction: column;
     gap: ${theme.spacing.sm};
+    padding: ${theme.spacing.md};
+    
+    &:not(:last-child) {
+      border-bottom: 1px solid ${theme.colors.border.light};
+    }
   }
 `;
 
 const TransactionIcon = styled.div`
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   border-radius: ${theme.radius.full};
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: ${theme.spacing.md};
-  flex-shrink: 0;
   
   ${({ type }) => {
     switch (type) {
@@ -128,56 +146,55 @@ const TransactionIcon = styled.div`
   }}
 `;
 
-const TransactionInfo = styled.div`
-  flex: 1;
-  
-  .transaction-id {
-    font-weight: ${theme.typography.fontWeights.medium};
-    font-size: ${theme.typography.fontSize.sm};
-    color: ${theme.colors.text.secondary};
-    margin-bottom: ${theme.spacing.xs};
-  }
-  
-  .transaction-type {
-    font-weight: ${theme.typography.fontWeights.medium};
-    font-size: ${theme.typography.fontSize.lg};
-    margin-bottom: ${theme.spacing.xs};
-  }
-  
-  .transaction-remark {
-    color: ${theme.colors.text.secondary};
-    font-size: ${theme.typography.fontSize.sm};
-  }
-  
-  .transaction-date {
-    color: ${theme.colors.text.secondary};
-    font-size: ${theme.typography.fontSize.sm};
-    margin-top: ${theme.spacing.xs};
-  }
+const MobileLabel = styled.span`
+  display: none;
+  font-weight: ${theme.typography.fontWeights.semiBold};
+  margin-right: ${theme.spacing.sm};
   
   @media (max-width: 768px) {
+    display: inline;
+  }
+`;
+
+const TransactionInfo = styled.div`
+  @media (max-width: 768px) {
+    display: flex;
+    justify-content: space-between;
     width: 100%;
+    margin-bottom: ${theme.spacing.sm};
+  }
+`;
+
+const TransactionId = styled.div`
+  font-weight: ${theme.typography.fontWeights.medium};
+`;
+
+const TransactionType = styled.div`
+  color: ${theme.colors.text.secondary};
+  font-size: ${theme.typography.fontSize.sm};
+  text-transform: capitalize;
+`;
+
+const TransactionDetails = styled.div`
+  @media (max-width: 768px) {
+    margin-bottom: ${theme.spacing.sm};
+  }
+`;
+
+const InfoLabel = styled.span`
+  color: ${theme.colors.text.secondary};
+  font-size: ${theme.typography.fontSize.sm};
+  margin-right: ${theme.spacing.xs};
+  
+  @media (max-width: 768px) {
+    display: block;
+    margin-bottom: ${theme.spacing.xs};
   }
 `;
 
 const TransactionAmount = styled.div`
-  font-weight: ${theme.typography.fontWeights.semiBold};
-  font-size: ${theme.typography.fontSize.xl};
-  margin-left: ${theme.spacing.md};
-  flex-shrink: 0;
-  
-  ${({ positive }) =>
-    positive
-      ? css`
-          color: ${theme.colors.success.main};
-        `
-      : css`
-          color: ${theme.colors.error.main};
-        `}
-        
-  @media (max-width: 768px) {
-    margin-left: auto;
-  }
+  font-weight: ${theme.typography.fontWeights.medium};
+  color: ${({ positive }) => positive ? theme.colors.success.main : theme.colors.error.main};
 `;
 
 const EmptyState = styled.div`
@@ -347,30 +364,58 @@ const UserTransactions = () => {
           <LoadingSpinner text="Loading transactions..." />
         ) : transactions.length > 0 ? (
           <>
-            <Card.Body>
-              {transactions.map((transaction) => (
-                <TransactionItem key={transaction.id}>
-                  <TransactionIcon type={transaction.type}>
-                    {getTransactionIcon(transaction.type)}
-                  </TransactionIcon>
-                  <TransactionInfo>
-                    <div className="transaction-id">Transaction #{transaction.id}</div>
-                    <div className="transaction-type">{getTransactionLabel(transaction)}</div>
-                    <div className="transaction-remark">
-                      {transaction.remark || 'No remark'}
+            <TableHeader>
+              <div>Type</div>
+              <div>Transaction</div>
+              <div>Details</div>
+              <div>Amount</div>
+            </TableHeader>
+            
+            {transactions.map((transaction) => (
+              <TableRow key={transaction.id}>
+                <TransactionIcon type={transaction.type}>
+                  {getTransactionIcon(transaction.type)}
+                </TransactionIcon>
+                
+                <TransactionInfo>
+                  <MobileLabel>Transaction:</MobileLabel>
+                  <div>
+                    <TransactionId>Transaction #{transaction.id}</TransactionId>
+                    <TransactionType>{transaction.type}</TransactionType>
+                  </div>
+                </TransactionInfo>
+                
+                <TransactionDetails>
+                  <MobileLabel>Details:</MobileLabel>
+                  <div>
+                    <div>
+                      <TransactionType>{getTransactionLabel(transaction)}</TransactionType>
                     </div>
+                    {transaction.remark && (
+                      <div>
+                        <InfoLabel>Remark:</InfoLabel> {transaction.remark}
+                      </div>
+                    )}
                     {transaction.createdAt && (
-                      <div className="transaction-date">
+                      <div>
+                        <InfoLabel>Date:</InfoLabel> 
                         {formatDate(transaction.createdAt)} {formatTime(transaction.createdAt)}
                       </div>
                     )}
-                  </TransactionInfo>
-                  <TransactionAmount positive={isPositiveTransaction(transaction)}>
-                    {formatAmount(transaction.amount)}
-                  </TransactionAmount>
-                </TransactionItem>
-              ))}
-            </Card.Body>
+                  </div>
+                </TransactionDetails>
+                
+                <TransactionAmount positive={isPositiveTransaction(transaction)}>
+                  <MobileLabel>Amount:</MobileLabel>
+                  {formatAmount(transaction.amount)}
+                  {transaction.spent && (
+                    <div style={{ fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary }}>
+                      ${transaction.spent.toFixed(2)}
+                    </div>
+                  )}
+                </TransactionAmount>
+              </TableRow>
+            ))}
             
             <PageControls>
               <PageInfo>

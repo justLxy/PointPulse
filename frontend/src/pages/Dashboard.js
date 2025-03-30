@@ -1020,9 +1020,16 @@ const Dashboard = () => {
                     </TransactionIcon>
                     <TransactionInfo>
                       <div className="transaction-type">{getTransactionLabel(transaction)}</div>
-                      <div className="transaction-date">
-                        {transaction.remark || 'No remark'}
-                      </div>
+                      {transaction.remark && (
+                        <div className="transaction-date">
+                          {transaction.remark}
+                        </div>
+                      )}
+                      {transaction.createdAt && (
+                        <div className="transaction-date">
+                          {formatDate(transaction.createdAt)}
+                        </div>
+                      )}
                     </TransactionInfo>
                     <TransactionAmount positive={isPositiveTransaction(transaction)}>
                       {formatAmount(transaction.amount)}

@@ -4,17 +4,30 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="905b8885-b565-4a74-b7b7-a48df9f79310" name="Changes" comment="Update">
+    <list default="true" id="905b8885-b565-4a74-b7b7-a48df9f79310" name="Changes" comment="Debug">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/Dashboard.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/Dashboard.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/UserTransactions.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/UserTransactions.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="JavaScript File" />
+      </list>
+    </option>
+  </component>
   <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="kiko" />
+      </map>
+    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="UPDATE_TYPE" value="REBASE" />
   </component>
   <component name="GitHubPullRequestSearchHistory">{
   &quot;lastFilter&quot;: {
@@ -74,6 +87,8 @@
     <recent_temporary>
       <list>
         <item itemvalue="npm.seed" />
+        <item itemvalue="npm.seed" />
+        <item itemvalue="npm.seed" />
       </list>
     </recent_temporary>
   </component>
@@ -99,7 +114,9 @@
       <workItem from="1743204236156" duration="147000" />
       <workItem from="1743214081334" duration="58000" />
       <workItem from="1743215452832" duration="9354000" />
-      <workItem from="1743267845127" duration="3574000" />
+      <workItem from="1743267845127" duration="21610000" />
+      <workItem from="1743296034074" duration="48000" />
+      <workItem from="1743296107148" duration="1183000" />
     </task>
     <task id="LOCAL-00001" summary="Update">
       <option name="closed" value="true" />
@@ -109,7 +126,79 @@
       <option name="project" value="LOCAL" />
       <updated>1743229823082</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="Update">
+      <option name="closed" value="true" />
+      <created>1743273746819</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1743273746819</updated>
+    </task>
+    <task id="LOCAL-00003" summary="Optimize the mobile view.">
+      <option name="closed" value="true" />
+      <created>1743276796612</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1743276796612</updated>
+    </task>
+    <task id="LOCAL-00004" summary="CreateUser and Sus Cashier">
+      <option name="closed" value="true" />
+      <created>1743278795132</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1743278795132</updated>
+    </task>
+    <task id="LOCAL-00005" summary="CreateUser and Sus Cashier">
+      <option name="closed" value="true" />
+      <created>1743280866095</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1743280866095</updated>
+    </task>
+    <task id="LOCAL-00006" summary="User Management UI Improvement">
+      <option name="closed" value="true" />
+      <created>1743281306840</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1743281306840</updated>
+    </task>
+    <task id="LOCAL-00007" summary="Create Transaction Improvement">
+      <option name="closed" value="true" />
+      <created>1743283433211</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1743283433211</updated>
+    </task>
+    <task id="LOCAL-00008" summary="Transaction &amp; Redemption Function Improvement">
+      <option name="closed" value="true" />
+      <created>1743291634873</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1743291634873</updated>
+    </task>
+    <task id="LOCAL-00009" summary="Debug">
+      <option name="closed" value="true" />
+      <created>1743292960790</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1743292960790</updated>
+    </task>
+    <task id="LOCAL-00010" summary="Debug">
+      <option name="closed" value="true" />
+      <created>1743293035960</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1743293035961</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -117,6 +206,12 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Update" />
-    <option name="LAST_COMMIT_MESSAGE" value="Update" />
+    <MESSAGE value="Optimize the mobile view." />
+    <MESSAGE value="CreateUser and Sus Cashier" />
+    <MESSAGE value="User Management UI Improvement" />
+    <MESSAGE value="Create Transaction Improvement" />
+    <MESSAGE value="Transaction &amp; Redemption Function Improvement" />
+    <MESSAGE value="Debug" />
+    <option name="LAST_COMMIT_MESSAGE" value="Debug" />
   </component>
 </project>
