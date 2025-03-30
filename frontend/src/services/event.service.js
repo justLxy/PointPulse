@@ -77,7 +77,38 @@ const EventService = {
       const response = await api.post(`/events/${eventId}/guests`, { userId });
       return response.data;
     } catch (error) {
-      throw error.response ? error.response.data : new Error('Failed to add guest');
+      if (error.response) {
+        const { status, data } = error.response;
+        
+        if (status === 400) {
+          if (data.message && data.message.includes('capacity')) {
+            throw new Error('Cannot add guest: Event has reached maximum capacity');
+          }
+          if (data.message && data.message.includes('already')) {
+            throw new Error('This user is already a guest of this event');
+          }
+          throw new Error(data.message || 'Invalid request to add guest');
+        }
+        
+        if (status === 403) {
+          throw new Error('You do not have permission to add guests to this event');
+        }
+        
+        if (status === 404) {
+          if (data.message && data.message.includes('user')) {
+            throw new Error('User not found');
+          }
+          throw new Error('Event not found');
+        }
+        
+        if (status === 409) {
+          throw new Error('This user is an organizer of this event and cannot be added as a guest');
+        }
+        
+        throw new Error(data.message || 'Failed to add guest');
+      }
+      
+      throw new Error('Network error: Could not connect to server');
     }
   },
 
@@ -87,7 +118,24 @@ const EventService = {
       const response = await api.delete(`/events/${eventId}/guests/${userId}`);
       return response.data;
     } catch (error) {
-      throw error.response ? error.response.data : new Error('Failed to remove guest');
+      if (error.response) {
+        const { status, data } = error.response;
+        
+        if (status === 403) {
+          throw new Error('You do not have permission to remove guests from this event');
+        }
+        
+        if (status === 404) {
+          if (data.message && data.message.includes('user')) {
+            throw new Error('User is not a guest of this event');
+          }
+          throw new Error('Event not found');
+        }
+        
+        throw new Error(data.message || 'Failed to remove guest');
+      }
+      
+      throw new Error('Network error: Could not connect to server');
     }
   },
 
@@ -97,7 +145,35 @@ const EventService = {
       const response = await api.post(`/events/${eventId}/guests/me`);
       return response.data;
     } catch (error) {
-      throw error.response ? error.response.data : new Error('Failed to RSVP to event');
+      if (error.response) {
+        const { status, data } = error.response;
+        
+        if (status === 400) {
+          if (data.message && data.message.includes('capacity')) {
+            throw new Error('Cannot RSVP: This event has reached its maximum capacity');
+          }
+          if (data.message && data.message.includes('already')) {
+            throw new Error('You have already RSVP\'d to this event');
+          }
+          throw new Error(data.message || 'Invalid RSVP request');
+        }
+        
+        if (status === 403) {
+          throw new Error('You must be verified to RSVP to events');
+        }
+        
+        if (status === 404) {
+          throw new Error('This event does not exist or has been cancelled');
+        }
+        
+        if (status === 409) {
+          throw new Error('You are an organizer of this event and cannot RSVP');
+        }
+        
+        throw new Error(data.message || 'Failed to RSVP to event');
+      }
+      
+      throw new Error('Network error: Could not connect to server');
     }
   },
 
@@ -107,7 +183,21 @@ const EventService = {
       const response = await api.delete(`/events/${eventId}/guests/me`);
       return response.data;
     } catch (error) {
-      throw error.response ? error.response.data : new Error('Failed to cancel RSVP');
+      if (error.response) {
+        const { status, data } = error.response;
+        
+        if (status === 400) {
+          throw new Error(data.message || 'Invalid request to cancel RSVP');
+        }
+        
+        if (status === 404) {
+          throw new Error('This event does not exist or you are not RSVP\'d to it');
+        }
+        
+        throw new Error(data.message || 'Failed to cancel RSVP');
+      }
+      
+      throw new Error('Network error: Could not connect to server');
     }
   },
 
@@ -118,7 +208,34 @@ const EventService = {
       const response = await api.post(`/events/${eventId}/transactions`, data);
       return response.data;
     } catch (error) {
-      throw error.response ? error.response.data : new Error('Failed to award points');
+      if (error.response) {
+        const { status, data } = error.response;
+        
+        if (status === 400) {
+          if (data.message && data.message.includes('points')) {
+            throw new Error('Not enough points remaining for this event');
+          }
+          if (data.message && data.message.includes('already awarded')) {
+            throw new Error('Points have already been awarded to this user');
+          }
+          throw new Error(data.message || 'Invalid points award request');
+        }
+        
+        if (status === 403) {
+          throw new Error('You do not have permission to award points for this event');
+        }
+        
+        if (status === 404) {
+          if (data.message && data.message.includes('user')) {
+            throw new Error('User is not a guest of this event');
+          }
+          throw new Error('Event not found');
+        }
+        
+        throw new Error(data.message || 'Failed to award points');
+      }
+      
+      throw new Error('Network error: Could not connect to server');
     }
   },
 };

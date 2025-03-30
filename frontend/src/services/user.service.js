@@ -7,7 +7,17 @@ const UserService = {
       const response = await api.get('/users/me');
       return response.data;
     } catch (error) {
-      throw error.response ? error.response.data : new Error('Failed to fetch profile');
+      if (error.response) {
+        const { status, data } = error.response;
+        
+        if (status === 401) {
+          throw new Error('Your session has expired. Please log in again.');
+        }
+        
+        throw new Error(data.message || 'Failed to fetch profile');
+      }
+      
+      throw new Error('Network error: Could not connect to server');
     }
   },
 
@@ -40,7 +50,38 @@ const UserService = {
       return response.data;
     } catch (error) {
       console.error('Profile update error:', error);
-      throw error.response ? error.response.data : new Error('Failed to update profile');
+      
+      if (error.response) {
+        const { status, data } = error.response;
+        
+        if (status === 400) {
+          if (data.message && data.message.includes('email')) {
+            throw new Error('Invalid email format. Please check your email address.');
+          }
+          if (data.message && data.message.includes('name')) {
+            throw new Error('Name is required.');
+          }
+          if (data.message && data.message.includes('birthday')) {
+            throw new Error('Invalid date format for birthday.');
+          }
+          if (data.message && data.message.includes('avatar')) {
+            throw new Error('Invalid avatar file. Please upload a valid image file (JPG, PNG, or GIF).');
+          }
+          throw new Error(data.message || 'Invalid profile data. Please check your inputs.');
+        }
+        
+        if (status === 401) {
+          throw new Error('Your session has expired. Please log in again.');
+        }
+        
+        if (status === 413) {
+          throw new Error('Avatar file is too large. Please upload a smaller image (max 5MB).');
+        }
+        
+        throw new Error(data.message || 'Failed to update profile');
+      }
+      
+      throw new Error('Network error: Could not connect to server');
     }
   },
 
@@ -60,7 +101,26 @@ const UserService = {
       return response.data;
     } catch (error) {
       console.error('Avatar update error:', error);
-      throw error.response ? error.response.data : new Error('Failed to update avatar');
+      
+      if (error.response) {
+        const { status, data } = error.response;
+        
+        if (status === 400) {
+          throw new Error(data.message || 'Invalid avatar file format. Please upload a valid image file.');
+        }
+        
+        if (status === 401) {
+          throw new Error('Your session has expired. Please log in again.');
+        }
+        
+        if (status === 413) {
+          throw new Error('Avatar file is too large. Please upload a smaller image (max 5MB).');
+        }
+        
+        throw new Error(data.message || 'Failed to update avatar');
+      }
+      
+      throw new Error('Network error: Could not upload avatar. Please check your connection.');
     }
   },
 
@@ -70,7 +130,21 @@ const UserService = {
       const response = await api.get(`/users/${userId}`);
       return response.data;
     } catch (error) {
-      throw error.response ? error.response.data : new Error('Failed to fetch user');
+      if (error.response) {
+        const { status, data } = error.response;
+        
+        if (status === 403) {
+          throw new Error('You do not have permission to view this user\'s details.');
+        }
+        
+        if (status === 404) {
+          throw new Error('User not found. The user may have been deleted or deactivated.');
+        }
+        
+        throw new Error(data.message || 'Failed to fetch user');
+      }
+      
+      throw new Error('Network error: Could not connect to server');
     }
   },
 
@@ -108,7 +182,22 @@ const UserService = {
       return response.data;
     } catch (error) {
       console.error('Error fetching users:', error);
-      throw error.response ? error.response.data : new Error('Failed to fetch users');
+      
+      if (error.response) {
+        const { status, data } = error.response;
+        
+        if (status === 400) {
+          throw new Error(data.message || 'Invalid search parameters. Please check your filters.');
+        }
+        
+        if (status === 403) {
+          throw new Error('You do not have permission to view the user list.');
+        }
+        
+        throw new Error(data.message || 'Failed to fetch users');
+      }
+      
+      throw new Error('Network error: Could not retrieve users. Please check your connection.');
     }
   },
 
@@ -118,7 +207,34 @@ const UserService = {
       const response = await api.post('/users', userData);
       return response.data;
     } catch (error) {
-      throw error.response ? error.response.data : new Error('Failed to create user');
+      if (error.response) {
+        const { status, data } = error.response;
+        
+        if (status === 400) {
+          if (data.message && data.message.includes('utorid')) {
+            throw new Error('Invalid or duplicate UTORid. Each user must have a unique UTORid.');
+          }
+          if (data.message && data.message.includes('email')) {
+            throw new Error('Invalid email format. Please enter a valid email address.');
+          }
+          if (data.message && data.message.includes('name')) {
+            throw new Error('Name is required.');
+          }
+          throw new Error(data.message || 'Invalid user data. Please check all required fields.');
+        }
+        
+        if (status === 403) {
+          throw new Error('You do not have permission to create new users.');
+        }
+        
+        if (status === 409) {
+          throw new Error('A user with this UTORid already exists.');
+        }
+        
+        throw new Error(data.message || 'Failed to create user');
+      }
+      
+      throw new Error('Network error: Could not connect to server');
     }
   },
 
@@ -128,7 +244,28 @@ const UserService = {
       const response = await api.patch(`/users/${userId}`, userData);
       return response.data;
     } catch (error) {
-      throw error.response ? error.response.data : new Error('Failed to update user');
+      if (error.response) {
+        const { status, data } = error.response;
+        
+        if (status === 400) {
+          if (data.message && data.message.includes('role')) {
+            throw new Error('Invalid role. Please select a valid role for the user.');
+          }
+          throw new Error(data.message || 'Invalid user data. Please check your inputs.');
+        }
+        
+        if (status === 403) {
+          throw new Error('You do not have permission to update this user.');
+        }
+        
+        if (status === 404) {
+          throw new Error('User not found. The user may have been deleted.');
+        }
+        
+        throw new Error(data.message || 'Failed to update user');
+      }
+      
+      throw new Error('Network error: Could not connect to server');
     }
   },
 
@@ -142,7 +279,35 @@ const UserService = {
       });
       return response.data;
     } catch (error) {
-      throw error.response ? error.response.data : new Error('Failed to transfer points');
+      if (error.response) {
+        const { status, data } = error.response;
+        
+        if (status === 400) {
+          if (data.message && data.message.includes('amount')) {
+            throw new Error('Invalid amount. Please enter a positive number within your available balance.');
+          }
+          if (data.message && data.message.includes('balance')) {
+            throw new Error('Insufficient points. You do not have enough points to complete this transfer.');
+          }
+          throw new Error(data.message || 'Invalid transfer request. Please check your inputs.');
+        }
+        
+        if (status === 403) {
+          throw new Error('You are not authorized to transfer points.');
+        }
+        
+        if (status === 404) {
+          throw new Error('Recipient not found. Please verify the user information.');
+        }
+        
+        if (status === 409) {
+          throw new Error('You cannot transfer points to yourself.');
+        }
+        
+        throw new Error(data.message || 'Failed to transfer points');
+      }
+      
+      throw new Error('Network error: Could not connect to server');
     }
   },
 
@@ -156,7 +321,31 @@ const UserService = {
       });
       return response.data;
     } catch (error) {
-      throw error.response ? error.response.data : new Error('Failed to create redemption');
+      if (error.response) {
+        const { status, data } = error.response;
+        
+        if (status === 400) {
+          if (data.message && data.message.includes('amount')) {
+            throw new Error('Invalid amount. Minimum redemption amount is 100 points.');
+          }
+          if (data.message && data.message.includes('balance')) {
+            throw new Error('Insufficient points. You do not have enough points for this redemption.');
+          }
+          throw new Error(data.message || 'Invalid redemption request. Please check your inputs.');
+        }
+        
+        if (status === 403) {
+          throw new Error('You are not authorized to create redemption requests.');
+        }
+        
+        if (status === 429) {
+          throw new Error('You have too many pending redemption requests. Please wait for existing requests to be processed.');
+        }
+        
+        throw new Error(data.message || 'Failed to create redemption');
+      }
+      
+      throw new Error('Network error: Could not connect to server');
     }
   },
 
@@ -166,7 +355,21 @@ const UserService = {
       const response = await api.get('/users/me/transactions', { params });
       return response.data;
     } catch (error) {
-      throw error.response ? error.response.data : new Error('Failed to fetch transactions');
+      if (error.response) {
+        const { status, data } = error.response;
+        
+        if (status === 400) {
+          throw new Error(data.message || 'Invalid search parameters. Please check your filters.');
+        }
+        
+        if (status === 401) {
+          throw new Error('Your session has expired. Please log in again.');
+        }
+        
+        throw new Error(data.message || 'Failed to fetch transactions');
+      }
+      
+      throw new Error('Network error: Could not retrieve transactions. Please check your connection.');
     }
   },
 
@@ -195,7 +398,21 @@ const UserService = {
       
       return exactMatch || null;
     } catch (error) {
-      throw error.response ? error.response.data : new Error('Failed to search user');
+      if (error.response) {
+        const { status, data } = error.response;
+        
+        if (status === 400) {
+          throw new Error(data.message || 'Invalid search parameters.');
+        }
+        
+        if (status === 403) {
+          throw new Error('You do not have permission to search for users.');
+        }
+        
+        throw new Error(data.message || 'Failed to search user');
+      }
+      
+      throw new Error('Network error: Could not connect to server');
     }
   },
 };

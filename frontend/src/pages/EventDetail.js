@@ -560,15 +560,6 @@ const EventDetail = () => {
               </Button>
             )
           )}
-          
-          {canEditEvent() && (
-            <Button 
-              variant="outlined"
-              onClick={() => navigate(`/events/${eventId}/edit`)}
-            >
-              <FaEdit /> Edit Event
-            </Button>
-          )}
         </PageActionsContainer>
       </PageHeader>
       
