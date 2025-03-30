@@ -221,6 +221,69 @@ const EmptyState = styled.div`
   color: ${theme.colors.text.secondary};
 `;
 
+const SummaryCard = styled(Card)`
+  position: sticky;
+  top: ${theme.spacing.lg}; // Sticks to the top when scrolling
+`;
+
+const SummaryItem = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: ${theme.spacing.sm} 0;
+  font-size: ${theme.typography.fontSize.sm};
+
+  &:not(:last-child) {
+    border-bottom: 1px solid ${theme.colors.border.light};
+  }
+
+  strong {
+    color: ${theme.colors.text.primary};
+    font-weight: ${theme.typography.fontWeights.medium};
+  }
+
+  span {
+    color: ${theme.colors.text.secondary};
+  }
+`;
+
+// Create a custom Badge component that accepts hex color values
+const ColoredBadge = styled(Badge)`
+  background-color: ${props => props.customColor || theme.colors.primary.main};
+  color: white;
+  font-weight: ${theme.typography.fontWeights.medium};
+  
+  /* Ensure good contrast with text */
+  ${props => props.customColor === '#f4d03f' && `
+    color: #333; /* Darker text for yellow background */
+  `}
+`;
+
+// Add this new styled component for the status indicator
+const StatusIndicator = styled.div`
+  display: flex;
+  align-items: center;
+  
+  span {
+    margin-left: ${theme.spacing.sm};
+    font-weight: ${theme.typography.fontWeights.medium};
+    color: ${theme.colors.text.primary}; // Use primary text color for better readability
+  }
+  
+  &::before {
+    content: '';
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: ${props => 
+      props.status === 'Upcoming' ? '#f4d03f' : // Yellow for upcoming
+      props.status === 'Ongoing' ? '#2ecc71' :  // Green for ongoing
+      '#e74c3c'  // Red for past
+    };
+  }
+`;
+
 const EventDetail = () => {
   const { eventId } = useParams();
   const navigate = useNavigate();
@@ -318,6 +381,22 @@ const EventDetail = () => {
   // Is user an organizer
   const isUserOrganizer = () => {
     return event?.isOrganizer || false;
+  };
+  
+  // Calculate event status
+  const getEventStatus = (startTime, endTime) => {
+    const now = new Date();
+    const start = new Date(startTime);
+    const end = endTime ? new Date(endTime) : null;
+    
+    if (start > now) {
+      return { text: 'Upcoming', color: '#f4d03f' }; // Yellow
+    }
+    if (end && end < now) {
+      return { text: 'Past', color: '#e74c3c' }; // Red
+    }
+    // If start is in the past and end is in the future (or null), it's ongoing
+    return { text: 'Ongoing', color: '#2ecc71' }; // Green
   };
   
   // Can edit event
@@ -440,7 +519,7 @@ const EventDetail = () => {
     return <EmptyState>Event not found</EmptyState>;
   }
   
-  const upcoming = isUpcoming(event.startTime);
+  const eventStatus = getEventStatus(event.startTime, event.endTime);
   const attending = isUserAttending();
   const isOrganizer = isUserOrganizer();
   
@@ -453,11 +532,7 @@ const EventDetail = () => {
           </BackLink>
           <PageTitle>{event.name}</PageTitle>
           <BadgeContainer>
-            {upcoming ? (
-              <Badge color="success">Upcoming</Badge>
-            ) : (
-              <Badge color="secondary">Past</Badge>
-            )}
+            <ColoredBadge customColor={eventStatus.color}>{eventStatus.text}</ColoredBadge>
             
             {attending && <Badge color="info">RSVP'd</Badge>}
             
@@ -466,7 +541,7 @@ const EventDetail = () => {
         </div>
         
         <PageActionsContainer>
-          {upcoming && !isOrganizer && (
+          {eventStatus.text === 'Upcoming' && !isOrganizer && (
             attending ? (
               <Button 
                 variant="outlined" 
@@ -519,7 +594,11 @@ const EventDetail = () => {
                   <FaCalendarAlt />
                   <div>
                     <strong>Date</strong>
-                    <div>{formatDate(event.startTime)}</div>
+                    <div>
+                      {formatDate(event.startTime)}
+                      {event.endTime && new Date(event.startTime).toDateString() !== new Date(event.endTime).toDateString() && 
+                        ` - ${formatDate(event.endTime)}`}
+                    </div>
                   </div>
                 </EventDetailItem>
                 
@@ -528,8 +607,7 @@ const EventDetail = () => {
                   <div>
                     <strong>Time</strong>
                     <div>
-                      {formatTime(event.startTime)} to{' '}
-                      {event.endTime ? formatTime(event.endTime) : 'TBD'}
+                      {formatTime(event.startTime)} - {event.endTime ? formatTime(event.endTime) : 'TBD'}
                     </div>
                   </div>
                 </EventDetailItem>
@@ -550,7 +628,8 @@ const EventDetail = () => {
                   <div>
                     <strong>Points</strong>
                     <div>
-                      {event.pointsAwarded || 0} / {event.points} points awarded
+                      {event.pointsAwarded || 0} points awarded 
+                      ({event.pointsRemain ?? event.points ?? 0} remaining)
                     </div>
                   </div>
                 </EventDetailItem>
@@ -595,7 +674,7 @@ const EventDetail = () => {
               <Card>
                 <Card.Header>
                   <Card.Title>Guests</Card.Title>
-                  {canEditEvent() && upcoming && (
+                  {canEditEvent() && eventStatus.text === 'Upcoming' && (
                     <div style={{ display: 'flex', gap: theme.spacing.sm }}>
                       <Button 
                         size="small" 
@@ -627,7 +706,7 @@ const EventDetail = () => {
                             <AttendeeActions>
                               {guest.pointsAwarded ? (
                                 <Badge color="success">{guest.pointsAwarded} points awarded</Badge>
-                              ) : upcoming && (
+                              ) : eventStatus.text === 'Upcoming' && (
                                 isManager && (
                                   <Button 
                                     size="small" 
@@ -709,25 +788,36 @@ const EventDetail = () => {
         </EventInfo>
         
         <div>
-          <Card>
+          <SummaryCard>
             <Card.Header>
               <Card.Title>Event Summary</Card.Title>
             </Card.Header>
             <Card.Body>
-              <p>
-                <strong>Created by:</strong> {event.createdBy}
-              </p>
-              <p>
-                <strong>Status:</strong> {upcoming ? 'Upcoming' : 'Past'}
-              </p>
-              <p>
-                <strong>Guests:</strong> {event.guests && Array.isArray(event.guests) ? event.guests.length : 0}{event.capacity ? `/${event.capacity}` : ''}
-              </p>
-              <p>
-                <strong>Points:</strong> {event.pointsAwarded || 0}/{event.points} awarded
-              </p>
+              <SummaryItem>
+                <strong>Created by:</strong>
+                <span>{event.organizers?.[0]?.name || 'N/A'}</span>
+              </SummaryItem>
+              <SummaryItem>
+                <strong>Status:</strong>
+                <StatusIndicator status={eventStatus.text}>
+                  <span>{eventStatus.text}</span>
+                </StatusIndicator>
+              </SummaryItem>
+              <SummaryItem>
+                <strong>Guests:</strong>
+                <span>
+                  {event.guests && Array.isArray(event.guests) ? event.guests.length : 0}
+                  {event.capacity ? ` / ${event.capacity} capacity` : ' (unlimited)'}
+                </span>
+              </SummaryItem>
+              <SummaryItem>
+                <strong>Points:</strong>
+                <span>
+                  {event.pointsAwarded || 0} awarded ({event.pointsRemain ?? event.points ?? 0} remaining)
+                </span>
+              </SummaryItem>
             </Card.Body>
-          </Card>
+          </SummaryCard>
         </div>
       </ContentGrid>
       

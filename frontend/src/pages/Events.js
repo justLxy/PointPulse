@@ -220,6 +220,18 @@ const BadgeContainer = styled.div`
   margin-top: ${theme.spacing.sm};
 `;
 
+// Create a custom Badge component that accepts hex color values
+const ColoredBadge = styled(Badge)`
+  background-color: ${props => props.customColor || theme.colors.primary.main};
+  color: white;
+  font-weight: ${theme.typography.fontWeights.medium};
+  
+  /* Ensure good contrast with text */
+  ${props => props.customColor === '#f4d03f' && `
+    color: #333; /* Darker text for yellow background */
+  `}
+`;
+
 const Events = () => {
   const { activeRole } = useAuth();
   const isManager = ['manager', 'superuser'].includes(activeRole);
@@ -365,6 +377,29 @@ const Events = () => {
     }
   };
   
+  // Format date in a more compact way for event cards (YYYY/MM/DD)
+  const formatCompactDate = (dateStr) => {
+    if (!dateStr) return '';
+    
+    try {
+      const date = new Date(dateStr);
+      
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return '';
+      }
+      
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      
+      return `${year}/${month}/${day}`;
+    } catch (error) {
+      console.error('Error formatting compact date:', error);
+      return '';
+    }
+  };
+  
   // Format time for display
   const formatTime = (dateStr) => {
     if (!dateStr) return '';
@@ -399,7 +434,7 @@ const Events = () => {
         return { month: '', day: '' };
       }
       
-      const month = date.toLocaleString('default', { month: 'short' });
+      const month = String(date.getMonth() + 1).padStart(2, '0'); // 数字月份 01-12
       const day = date.getDate();
       return { month, day };
     } catch (error) {
@@ -408,11 +443,19 @@ const Events = () => {
     }
   };
   
-  // Check if event is upcoming
-  const isUpcoming = (startTime) => {
-    if (!startTime) return false;
+  // Calculate event status for card badge
+  const getEventStatus = (startTime, endTime) => {
     const now = new Date();
-    return new Date(startTime) > now;
+    const start = new Date(startTime);
+    const end = endTime ? new Date(endTime) : null;
+    
+    if (start > now) {
+      return { text: 'Upcoming', color: '#f4d03f' }; // Yellow for upcoming
+    }
+    if (end && end < now) {
+      return { text: 'Past', color: '#e74c3c' }; // Red for past
+    }
+    return { text: 'Ongoing', color: '#2ecc71' }; // Green for ongoing
   };
   
   // Handle create/edit form changes
@@ -640,8 +683,8 @@ const Events = () => {
                   if (!event) return null; // Skip null/undefined events
                   
                   const { month, day } = getEventCardDate(event.startTime);
+                  const eventStatus = getEventStatus(event.startTime, event.endTime);
                   const isUserRsvpd = isRsvpd(event);
-                  const upcoming = isUpcoming(event.startTime);
                   
                   return (
                     <EventCard key={event.id || 'unknown'}>
@@ -654,11 +697,7 @@ const Events = () => {
                           <div>
                             <EventTitle>{event.name || 'Unnamed Event'}</EventTitle>
                             <BadgeContainer>
-                              {upcoming ? (
-                                <Badge color="success">Upcoming</Badge>
-                              ) : (
-                                <Badge color="secondary">Past</Badge>
-                              )}
+                              <ColoredBadge customColor={eventStatus.color}>{eventStatus.text}</ColoredBadge>
                               
                               {isUserRsvpd && <Badge color="info">RSVP'd</Badge>}
                               
@@ -690,8 +729,16 @@ const Events = () => {
                           <EventDetail>
                             <FaCalendarAlt />
                             <span>
-                              {formatDate(event.startTime)} {formatTime(event.startTime)} to{' '}
-                              {event.endTime ? `${formatDate(event.endTime)} ${formatTime(event.endTime)}` : 'TBD'}
+                              {formatCompactDate(event.startTime)}
+                              {event.endTime && new Date(event.startTime).toDateString() !== new Date(event.endTime).toDateString() && 
+                                ` - ${formatCompactDate(event.endTime)}`}
+                            </span>
+                          </EventDetail>
+                          
+                          <EventDetail>
+                            <FaClock />
+                            <span>
+                              {formatTime(event.startTime)} - {event.endTime ? formatTime(event.endTime) : 'TBD'}
                             </span>
                           </EventDetail>
                           
@@ -705,7 +752,7 @@ const Events = () => {
                           
                           <EventDetail>
                             <FaCoins />
-                            <span>{event.points || 0} points available</span>
+                            <span>{event.pointsRemain ?? 0} points available</span>
                           </EventDetail>
                         </EventDetails>
                         
@@ -717,7 +764,7 @@ const Events = () => {
                           </div>
                           
                           <div style={{ display: 'flex', gap: theme.spacing.sm }}>
-                            {upcoming && (
+                            {eventStatus.text === 'Upcoming' && (
                               <Button 
                                 size="small" 
                                 variant={isUserRsvpd ? "outlined" : "default"}
