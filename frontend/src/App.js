@@ -27,7 +27,7 @@ import Transactions from './pages/transactions/Transactions';
 import CreateAdjustment from './pages/transactions/CreateAdjustment';
 
 // Import other pages
-import Promotions from './pages/Promotions';
+import Promotions from './pages/promotions/Promotions';
 import Events from './pages/Events';
 import EventDetail from './pages/EventDetail';
 
