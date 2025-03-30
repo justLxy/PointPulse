@@ -7,6 +7,7 @@ import Button from '../common/Button';
 import Input from '../common/Input';
 import theme from '../../styles/theme';
 import { FaGift, FaCheck } from 'react-icons/fa';
+import { toast } from 'react-hot-toast';
 
 const RedemptionOptions = styled.div`
   display: grid;
@@ -203,17 +204,26 @@ const RedemptionModal = ({ isOpen, onClose, availablePoints = 0 }) => {
       
       const amount = getRedemptionAmount();
       
-      const response = await createRedemption({
-        amount,
-        remark,
-      });
+      // 设置加载状态让按钮显示loading
+      // isCreatingRedemption 是由 useUserTransactions 钩子提供的
+
+      // 立即关闭弹窗
+      handleClose();
       
-      if (response && response.id) {
-        setRedemptionId(response.id);
-        setStep(3);
+      // 在后台创建兑换请求
+      try {
+        await createRedemption({
+          amount,
+          remark,
+        });
+        // useUserTransactions钩子内部可能已经显示了成功通知
+      } catch (apiError) {
+        // 如果API请求失败，显示错误通知
+        toast.error(apiError.message || 'Failed to process redemption request');
       }
     } catch (err) {
-      setError(err.message || 'Failed to create redemption request');
+      // 这个catch捕获的是validateAmount等函数可能抛出的错误
+      setError(err.message || 'Failed to validate redemption request');
     }
   };
   

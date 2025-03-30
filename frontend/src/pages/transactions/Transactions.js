@@ -17,7 +17,10 @@ import {
   FaMinus, 
   FaExchangeAlt,
   FaCalendarAlt,
-  FaFilter
+  FaFilter,
+  FaUser,
+  FaChevronLeft,
+  FaChevronRight
 } from 'react-icons/fa';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 
@@ -271,6 +274,51 @@ const BadgeContainer = styled.div`
   }
 `;
 
+const RelatedInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${theme.spacing.xs};
+  
+  svg {
+    color: ${theme.colors.text.secondary};
+  }
+  
+  a {
+    color: ${theme.colors.primary.main};
+    text-decoration: none;
+    font-weight: ${theme.typography.fontWeights.medium};
+    
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+`;
+
+const StatusBadge = styled.span`
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-block;
+  background-color: ${props => 
+    props.status === 'suspicious' ? '#FFEBEE' : 
+    props.status === 'verified' ? '#E8F5E9' : '#E3F2FD'};
+  color: ${props => 
+    props.status === 'suspicious' ? '#D32F2F' : 
+    props.status === 'verified' ? '#388E3C' : '#1976D2'};
+`;
+
+const InfoLabel = styled.span`
+  color: ${theme.colors.text.secondary};
+  font-size: ${theme.typography.fontSize.sm};
+  margin-right: ${theme.spacing.xs};
+  
+  @media (max-width: 768px) {
+    display: block;
+    margin-bottom: ${theme.spacing.xs};
+  }
+`;
+
 const Transactions = () => {
   // State for filters and pagination
   const [filters, setFilters] = useState({
@@ -350,6 +398,27 @@ const Transactions = () => {
     }
   };
   
+  // Get related entity description based on transaction type
+  const getRelatedDescription = (transaction) => {
+    if (!transaction.relatedId) return null;
+    
+    switch (transaction.type) {
+      case 'adjustment':
+        return `Transaction #${transaction.relatedId}`;
+      case 'transfer':
+        // For transfers, relatedId is the other user's ID
+        return `User ID: ${transaction.relatedId}`;
+      case 'redemption':
+        // For redemptions, relatedId is the cashier ID who processed it
+        return transaction.relatedId ? `Processed by: ${transaction.relatedId}` : 'Not processed';
+      case 'event':
+        // For events, relatedId is the event ID
+        return `Event #${transaction.relatedId}`;
+      default:
+        return `Related ID: ${transaction.relatedId}`;
+    }
+  };
+  
   // View transaction details
   const handleViewTransaction = (transaction) => {
     setSelectedTransaction(transaction);
@@ -382,12 +451,22 @@ const Transactions = () => {
   
   return (
     <div>
-      <PageTitle>Transaction Management</PageTitle>
+      <PageTitle>All Transactions</PageTitle>
+      
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: theme.spacing.md }}>
+        <Button 
+          as="a" 
+          href="/transactions/adjustment" 
+          style={{ marginLeft: theme.spacing.sm }}
+        >
+          <FaExchangeAlt style={{ marginRight: theme.spacing.xs }} /> Create Adjustment
+        </Button>
+      </div>
       
       <FilterSection>
         <SearchInput>
           <Input
-            placeholder="Search by user name or ID"
+            placeholder="Search by user name or UTORid"
             value={filters.name}
             onChange={(e) => handleFilterChange('name', e.target.value)}
             leftIcon={<FaSearch />}
@@ -396,7 +475,7 @@ const Transactions = () => {
         
         <FilterInput>
           <Input
-            placeholder="Created by"
+            placeholder="Created by (UTORid)"
             value={filters.createdBy}
             onChange={(e) => handleFilterChange('createdBy', e.target.value)}
           />
@@ -406,7 +485,7 @@ const Transactions = () => {
           <Select
             value={filters.type}
             onChange={(e) => handleFilterChange('type', e.target.value)}
-            placeholder="Type"
+            placeholder="Transaction Type"
           >
             <option value="">All Types</option>
             <option value="purchase">Purchase</option>
@@ -448,7 +527,18 @@ const Transactions = () => {
             />
           </FilterInput>
         )}
-
+        
+        <FilterInput>
+          <Select
+            value={filters.operator}
+            onChange={(e) => handleFilterChange('operator', e.target.value)}
+            placeholder="Amount Operator"
+          >
+            <option value="gte">Greater than or equal to</option>
+            <option value="lte">Less than or equal to</option>
+          </Select>
+        </FilterInput>
+        
         <FilterInput>
           <Input
             placeholder="Amount"
@@ -457,260 +547,240 @@ const Transactions = () => {
             onChange={(e) => handleFilterChange('amount', e.target.value ? Number(e.target.value) : '')}
           />
         </FilterInput>
-
-        {filters.amount && (
-          <FilterInput>
-            <Select
-              value={filters.operator}
-              onChange={(e) => handleFilterChange('operator', e.target.value)}
-              placeholder="Operator"
-            >
-              <option value="gte">Greater than or equal</option>
-              <option value="lte">Less than or equal</option>
-            </Select>
-          </FilterInput>
-        )}
       </FilterSection>
       
       <Card>
-        <TableHeader>
-          <div>Type</div>
-          <div>Transaction</div>
-          <div>User</div>
-          <div>Amount</div>
-          <div>Date</div>
-          <div>Actions</div>
-        </TableHeader>
-        
         {isLoading ? (
           <LoadingSpinner text="Loading transactions..." />
-        ) : transactions && transactions.length > 0 ? (
-          transactions.map((transaction) => (
-            <TableRow key={transaction.id} style={transaction.suspicious ? { borderLeft: '4px solid #e74c3c' } : {}}>
-              <TransactionIcon type={transaction.type}>
-                {getTransactionIcon(transaction.type)}
-              </TransactionIcon>
-              
-              <TransactionInfo>
-                <div>
-                  <MobileLabel>Transaction:</MobileLabel>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <TransactionId>#{transaction.id}</TransactionId>
-                    {transaction.suspicious && (
-                      <Badge style={{ backgroundColor: '#e74c3c', color: 'white', marginLeft: '8px' }}>
-                        Suspicious
-                      </Badge>
+        ) : transactions.length > 0 ? (
+          <>
+            <TableHeader>
+              <div>Type</div>
+              <div>User</div>
+              <div>Details</div>
+              <div>Amount</div>
+              <div>Status</div>
+              <div>Actions</div>
+            </TableHeader>
+            
+            {transactions.map((transaction) => (
+              <TableRow key={transaction.id}>
+                <TransactionIcon type={transaction.type}>
+                  {getTransactionIcon(transaction.type)}
+                </TransactionIcon>
+                
+                <TransactionUser>
+                  <MobileLabel>User:</MobileLabel>
+                  <TransactionId>{transaction.utorid}</TransactionId>
+                  <TransactionType>{transaction.type}</TransactionType>
+                </TransactionUser>
+                
+                <TransactionInfo>
+                  <MobileLabel>Details:</MobileLabel>
+                  <div>
+                    {transaction.createdAt && (
+                      <div>
+                        <InfoLabel>Created:</InfoLabel> 
+                        {formatDate(transaction.createdAt)} {formatTime(transaction.createdAt)}
+                      </div>
+                    )}
+                    {transaction.remark && (
+                      <div>
+                        <InfoLabel>Remark:</InfoLabel> {transaction.remark}
+                      </div>
+                    )}
+                    {getRelatedDescription(transaction) && (
+                      <RelatedInfo>
+                        <InfoLabel>Related:</InfoLabel> {getRelatedDescription(transaction)}
+                      </RelatedInfo>
                     )}
                   </div>
-                  <TransactionType>{transaction.type}</TransactionType>
-                </div>
-              </TransactionInfo>
-              
-              <TransactionUser>
-                <MobileLabel>User:</MobileLabel>
-                {transaction.utorid}
-              </TransactionUser>
-              
-              <TransactionAmount positive={transaction.amount > 0}>
-                <MobileLabel>Amount:</MobileLabel>
-                {transaction.amount > 0 ? `+${transaction.amount}` : transaction.amount} pts
-                {transaction.spent && ` ($${transaction.spent.toFixed(2)})`}
-              </TransactionAmount>
-              
-              <TransactionDate>
-                <MobileLabel>Date:</MobileLabel>
-                {formatDate(transaction.createdAt)}
-              </TransactionDate>
-              
-              <ActionButtons>
-                <Button 
-                  size="small" 
-                  variant="outlined" 
-                  onClick={() => handleViewTransaction(transaction)}
-                >
-                  <FaEye />
-                </Button>
+                </TransactionInfo>
                 
-                {transaction.type === 'purchase' && (
+                <TransactionAmount positive={transaction.amount > 0}>
+                  <MobileLabel>Amount:</MobileLabel>
+                  {transaction.amount > 0 ? '+' : ''}{transaction.amount} pts
+                  {transaction.spent && (
+                    <div style={{ fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary }}>
+                      ${transaction.spent.toFixed(2)}
+                    </div>
+                  )}
+                </TransactionAmount>
+                
+                <BadgeContainer>
+                  <MobileLabel>Status:</MobileLabel>
+                  <StatusBadge 
+                    status={transaction.suspicious ? 'suspicious' : 'verified'}
+                  >
+                    {transaction.suspicious ? 'Suspicious' : 'Verified'}
+                  </StatusBadge>
+                </BadgeContainer>
+                
+                <ActionButtons>
                   <Button 
-                    size="small" 
-                    variant="outlined" 
+                    size="small"
+                    variant="outlined"
+                    onClick={() => handleViewTransaction(transaction)}
+                    title="View Details"
+                  >
+                    <FaEye />
+                  </Button>
+                  
+                  <Button 
+                    size="small"
+                    variant="outlined"
                     color={transaction.suspicious ? 'success' : 'error'}
                     onClick={() => handleMarkAsSuspiciousClick(transaction)}
+                    title={transaction.suspicious ? 'Mark as Verified' : 'Mark as Suspicious'}
                   >
                     {transaction.suspicious ? <FaCheck /> : <FaExclamationTriangle />}
                   </Button>
-                )}
-              </ActionButtons>
-            </TableRow>
-          ))
+                </ActionButtons>
+              </TableRow>
+            ))}
+            
+            <PageControls>
+              <PageInfo>
+                Showing {startIndex} to {endIndex} of {totalCount} transaction{totalCount !== 1 ? 's' : ''}
+              </PageInfo>
+              
+              <Pagination>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => handleFilterChange('page', Math.max(1, filters.page - 1))}
+                  disabled={filters.page === 1}
+                >
+                  <FaChevronLeft /> Previous
+                </Button>
+                
+                <PageInfo>
+                  Page {filters.page} of {totalPages || 1}
+                </PageInfo>
+                
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => handleFilterChange('page', Math.min(totalPages, filters.page + 1))}
+                  disabled={filters.page >= totalPages}
+                >
+                  Next <FaChevronRight />
+                </Button>
+              </Pagination>
+            </PageControls>
+          </>
         ) : (
-          <EmptyState>No transactions found</EmptyState>
+          <EmptyState>
+            <p>No transactions found</p>
+            <p style={{ fontSize: theme.typography.fontSize.sm }}>Try adjusting your filters to see more results.</p>
+          </EmptyState>
         )}
       </Card>
       
-      {totalCount > 0 && (
-        <PageControls>
-          <PageInfo>
-            Showing {startIndex} to {endIndex} of {totalCount} transactions
-          </PageInfo>
-          
-          <Pagination>
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={() => handleFilterChange('page', Math.max(1, filters.page - 1))}
-              disabled={filters.page === 1}
-            >
-              Previous
-            </Button>
-            
-            <PageInfo>
-              Page {filters.page} of {totalPages}
-            </PageInfo>
-            
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={() => handleFilterChange('page', Math.min(totalPages, filters.page + 1))}
-              disabled={filters.page === totalPages}
-            >
-              Next
-            </Button>
-          </Pagination>
-        </PageControls>
-      )}
-      
-      {/* View Transaction Details Modal */}
+      {/* Transaction Detail Modal */}
       <Modal
         isOpen={viewTransactionDetails}
-        onClose={() => {
-          setViewTransactionDetails(false);
-          setSelectedTransaction(null);
-        }}
+        onClose={() => setViewTransactionDetails(false)}
         title={`Transaction #${selectedTransaction?.id || ''}`}
-        size="medium"
       >
         {selectedTransaction && (
           <ModalContent>
-            <div>
-              <BadgeContainer>
-                <Badge 
-                  color={
-                    selectedTransaction.type === 'purchase'
-                      ? 'secondary'
-                      : selectedTransaction.type === 'redemption'
-                      ? 'accent'
-                      : selectedTransaction.type === 'transfer'
-                      ? 'primary'
-                      : selectedTransaction.type === 'adjustment'
-                      ? 'info'
-                      : 'success'
-                  }
-                >
-                  {selectedTransaction.type.charAt(0).toUpperCase() + selectedTransaction.type.slice(1)}
-                </Badge>
-                
-                {selectedTransaction.suspicious !== undefined && (
-                  <Badge style={selectedTransaction.suspicious ? { backgroundColor: '#e74c3c', color: 'white' } : { backgroundColor: '#2ecc71', color: 'white' }}>
-                    {selectedTransaction.suspicious ? 'Suspicious' : 'Verified'}
-                  </Badge>
-                )}
-              </BadgeContainer>
-              
+            <DetailItem>
+              <strong>Type</strong>
+              <span style={{ textTransform: 'capitalize' }}>{selectedTransaction.type}</span>
+            </DetailItem>
+            
+            <DetailItem>
+              <strong>User</strong>
+              <span>{selectedTransaction.utorid}</span>
+            </DetailItem>
+            
+            <DetailItem>
+              <strong>Amount</strong>
+              <span style={{ 
+                color: selectedTransaction.amount > 0 ? theme.colors.success.main : theme.colors.error.main,
+                fontWeight: theme.typography.fontWeights.medium
+              }}>
+                {selectedTransaction.amount > 0 ? '+' : ''}{selectedTransaction.amount} pts
+              </span>
+            </DetailItem>
+            
+            {selectedTransaction.spent && (
               <DetailItem>
-                <strong>User:</strong>
-                <span>{selectedTransaction.utorid}</span>
+                <strong>Spent</strong>
+                <span>${selectedTransaction.spent.toFixed(2)}</span>
               </DetailItem>
-              
+            )}
+            
+            {selectedTransaction.redeemed && (
               <DetailItem>
-                <strong>Amount:</strong>
-                <TransactionAmount positive={selectedTransaction.amount > 0}>
-                  {selectedTransaction.amount > 0 ? `+${selectedTransaction.amount}` : selectedTransaction.amount} pts
-                </TransactionAmount>
+                <strong>Redeemed</strong>
+                <span>{selectedTransaction.redeemed} pts</span>
               </DetailItem>
-              
-              {selectedTransaction.spent !== undefined && (
-                <DetailItem>
-                  <strong>Spent:</strong>
-                  <span>${selectedTransaction.spent.toFixed(2)}</span>
-                </DetailItem>
-              )}
-              
-              {selectedTransaction.redeemed !== undefined && (
-                <DetailItem>
-                  <strong>Redeemed:</strong>
-                  <span>{selectedTransaction.redeemed} pts</span>
-                </DetailItem>
-              )}
-              
-              {selectedTransaction.relatedId !== undefined && (
-                <DetailItem>
-                  <strong>Related To:</strong>
-                  <span>
-                    {selectedTransaction.type === 'transfer'
-                      ? `User #${selectedTransaction.relatedId}`
-                      : selectedTransaction.type === 'adjustment'
-                      ? `Transaction #${selectedTransaction.relatedId}`
-                      : selectedTransaction.type === 'redemption' && selectedTransaction.relatedId
-                      ? `Processed by Cashier #${selectedTransaction.relatedId}`
-                      : selectedTransaction.type === 'event'
-                      ? `Event #${selectedTransaction.relatedId}`
-                      : selectedTransaction.relatedId}
-                  </span>
-                </DetailItem>
-              )}
-              
-              {selectedTransaction.promotionIds && selectedTransaction.promotionIds.length > 0 && (
-                <DetailItem>
-                  <strong>Promotions:</strong>
-                  <span>{selectedTransaction.promotionIds.join(', ')}</span>
-                </DetailItem>
-              )}
-              
+            )}
+            
+            {selectedTransaction.createdBy && (
               <DetailItem>
-                <strong>Created By:</strong>
+                <strong>Created By</strong>
                 <span>{selectedTransaction.createdBy}</span>
               </DetailItem>
-              
+            )}
+            
+            {selectedTransaction.relatedId && (
               <DetailItem>
-                <strong>Date:</strong>
-                <span>
-                  {formatDate(selectedTransaction.createdAt)} at {formatTime(selectedTransaction.createdAt)}
-                </span>
+                <strong>Related ID</strong>
+                <span>{getRelatedDescription(selectedTransaction)}</span>
               </DetailItem>
-              
-              {selectedTransaction.remark && (
-                <DetailItem>
-                  <strong>Remark:</strong>
-                  <span>{selectedTransaction.remark}</span>
-                </DetailItem>
-              )}
-            </div>
+            )}
+            
+            {selectedTransaction.promotionIds && selectedTransaction.promotionIds.length > 0 && (
+              <DetailItem>
+                <strong>Promotions</strong>
+                <div>
+                  {selectedTransaction.promotionIds.map((id) => (
+                    <Badge key={id}>Promotion #{id}</Badge>
+                  ))}
+                </div>
+              </DetailItem>
+            )}
+            
+            <DetailItem>
+              <strong>Status</strong>
+              <StatusBadge 
+                status={selectedTransaction.suspicious ? 'suspicious' : 'verified'}
+              >
+                {selectedTransaction.suspicious ? 'Suspicious' : 'Verified'}
+              </StatusBadge>
+            </DetailItem>
+            
+            {selectedTransaction.remark && (
+              <DetailItem>
+                <strong>Remark</strong>
+                <span>{selectedTransaction.remark}</span>
+              </DetailItem>
+            )}
+            
+            {selectedTransaction.createdAt && (
+              <DetailItem>
+                <strong>Date</strong>
+                <span>{formatDate(selectedTransaction.createdAt)} {formatTime(selectedTransaction.createdAt)}</span>
+              </DetailItem>
+            )}
             
             <ModalActions>
-              {selectedTransaction.type === 'purchase' && (
-                <Button
-                  color={selectedTransaction.suspicious ? 'success' : 'error'}
-                  onClick={() => {
-                    setViewTransactionDetails(false);
-                    handleMarkAsSuspiciousClick(selectedTransaction);
-                  }}
-                >
-                  {selectedTransaction.suspicious
-                    ? 'Mark as Verified'
-                    : 'Mark as Suspicious'}
-                </Button>
-              )}
+              <Button onClick={() => setViewTransactionDetails(false)}>
+                Close
+              </Button>
               
               <Button
-                variant="outlined"
                 onClick={() => {
                   setViewTransactionDetails(false);
-                  setSelectedTransaction(null);
+                  handleMarkAsSuspiciousClick(selectedTransaction);
                 }}
+                variant="outlined"
+                color={selectedTransaction.suspicious ? 'success' : 'error'}
               >
-                Close
+                {selectedTransaction.suspicious ? 'Mark as Verified' : 'Mark as Suspicious'}
               </Button>
             </ModalActions>
           </ModalContent>
@@ -720,52 +790,37 @@ const Transactions = () => {
       {/* Mark as Suspicious Modal */}
       <Modal
         isOpen={markSuspiciousModal}
-        onClose={() => {
-          setMarkSuspiciousModal(false);
-          setSelectedTransaction(null);
-        }}
-        title={
-          selectedTransaction?.suspicious
-            ? 'Mark Transaction as Verified'
-            : 'Mark Transaction as Suspicious'
-        }
-        size="small"
+        onClose={() => setMarkSuspiciousModal(false)}
+        title={selectedTransaction?.suspicious ? 'Mark Transaction as Verified' : 'Mark Transaction as Suspicious'}
       >
         {selectedTransaction && (
           <ModalContent>
             <p>
-              {selectedTransaction.suspicious
-                ? `Are you sure you want to mark transaction #${selectedTransaction.id} as verified?`
-                : `Are you sure you want to mark transaction #${selectedTransaction.id} as suspicious?`}
+              Are you sure you want to mark transaction #{selectedTransaction.id} as 
+              {selectedTransaction.suspicious ? ' verified' : ' suspicious'}?
             </p>
             
             {selectedTransaction.suspicious ? (
               <p>
-                This will credit {selectedTransaction.amount} points back to the user's account.
+                This will credit {Math.abs(selectedTransaction.amount)} points back to {selectedTransaction.utorid}'s account.
               </p>
             ) : (
               <p>
-                This will deduct {selectedTransaction.amount} points from the user's account, which may result in a negative balance.
+                This will deduct {Math.abs(selectedTransaction.amount)} points from {selectedTransaction.utorid}'s account.
               </p>
             )}
             
             <ModalActions>
-              <Button
-                variant="outlined"
-                onClick={() => {
-                  setMarkSuspiciousModal(false);
-                  setSelectedTransaction(null);
-                }}
-                disabled={isMarkingAsSuspicious}
-              >
+              <Button variant="outlined" onClick={() => setMarkSuspiciousModal(false)}>
                 Cancel
               </Button>
-              <Button
-                color={selectedTransaction.suspicious ? 'success' : 'error'}
-                onClick={handleMarkAsSuspicious}
+              
+              <Button 
+                onClick={handleMarkAsSuspicious} 
                 loading={isMarkingAsSuspicious}
+                color={selectedTransaction.suspicious ? 'success' : 'error'}
               >
-                {selectedTransaction.suspicious ? 'Mark as Verified' : 'Mark as Suspicious'}
+                Confirm
               </Button>
             </ModalActions>
           </ModalContent>

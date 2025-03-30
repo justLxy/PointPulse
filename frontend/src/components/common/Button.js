@@ -59,6 +59,12 @@ const getVariantStyles = (variant) => {
 
 const getSizeStyles = (size) => {
   const sizes = {
+    tiny: css`
+      font-size: ${theme.typography.fontSize.xs};
+      padding: ${theme.spacing.xs} ${theme.spacing.xs};
+      height: 24px;
+      min-width: 24px;
+    `,
     small: css`
       font-size: ${theme.typography.fontSize.xs};
       padding: ${theme.spacing.xs} ${theme.spacing.md};

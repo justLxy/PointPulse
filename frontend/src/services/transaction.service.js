@@ -10,7 +10,28 @@ const TransactionService = {
       });
       return response.data;
     } catch (error) {
-      throw error.response ? error.response.data : new Error('Failed to create purchase');
+      if (error.response) {
+        const { status, data } = error.response;
+        
+        if (status === 400) {
+          if (data.message && data.message.includes('amount')) {
+            throw new Error('Invalid amount. Amount must be positive.');
+          }
+          throw new Error(data.message || 'Invalid purchase request. Please check the data and try again.');
+        }
+        
+        if (status === 403) {
+          throw new Error('You do not have permission to create purchase transactions.');
+        }
+        
+        if (status === 404) {
+          throw new Error('User not found. Please verify the user information.');
+        }
+        
+        throw new Error(data.message || 'Failed to create purchase');
+      }
+      
+      throw new Error('Network error: Could not connect to server');
     }
   },
 
@@ -23,7 +44,25 @@ const TransactionService = {
       });
       return response.data;
     } catch (error) {
-      throw error.response ? error.response.data : new Error('Failed to create adjustment');
+      if (error.response) {
+        const { status, data } = error.response;
+        
+        if (status === 400) {
+          throw new Error(data.message || 'Invalid adjustment data. Please check and try again.');
+        }
+        
+        if (status === 403) {
+          throw new Error('You do not have permission to create adjustment transactions.');
+        }
+        
+        if (status === 404) {
+          throw new Error('User not found. Please verify the user information.');
+        }
+        
+        throw new Error(data.message || 'Failed to create adjustment');
+      }
+      
+      throw new Error('Network error: Could not connect to server');
     }
   },
 
@@ -35,7 +74,53 @@ const TransactionService = {
       });
       return response.data;
     } catch (error) {
-      throw error.response ? error.response.data : new Error('Failed to process redemption');
+      if (error.response) {
+        const { status, data } = error.response;
+        
+        if (status === 400) {
+          if (data.error === 'Invalid transaction ID') {
+            throw new Error('Invalid transaction ID');
+          }
+          
+          if (data.error === 'No data provided') {
+            throw new Error('No data provided');
+          }
+          
+          if (data.error === 'Processed status must be true') {
+            throw new Error('Processed status must be true');
+          }
+          
+          if (data.error === 'Transaction is not a redemption') {
+            throw new Error('Transaction is not a redemption');
+          }
+          
+          if (data.error === 'Transaction has already been processed') {
+            throw new Error('This redemption has already been processed.');
+          }
+          
+          throw new Error(data.error || 'Invalid redemption processing request.');
+        }
+        
+        if (status === 403) {
+          if (data.error === 'Unauthorized to process redemptions') {
+            throw new Error('You do not have permission to process redemptions.');
+          }
+          
+          throw new Error(data.error || 'Unauthorized action');
+        }
+        
+        if (status === 404) {
+          if (data.error === 'Transaction not found') {
+            throw new Error('Redemption transaction not found.');
+          }
+          
+          throw new Error(data.error || 'Not found');
+        }
+        
+        throw new Error(data.error || 'Failed to process redemption');
+      }
+      
+      throw new Error('Network error: Could not connect to server');
     }
   },
 
@@ -47,7 +132,25 @@ const TransactionService = {
       });
       return response.data;
     } catch (error) {
-      throw error.response ? error.response.data : new Error('Failed to update suspicious status');
+      if (error.response) {
+        const { status, data } = error.response;
+        
+        if (status === 400) {
+          throw new Error(data.message || 'Invalid request to update suspicious status.');
+        }
+        
+        if (status === 403) {
+          throw new Error('You do not have permission to mark transactions as suspicious.');
+        }
+        
+        if (status === 404) {
+          throw new Error('Transaction not found.');
+        }
+        
+        throw new Error(data.message || 'Failed to update suspicious status');
+      }
+      
+      throw new Error('Network error: Could not connect to server');
     }
   },
 
@@ -56,19 +159,17 @@ const TransactionService = {
     try {
       console.log('Fetching transactions with params:', params);
       
-      // 确保布尔值正确转换为字符串
       const cleanParams = {};
       for (const [key, value] of Object.entries(params)) {
-        // 跳过空字符串和null/undefined
-        if (value === '' || value === null || value === undefined) {
-          continue;
-        }
-        
-        // 布尔值转换为字符串
-        if (typeof value === 'boolean') {
-          cleanParams[key] = value.toString();
+        // Allow relatedId=null to pass through
+        if (key === 'relatedId' && value === null) {
+           cleanParams[key] = null; // Keep null for serializer
+        } else if (value === '' || value === null || value === undefined) {
+          continue; // Skip other null/undefined/empty values
+        } else if (typeof value === 'boolean') {
+          cleanParams[key] = value.toString(); // Keep boolean conversion
         } else {
-          cleanParams[key] = value;
+          cleanParams[key] = value; // Keep other values
         }
       }
       
@@ -79,12 +180,21 @@ const TransactionService = {
         paramsSerializer: params => {
           return Object.entries(params)
             .map(([key, value]) => {
-              // 确保布尔值正确序列化
+              // Explicitly handle null for relatedId by sending key=null
+              if (key === 'relatedId' && value === null) {
+                return `${encodeURIComponent(key)}=null`; 
+              }
+              // Handle boolean serialization
               if (typeof value === 'boolean') {
                 return `${encodeURIComponent(key)}=${encodeURIComponent(value.toString())}`;
               }
-              return `${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+              // Standard serialization for other types (excluding nulls not handled above)
+              if (value !== null && value !== undefined) {
+                 return `${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+              }
+              return ''; // Skip other null/undefined values if they somehow got here
             })
+            .filter(p => p !== '') // Remove empty parameters
             .join('&');
         }
       });
@@ -93,7 +203,22 @@ const TransactionService = {
       return response.data;
     } catch (error) {
       console.error('Error fetching transactions:', error);
-      throw error.response ? error.response.data : new Error('Failed to fetch transactions');
+      
+      if (error.response) {
+        const { status, data } = error.response;
+        
+        if (status === 403) {
+          throw new Error('You do not have permission to view all transactions.');
+        }
+        
+        if (status === 400) {
+          throw new Error(data.message || 'Invalid query parameters for transaction search.');
+        }
+        
+        throw new Error(data.message || 'Failed to fetch transactions');
+      }
+      
+      throw new Error('Network error: Could not retrieve transactions. Please check your connection.');
     }
   },
 
@@ -103,7 +228,21 @@ const TransactionService = {
       const response = await api.get(`/transactions/${transactionId}`);
       return response.data;
     } catch (error) {
-      throw error.response ? error.response.data : new Error('Failed to fetch transaction');
+      if (error.response) {
+        const { status, data } = error.response;
+        
+        if (status === 403) {
+          throw new Error('You do not have permission to view this transaction.');
+        }
+        
+        if (status === 404) {
+          throw new Error('Transaction not found.');
+        }
+        
+        throw new Error(data.message || 'Failed to fetch transaction');
+      }
+      
+      throw new Error('Network error: Could not connect to server');
     }
   },
 };

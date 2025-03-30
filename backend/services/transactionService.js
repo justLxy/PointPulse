@@ -411,15 +411,7 @@ const createRedemption = async (data, userId) => {
         }
     });
 
-    // Update user points
-    await prisma.user.update({
-        where: { id: userId },
-        data: {
-            points: {
-                decrement: amount
-            }
-        }
-    });
+    // No longer updating user points here - points will be deducted when redemption is processed
 
     return {
         id: transaction.id,
@@ -514,6 +506,18 @@ const processRedemption = async (transactionId, processorId) => {
             }
         });
         console.log('Transaction updated successfully');
+
+        // Deduct points from user when redemption is processed
+        console.log('Deducting points from user');
+        await tx.user.update({
+            where: { id: transaction.userId },
+            data: {
+                points: {
+                    decrement: -transaction.amount // transaction.amount is negative, so we negate it
+                }
+            }
+        });
+        console.log('User points updated');
 
         const result = {
             id: updatedTransaction.id,
@@ -1014,19 +1018,33 @@ const getUserTransactions = async (userId, filters = {}, page = 1, limit = 10) =
                 select: {
                     promotionId: true
                 }
+            },
+            user: {
+                select: {
+                    utorid: true
+                }
+            },
+            processor: {
+                select: {
+                    utorid: true
+                }
             }
         },
+        orderBy: {
+            createdAt: 'desc'
+        }
     });
 
     // Format the transactions for response (user view - more limited)
-    const results = transactions.map(tx => {
+    const results = await Promise.all(transactions.map(async tx => {
         const formattedTx = {
             id: tx.id,
             type: tx.type,
             amount: tx.amount,
             remark: tx.remark,
             createdBy: tx.creator.utorid,
-            promotionIds: tx.promotions.map(p => p.promotionId)
+            promotionIds: tx.promotions.map(p => p.promotionId),
+            createdAt: tx.createdAt
         };
 
         // Add transaction-specific fields
@@ -1035,12 +1053,40 @@ const getUserTransactions = async (userId, filters = {}, page = 1, limit = 10) =
         } else if (tx.type === 'redemption') {
             formattedTx.redeemed = tx.redeemed;
             formattedTx.relatedId = tx.relatedId;
-        } else if (tx.type === 'adjustment' || tx.type === 'transfer' || tx.type === 'event') {
+            // Add processedBy field if this redemption has been processed
+            if (tx.processedBy !== null) {
+                formattedTx.processedBy = tx.processor?.utorid || 'cashier';
+            }
+        } else if (tx.type === 'transfer') {
+            // 获取转账的相关用户信息
+            if (tx.amount > 0) {
+                // 这是接收方的记录，关联ID是发送方
+                const sender = await prisma.user.findUnique({
+                    where: { id: tx.relatedId },
+                    select: { utorid: true, name: true }
+                });
+                if (sender) {
+                    formattedTx.sender = sender.utorid;
+                    formattedTx.senderName = sender.name;
+                }
+            } else {
+                // 这是发送方的记录，关联ID是接收方
+                const recipient = await prisma.user.findUnique({
+                    where: { id: tx.relatedId },
+                    select: { utorid: true, name: true }
+                });
+                if (recipient) {
+                    formattedTx.recipient = recipient.utorid;
+                    formattedTx.recipientName = recipient.name;
+                }
+            }
+            formattedTx.relatedId = tx.relatedId;
+        } else if (tx.type === 'adjustment' || tx.type === 'event') {
             formattedTx.relatedId = tx.relatedId;
         }
 
         return formattedTx;
-    });
+    }));
 
     return { count, results };
 };

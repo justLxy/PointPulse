@@ -115,7 +115,7 @@ const CreateUser = () => {
     }
     
     if (!validateEmail(formData.email)) {
-      newErrors.email = 'Must be a valid University of Toronto email (@utoronto.ca or @mail.utoronto.ca)';
+      newErrors.email = 'Must be a valid University of Toronto email (@mail.utoronto.ca)';
       valid = false;
     }
     

@@ -67,7 +67,25 @@ const AuthService = {
       const response = await api.post('/auth/resets', { utorid });
       return response.data;
     } catch (error) {
-      throw error.response ? error.response.data : new Error('Request failed');
+      if (error.response) {
+        const { status, data } = error.response;
+        
+        if (status === 400) {
+          throw new Error('Invalid UTORid format. Please check your UTORid and try again.');
+        }
+        
+        if (status === 404) {
+          throw new Error('User not found. Please verify your UTORid.');
+        }
+        
+        if (status === 429) {
+          throw new Error('Too many reset requests. Please wait before trying again.');
+        }
+        
+        throw new Error(data.message || 'Password reset request failed');
+      }
+      
+      throw new Error('Network error: Could not connect to server');
     }
   },
 
@@ -79,7 +97,28 @@ const AuthService = {
       });
       return response.data;
     } catch (error) {
-      throw error.response ? error.response.data : new Error('Reset failed');
+      if (error.response) {
+        const { status, data } = error.response;
+        
+        if (status === 400) {
+          if (data.message && data.message.includes('password')) {
+            throw new Error('Invalid password. Password must be at least 8 characters long and contain letters and numbers.');
+          }
+          throw new Error(data.message || 'Invalid reset request. Please check your information.');
+        }
+        
+        if (status === 404) {
+          throw new Error('Invalid or expired reset token. Please request a new password reset.');
+        }
+        
+        if (status === 410) {
+          throw new Error('This reset token has expired. Please request a new password reset.');
+        }
+        
+        throw new Error(data.message || 'Password reset failed');
+      }
+      
+      throw new Error('Network error: Could not connect to server');
     }
   },
 
@@ -120,7 +159,28 @@ const AuthService = {
       });
       return response.data;
     } catch (error) {
-      throw error.response ? error.response.data : new Error('Password update failed');
+      if (error.response) {
+        const { status, data } = error.response;
+        
+        if (status === 400) {
+          if (data.message && data.message.includes('password requirements')) {
+            throw new Error('New password does not meet security requirements. Password must be at least 8 characters long and contain letters and numbers.');
+          }
+          throw new Error(data.message || 'Invalid password change request.');
+        }
+        
+        if (status === 401) {
+          throw new Error('Your current password is incorrect. Please enter the correct password.');
+        }
+        
+        if (status === 409) {
+          throw new Error('New password cannot be the same as your current password.');
+        }
+        
+        throw new Error(data.message || 'Password update failed');
+      }
+      
+      throw new Error('Network error: Could not connect to server');
     }
   },
 

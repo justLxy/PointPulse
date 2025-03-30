@@ -8,6 +8,7 @@ import Button from '../../components/common/Button';
 import theme from '../../styles/theme';
 import { FaLock, FaUser, FaSignInAlt, FaEye, FaEyeSlash, FaExclamationTriangle } from 'react-icons/fa';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import AnimatedLogo from '../../components/common/AnimatedLogo';
 
 const fadeIn = keyframes`
   from {
@@ -20,40 +21,81 @@ const fadeIn = keyframes`
   }
 `;
 
+const floatParticle = keyframes`
+  0% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(15px, -15px);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+`;
+
 const Container = styled.div`
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: ${theme.spacing.lg};
-  background-image: linear-gradient(to right, ${theme.colors.primary.light}, ${theme.colors.secondary.light});
+  background: linear-gradient(135deg, #2193b0, #6dd5ed);
+  position: relative;
+  overflow: hidden;
+  
+  &::before, &::after {
+    content: "";
+    position: absolute;
+    width: 80vw;
+    height: 80vw;
+    top: -40vw;
+    left: -20vw;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+    border-radius: 50%;
+    z-index: 0;
+    animation: ${floatParticle} 15s ease-in-out infinite;
+  }
+  
+  &::after {
+    top: auto;
+    bottom: -40vw;
+    left: auto;
+    right: -20vw;
+    width: 70vw;
+    height: 70vw;
+    animation: ${floatParticle} 18s ease-in-out infinite reverse;
+  }
+`;
+
+const Particle = styled.div`
+  position: absolute;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  width: ${props => props.size || '30px'};
+  height: ${props => props.size || '30px'};
+  top: ${props => props.top || '10%'};
+  left: ${props => props.left || '10%'};
+  animation: ${floatParticle} ${props => props.duration || '15s'} ease-in-out infinite ${props => props.delay || '0s'};
+  z-index: 0;
 `;
 
 const Card = styled.div`
   background-color: ${theme.colors.background.paper};
   border-radius: ${theme.radius.lg};
-  box-shadow: ${theme.shadows.xl};
+  box-shadow: ${theme.shadows.xl}, 0 10px 30px rgba(0, 0, 0, 0.1);
   width: 100%;
   max-width: 450px;
   padding: ${theme.spacing.xl};
   animation: ${fadeIn} 0.5s ease-out;
+  position: relative;
+  z-index: 1;
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 `;
 
 const Logo = styled.div`
   text-align: center;
   margin-bottom: ${theme.spacing.xl};
-  
-  img {
-    height: 80px;
-    width: auto;
-  }
-  
-  h1 {
-    margin-top: ${theme.spacing.md};
-    font-size: ${theme.typography.fontSize['3xl']};
-    font-weight: ${theme.typography.fontWeights.bold};
-    color: ${theme.colors.primary.main};
-  }
 `;
 
 const Form = styled.form`
@@ -187,11 +229,11 @@ const Login = () => {
   if (loading) {
     return (
       <Container>
+        <Particle size="50px" top="20%" left="15%" duration="20s" />
+        <Particle size="80px" top="60%" left="75%" duration="25s" delay="5s" />
+        <Particle size="20px" top="30%" left="80%" duration="15s" delay="2s" />
+        <Particle size="35px" top="70%" left="25%" duration="18s" delay="7s" />
         <Card>
-          <Logo>
-            <img src="/logo.png" alt="PointPulse Logo" />
-            <h1>PointPulse</h1>
-          </Logo>
           <LoadingSpinner text="Checking login status..." />
         </Card>
       </Container>
@@ -201,10 +243,13 @@ const Login = () => {
   // Only render login form if not authenticated
   return (
     <Container>
+      <Particle size="50px" top="20%" left="15%" duration="20s" />
+      <Particle size="80px" top="60%" left="75%" duration="25s" delay="5s" />
+      <Particle size="20px" top="30%" left="80%" duration="15s" delay="2s" />
+      <Particle size="35px" top="70%" left="25%" duration="18s" delay="7s" />
       <Card>
         <Logo>
-          <img src="/logo.png" alt="PointPulse Logo" />
-          <h1>PointPulse</h1>
+          <AnimatedLogo />
         </Logo>
         
         {error && (

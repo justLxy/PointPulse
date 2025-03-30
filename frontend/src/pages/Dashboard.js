@@ -69,7 +69,10 @@ const ShortcutsSection = styled.div`
   }
 `;
 
-const ShortcutCard = styled(Link)`
+const ShortcutCard = styled(({ as, ...rest }) => {
+  const Component = as || Link;
+  return <Component {...rest} />;
+})`
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -81,6 +84,10 @@ const ShortcutCard = styled(Link)`
   box-shadow: ${theme.shadows.md};
   transition: transform ${theme.transitions.default}, box-shadow ${theme.transitions.default};
   color: ${theme.colors.text.primary};
+  border: none;
+  text-decoration: none;
+  cursor: pointer;
+  width: 100%;
   
   &:hover {
     transform: translateY(-5px);
@@ -321,9 +328,12 @@ const PromotionHeader = styled.div`
   color: ${({ type }) => 
     type === 'automatic' 
       ? theme.colors.accent.contrastText 
-      : theme.colors.primary.dark};
+      : 'white'};
+  font-weight: ${({ type }) => 
+    type === 'automatic' 
+      ? theme.typography.fontWeights.medium
+      : theme.typography.fontWeights.semiBold};
   padding: ${theme.spacing.xs} ${theme.spacing.md};
-  font-weight: ${theme.typography.fontWeights.medium};
   font-size: ${theme.typography.fontSize.sm};
   display: flex;
   justify-content: space-between;
@@ -693,9 +703,9 @@ const formatDisplayDate = (dateString) => {
 const Dashboard = () => {
   const { activeRole } = useAuth();
   const { profile, isLoading: isProfileLoading } = useUserProfile();
-  const { transactions, isLoading: isTransactionsLoading } = useUserTransactions({ limit: 5 });
+  const { transactions, isLoading: isTransactionsLoading } = useUserTransactions({ limit: 3 });
   const { promotions, isLoading: isPromotionsLoading } = usePromotions({ started: true, ended: false, limit: 3 });
-  const { events, isLoading: isEventsLoading } = useEvents({ started: false, ended: false, limit: 3 });
+  const { events, isLoading: isEventsLoading } = useEvents({ started: false, ended: false, limit: 4 });
   const [isRedeemModalOpen, setIsRedeemModalOpen] = useState(false);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   
@@ -743,14 +753,20 @@ const Dashboard = () => {
         return `Purchase - $${transaction.spent?.toFixed(2) || '0.00'}`;
       case 'redemption':
         if (transaction.processedBy) {
-          return `Redemption - Processed`;
+          return `Redemption - Completed`;
         }
         return `Redemption - Pending`;
       case 'transfer':
         if (transaction.amount > 0) {
-          return `Transfer from ${transaction.relatedId || 'another user'}`;
+          if (transaction.senderName && transaction.sender) {
+            return `Transfer from ${transaction.senderName} (${transaction.sender})`;
+          }
+          return `Transfer from ${transaction.sender || transaction.senderName || 'user'}`;
         }
-        return `Transfer to ${transaction.relatedId || 'another user'}`;
+        if (transaction.recipientName && transaction.recipient) {
+          return `Transfer to ${transaction.recipientName} (${transaction.recipient})`;
+        }
+        return `Transfer to ${transaction.recipient || transaction.recipientName || 'user'}`;
       case 'adjustment':
         return `Adjustment from ${transaction.createdBy || 'manager'}`;
       case 'event':
@@ -922,13 +938,16 @@ const Dashboard = () => {
       </PointsOverview>
       
       <ShortcutsSection>
-        <ShortcutCard to="/profile">
-          <FaUser />
-          <span>My Profile</span>
-        </ShortcutCard>
-        
         {activeRole === 'regular' && (
           <>
+            <ShortcutCard to="/user-transactions">
+              <FaExchangeAlt />
+              <span>My Transactions</span>
+            </ShortcutCard>
+            <ShortcutCard as="button" onClick={() => setIsTransferModalOpen(true)}>
+              <FaExchangeAlt />
+              <span>Transfer Points</span>
+            </ShortcutCard>
             <ShortcutCard to="/promotions">
               <FaTags />
               <span>Promotions</span>
@@ -955,6 +974,10 @@ const Dashboard = () => {
               <FaQrcode />
               <span>Create Transaction</span>
             </ShortcutCard>
+            <ShortcutCard as="button" onClick={() => setIsTransferModalOpen(true)}>
+              <FaExchangeAlt />
+              <span>Transfer Points</span>
+            </ShortcutCard>
           </>
         )}
         
@@ -973,6 +996,10 @@ const Dashboard = () => {
               <FaQrcode />
               <span>Create Transaction</span>
             </ShortcutCard>
+            <ShortcutCard as="button" onClick={() => setIsTransferModalOpen(true)}>
+              <FaExchangeAlt />
+              <span>Transfer Points</span>
+            </ShortcutCard>
           </>
         )}
       </ShortcutsSection>
@@ -981,7 +1008,7 @@ const Dashboard = () => {
         <div>
           <SectionTitle>
             Recent Transactions
-            <ViewAllLink to="/profile">
+            <ViewAllLink to="/user-transactions">
               View All <FaChevronRight size={12} />
             </ViewAllLink>
           </SectionTitle>
@@ -996,9 +1023,16 @@ const Dashboard = () => {
                     </TransactionIcon>
                     <TransactionInfo>
                       <div className="transaction-type">{getTransactionLabel(transaction)}</div>
-                      <div className="transaction-date">
-                        {transaction.createdAt ? formatDate(transaction.createdAt) : 'Unknown date'}
-                      </div>
+                      {transaction.remark && (
+                        <div className="transaction-date">
+                          {transaction.remark}
+                        </div>
+                      )}
+                      {transaction.createdAt && (
+                        <div className="transaction-date">
+                          {formatDate(transaction.createdAt)}
+                        </div>
+                      )}
                     </TransactionInfo>
                     <TransactionAmount positive={isPositiveTransaction(transaction)}>
                       {formatAmount(transaction.amount)}

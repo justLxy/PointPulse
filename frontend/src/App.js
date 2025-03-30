@@ -18,11 +18,13 @@ import Profile from './pages/Profile';
 import Dashboard from './pages/Dashboard';
 import Users from './pages/Users';
 import CreateUser from './pages/users/CreateUser';
+import UserTransactions from './pages/UserTransactions';
 
 // Import transaction pages
 import CreateTransaction from './pages/transactions/CreateTransaction';
 import ProcessRedemption from './pages/transactions/ProcessRedemption';
 import Transactions from './pages/transactions/Transactions';
+import CreateAdjustment from './pages/transactions/CreateAdjustment';
 
 // Import other pages
 import Promotions from './pages/promotions/Promotions';
@@ -121,6 +123,16 @@ const App = () => {
               }
             />
             <Route
+              path="/user-transactions"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <UserTransactions />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/promotions"
               element={
                 <ProtectedRoute>
@@ -176,6 +188,16 @@ const App = () => {
                 <ProtectedRoute allowedRoles={['cashier', 'manager', 'superuser']}>
                   <Layout>
                     <ProcessRedemption />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/transactions/adjustment"
+              element={
+                <ProtectedRoute allowedRoles={['manager', 'superuser']}>
+                  <Layout>
+                    <CreateAdjustment />
                   </Layout>
                 </ProtectedRoute>
               }

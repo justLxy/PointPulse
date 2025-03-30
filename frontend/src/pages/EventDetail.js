@@ -26,6 +26,7 @@ import {
   FaUserMinus,
 } from 'react-icons/fa';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import { toast } from 'react-hot-toast';
 
 const PageHeader = styled.div`
   display: flex;
@@ -60,11 +61,39 @@ const PageTitle = styled.h1`
   font-weight: ${theme.typography.fontWeights.bold};
   color: ${theme.colors.text.primary};
   margin-bottom: ${theme.spacing.sm};
+  display: flex;
+  align-items: center;
+  
+  &::after {
+    content: ${props => props.showStatus ? `'${props.statusEmoji}'` : '""'};
+    margin-left: ${theme.spacing.sm};
+    font-size: ${theme.typography.fontSize.xl};
+  }
 `;
 
 const PageSubtitle = styled.p`
   color: ${theme.colors.text.secondary};
   margin-bottom: ${theme.spacing.md};
+  display: flex;
+  align-items: center;
+  gap: ${theme.spacing.sm};
+`;
+
+const EventBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: ${theme.spacing.xs} ${theme.spacing.sm};
+  background-color: ${theme.colors.primary.main};
+  color: white;
+  border-radius: ${theme.radius.full};
+  font-size: ${theme.typography.fontSize.xs};
+  font-weight: ${theme.typography.fontWeights.medium};
+  margin-left: ${theme.spacing.sm};
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+  svg {
+    margin-right: ${theme.spacing.xs};
+  }
 `;
 
 const PageActionsContainer = styled.div`
@@ -221,6 +250,186 @@ const EmptyState = styled.div`
   color: ${theme.colors.text.secondary};
 `;
 
+const SummaryCard = styled(Card)`
+  position: sticky;
+  top: ${theme.spacing.lg}; // Sticks to the top when scrolling
+`;
+
+const SummaryItem = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: ${theme.spacing.sm} 0;
+  font-size: ${theme.typography.fontSize.sm};
+
+  &:not(:last-child) {
+    border-bottom: 1px solid ${theme.colors.border.light};
+  }
+
+  strong {
+    color: ${theme.colors.text.primary};
+    font-weight: ${theme.typography.fontWeights.medium};
+  }
+
+  span {
+    color: ${theme.colors.text.secondary};
+  }
+`;
+
+// Create a custom Badge component that accepts hex color values
+const ColoredBadge = styled(Badge)`
+  background-color: ${props => props.customColor || theme.colors.primary.main};
+  color: white;
+  font-weight: ${theme.typography.fontWeights.medium};
+  
+  /* Ensure good contrast with text */
+  ${props => props.customColor === '#f4d03f' && `
+    color: #333; /* Darker text for yellow background */
+  `}
+`;
+
+// Add this new styled component for the status indicator
+const StatusIndicator = styled.div`
+  display: inline-flex;
+  align-items: center;
+  padding: ${theme.spacing.xs} ${theme.spacing.sm};
+  border-radius: ${theme.radius.full};
+  background-color: ${props => {
+    switch (props.status) {
+      case 'Upcoming': return '#ffd54f'; // 更深的黄色
+      case 'Ongoing': return '#C8E6C9'; // Light green
+      case 'Past': return '#FFCCBC'; // Light red
+      default: return theme.colors.background.default;
+    }
+  }};
+  
+  span {
+    color: ${props => {
+      switch (props.status) {
+        case 'Upcoming': return '#7e4d0d'; // 深褐色文字
+        case 'Ongoing': return '#2E7D32'; // Darker green
+        case 'Past': return '#BF360C'; // Darker red
+        default: return theme.colors.text.primary;
+      }
+    }};
+    font-weight: ${theme.typography.fontWeights.semiBold};
+  }
+`;
+
+// 为Upcoming标签创建更简单的样式
+const UpcomingBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: ${theme.spacing.xs} ${theme.spacing.md};
+  background-color: #FFD54F;
+  color: #000000;
+  border-radius: ${theme.radius.full};
+  font-size: ${theme.typography.fontSize.sm};
+  font-weight: ${theme.typography.fontWeights.medium};
+`;
+
+// 新增观众席样式组件
+const AudienceContainer = styled.div`
+  margin-top: ${theme.spacing.lg};
+  background-color: ${theme.colors.background.default};
+  border-radius: ${theme.radius.lg};
+  padding: ${theme.spacing.xl};
+  position: relative;
+`;
+
+const AudienceStage = styled.div`
+  background: linear-gradient(180deg, #1a237e 0%, #0d47a1 100%);
+  height: 50px;
+  border-radius: ${theme.radius.lg} ${theme.radius.lg} 0 0;
+  margin: -${theme.spacing.xl};
+  margin-bottom: ${theme.spacing.lg};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: ${theme.typography.fontWeights.bold};
+  font-size: ${theme.typography.fontSize.lg};
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+`;
+
+const AudienceSeats = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: ${theme.spacing.md};
+  padding: ${theme.spacing.md} 0;
+`;
+
+const AudienceSeat = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: transform 0.2s ease-in-out;
+
+  &:hover {
+    transform: translateY(-5px);
+  }
+`;
+
+const AvatarContainer = styled.div`
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  overflow: hidden;
+  background-color: ${theme.colors.background.light};
+  border: 3px solid ${theme.colors.primary.light};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: ${theme.spacing.sm};
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+`;
+
+const Avatar = styled.div`
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: ${theme.typography.fontSize.xl};
+  color: ${theme.colors.text.primary};
+  background-color: ${props => props.randomColor || theme.colors.primary.light};
+`;
+
+const AudienceName = styled.div`
+  font-size: ${theme.typography.fontSize.sm};
+  font-weight: ${theme.typography.fontWeights.medium};
+  margin-bottom: 2px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+const AudienceRole = styled.div`
+  font-size: ${theme.typography.fontSize.xs};
+  color: ${theme.colors.text.secondary};
+`;
+
+const EmptyAudienceSeat = styled.div`
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: ${theme.colors.background.default};
+  border: 2px dashed ${theme.colors.border.light};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: ${theme.spacing.sm};
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  
+  &:hover {
+    background-color: ${theme.colors.background.hover};
+    border-color: ${theme.colors.primary.light};
+  }
+`;
+
 const EventDetail = () => {
   const { eventId } = useParams();
   const navigate = useNavigate();
@@ -252,6 +461,7 @@ const EventDetail = () => {
     isRsvping,
     isCancellingRsvp,
     isAwardingPoints,
+    updateEvent,
   } = useEvents();
   
   const { data: event, isLoading, error, refetch } = getEvent(eventId);
@@ -320,6 +530,22 @@ const EventDetail = () => {
     return event?.isOrganizer || false;
   };
   
+  // Calculate event status
+  const getEventStatus = (startTime, endTime) => {
+    const now = new Date();
+    const start = new Date(startTime);
+    const end = endTime ? new Date(endTime) : null;
+    
+    if (start > now) {
+      return { text: 'Upcoming', color: '#f4d03f' }; // Yellow
+    }
+    if (end && end < now) {
+      return { text: 'Past', color: '#e74c3c' }; // Red
+    }
+    // If start is in the past and end is in the future (or null), it's ongoing
+    return { text: 'Ongoing', color: '#2ecc71' }; // Green
+  };
+  
   // Can edit event
   const canEditEvent = () => {
     return isManager || isUserOrganizer();
@@ -376,6 +602,24 @@ const EventDetail = () => {
       {
         onSuccess: () => {
           refetch();
+        },
+      }
+    );
+  };
+  
+  // Handle publish event
+  const handlePublishEvent = () => {
+    if (!event) return;
+    
+    updateEvent(
+      { 
+        id: eventId, 
+        data: { published: true } 
+      },
+      {
+        onSuccess: () => {
+          refetch();
+          toast.success('Event successfully published!');
         },
       }
     );
@@ -440,7 +684,7 @@ const EventDetail = () => {
     return <EmptyState>Event not found</EmptyState>;
   }
   
-  const upcoming = isUpcoming(event.startTime);
+  const eventStatus = getEventStatus(event.startTime, event.endTime);
   const attending = isUserAttending();
   const isOrganizer = isUserOrganizer();
   
@@ -451,26 +695,69 @@ const EventDetail = () => {
           <BackLink to="/events">
             <FaArrowLeft /> Back to Events
           </BackLink>
-          <PageTitle>{event.name}</PageTitle>
-          <BadgeContainer>
-            {upcoming ? (
-              <Badge color="success">Upcoming</Badge>
-            ) : (
-              <Badge color="secondary">Past</Badge>
+          <PageTitle
+            showStatus={true}
+            statusEmoji={
+              eventStatus.text === 'Upcoming' ? '🔜' : 
+              eventStatus.text === 'Ongoing' ? '🎬' : '🎭'
+            }
+          >
+            {event.name}
+          </PageTitle>
+          <PageSubtitle>
+            {event.startTime && (
+              <>
+                {formatDate(event.startTime)}
+                {event.endTime && new Date(event.startTime).toDateString() !== new Date(event.endTime).toDateString() && 
+                  ` - ${formatDate(event.endTime)}`}
+                {' at '}
+                {formatTime(event.startTime)}
+                {event.endTime && ` - ${formatTime(event.endTime)}`}
+                
+                <EventBadge>
+                  <FaUsers size={12} /> 
+                  {event.guests && Array.isArray(event.guests) ? event.guests.length : 0} Attendees
+                  {event.capacity ? ` / ${event.capacity}` : ''}
+                </EventBadge>
+              </>
             )}
-            
-            {attending && <Badge color="info">RSVP'd</Badge>}
-            
-            {isOrganizer && <Badge color="primary">You're an Organizer</Badge>}
-          </BadgeContainer>
+          </PageSubtitle>
         </div>
         
         <PageActionsContainer>
-          {upcoming && !isOrganizer && (
+          {canEditEvent() && (
+            <Link to={`/events/${eventId}/edit`}>
+              <Button size="small">
+                <FaEdit /> Edit Event
+              </Button>
+            </Link>
+          )}
+          
+          {isManager && !event.published && (
+            <Button 
+              variant="outlined" 
+              size="small"
+              onClick={handlePublishEvent}
+            >
+              Publish Event
+            </Button>
+          )}
+          
+          {isManager && (
+            <Button 
+              variant="outlined" 
+              color="danger" 
+              size="small"
+            >
+              <FaTrash /> Delete Event
+            </Button>
+          )}
+          
+          {eventStatus.text === 'Upcoming' && !isOrganizer && (
             attending ? (
               <Button 
                 variant="outlined" 
-                color="error" 
+                color="danger"
                 onClick={handleCancelRsvp}
                 loading={isCancellingRsvp}
               >
@@ -484,15 +771,6 @@ const EventDetail = () => {
                 RSVP to Event
               </Button>
             )
-          )}
-          
-          {canEditEvent() && (
-            <Button 
-              variant="outlined"
-              onClick={() => navigate(`/events/${eventId}/edit`)}
-            >
-              <FaEdit /> Edit Event
-            </Button>
           )}
         </PageActionsContainer>
       </PageHeader>
@@ -519,7 +797,11 @@ const EventDetail = () => {
                   <FaCalendarAlt />
                   <div>
                     <strong>Date</strong>
-                    <div>{formatDate(event.startTime)}</div>
+                    <div>
+                      {formatDate(event.startTime)}
+                      {event.endTime && new Date(event.startTime).toDateString() !== new Date(event.endTime).toDateString() && 
+                        ` - ${formatDate(event.endTime)}`}
+                    </div>
                   </div>
                 </EventDetailItem>
                 
@@ -528,8 +810,7 @@ const EventDetail = () => {
                   <div>
                     <strong>Time</strong>
                     <div>
-                      {formatTime(event.startTime)} to{' '}
-                      {event.endTime ? formatTime(event.endTime) : 'TBD'}
+                      {formatTime(event.startTime)} - {event.endTime ? formatTime(event.endTime) : 'TBD'}
                     </div>
                   </div>
                 </EventDetailItem>
@@ -550,7 +831,8 @@ const EventDetail = () => {
                   <div>
                     <strong>Points</strong>
                     <div>
-                      {event.pointsAwarded || 0} / {event.points} points awarded
+                      {event.pointsAwarded || 0} points awarded 
+                      ({event.pointsRemain ?? event.points ?? 0} remaining)
                     </div>
                   </div>
                 </EventDetailItem>
@@ -595,7 +877,7 @@ const EventDetail = () => {
               <Card>
                 <Card.Header>
                   <Card.Title>Guests</Card.Title>
-                  {canEditEvent() && upcoming && (
+                  {canEditEvent() && eventStatus.text === 'Upcoming' && (
                     <div style={{ display: 'flex', gap: theme.spacing.sm }}>
                       <Button 
                         size="small" 
@@ -615,51 +897,90 @@ const EventDetail = () => {
                   )}
                 </Card.Header>
                 <Card.Body>
-                  <AttendeesContainer>
+                  <AudienceContainer>
+                    <AudienceStage>🎬 STAGE 🎬</AudienceStage>
                     {event.guests && Array.isArray(event.guests) && event.guests.length > 0 ? (
-                      event.guests.map(guest => (
-                        <AttendeeRow key={guest.id}>
-                          <AttendeeInfo>
-                            <AttendeeName>{guest.name}</AttendeeName>
-                            <AttendeeSubtext>{guest.utorid}</AttendeeSubtext>
-                          </AttendeeInfo>
-                          {canEditEvent() && (
-                            <AttendeeActions>
-                              {guest.pointsAwarded ? (
-                                <Badge color="success">{guest.pointsAwarded} points awarded</Badge>
-                              ) : upcoming && (
-                                isManager && (
+                      <AudienceSeats>
+                        {event.guests.map(guest => {
+                          // 为每个用户生成一个随机颜色，基于用户ID保持一致
+                          const colorSeed = guest.id % 5;
+                          const colors = ['#e57373', '#64b5f6', '#81c784', '#ffb74d', '#ba68c8'];
+                          const randomColor = colors[colorSeed];
+                          
+                          // 获取用户名称的首字母
+                          const initials = guest.name ? guest.name.charAt(0).toUpperCase() : '?';
+                          
+                          return (
+                            <AudienceSeat key={guest.id}>
+                              <AvatarContainer>
+                                <Avatar randomColor={randomColor}>
+                                  {guest.avatarUrl ? (
+                                    <img 
+                                      src={guest.avatarUrl} 
+                                      alt={guest.name} 
+                                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                    />
+                                  ) : (
+                                    initials
+                                  )}
+                                </Avatar>
+                              </AvatarContainer>
+                              <AudienceName>{guest.name}</AudienceName>
+                              <AudienceRole>
+                                {guest.pointsAwarded ? (
+                                  <Badge color="success">{guest.pointsAwarded}pt</Badge>
+                                ) : canEditEvent() && eventStatus.text === 'Upcoming' && isManager ? (
                                   <Button 
-                                    size="small" 
-                                    variant="outlined"
+                                    size="tiny" 
                                     onClick={() => {
                                       setSelectedUserId(guest.id);
                                       setAwardPointsModalOpen(true);
                                     }}
                                   >
-                                    <FaTrophy /> Award Points
+                                    🏆
                                   </Button>
-                                )
-                              )}
-                              
-                              {canEditEvent() && (
-                                <Button 
-                                  size="small" 
-                                  variant="outlined" 
-                                  color="error"
-                                  onClick={() => handleRemoveGuest(guest.id)}
-                                >
-                                  <FaUserMinus />
-                                </Button>
-                              )}
-                            </AttendeeActions>
-                          )}
-                        </AttendeeRow>
-                      ))
+                                ) : null}
+                                {canEditEvent() && (
+                                  <Button 
+                                    size="tiny" 
+                                    color="error"
+                                    onClick={() => handleRemoveGuest(guest.id)}
+                                    style={{ marginLeft: '2px' }}
+                                  >
+                                    ❌
+                                  </Button>
+                                )}
+                              </AudienceRole>
+                            </AudienceSeat>
+                          );
+                        })}
+                        {canEditEvent() && eventStatus.text === 'Upcoming' && (
+                          <AudienceSeat>
+                            <EmptyAudienceSeat onClick={() => setAddGuestModalOpen(true)}>
+                              <FaUserPlus color={theme.colors.text.secondary} />
+                            </EmptyAudienceSeat>
+                            <AudienceName>Add Guest</AudienceName>
+                          </AudienceSeat>
+                        )}
+                      </AudienceSeats>
                     ) : (
-                      <EmptyState>No guests registered for this event yet.</EmptyState>
+                      <EmptyState>
+                        {canEditEvent() ? (
+                          <>
+                            <p>No guests registered for this event yet.</p>
+                            <Button 
+                              style={{ marginTop: theme.spacing.md }}
+                              onClick={() => setAddGuestModalOpen(true)}
+                            >
+                              <FaUserPlus /> Add First Guest
+                            </Button>
+                          </>
+                        ) : (
+                          "No guests registered for this event yet."
+                        )}
+                      </EmptyState>
                     )}
-                  </AttendeesContainer>
+                  </AudienceContainer>
                 </Card.Body>
               </Card>
             )}
@@ -709,25 +1030,34 @@ const EventDetail = () => {
         </EventInfo>
         
         <div>
-          <Card>
+          <SummaryCard>
             <Card.Header>
               <Card.Title>Event Summary</Card.Title>
             </Card.Header>
             <Card.Body>
-              <p>
-                <strong>Created by:</strong> {event.createdBy}
-              </p>
-              <p>
-                <strong>Status:</strong> {upcoming ? 'Upcoming' : 'Past'}
-              </p>
-              <p>
-                <strong>Guests:</strong> {event.guests && Array.isArray(event.guests) ? event.guests.length : 0}{event.capacity ? `/${event.capacity}` : ''}
-              </p>
-              <p>
-                <strong>Points:</strong> {event.pointsAwarded || 0}/{event.points} awarded
-              </p>
+              <SummaryItem>
+                <strong>Created by:</strong>
+                <span>{event.organizers?.[0]?.name || 'N/A'}</span>
+              </SummaryItem>
+              <SummaryItem>
+                <strong>Status:</strong>
+                <UpcomingBadge>Upcoming</UpcomingBadge>
+              </SummaryItem>
+              <SummaryItem>
+                <strong>Guests:</strong>
+                <span>
+                  {event.guests && Array.isArray(event.guests) ? event.guests.length : 0}
+                  {event.capacity ? ` / ${event.capacity} capacity` : ' (unlimited)'}
+                </span>
+              </SummaryItem>
+              <SummaryItem>
+                <strong>Points:</strong>
+                <span>
+                  {event.pointsAwarded || 0} awarded ({event.pointsRemain ?? event.points ?? 0} remaining)
+                </span>
+              </SummaryItem>
             </Card.Body>
-          </Card>
+          </SummaryCard>
         </div>
       </ContentGrid>
       
