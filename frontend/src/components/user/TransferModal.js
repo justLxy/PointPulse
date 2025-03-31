@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import styled from '@emotion/styled';
 import useUserTransactions from '../../hooks/useUserTransactions';
 import Modal from '../common/Modal';
@@ -172,39 +172,21 @@ const TransferModal = ({ isOpen, onClose, availablePoints = 0 }) => {
   const [selectedAmount, setSelectedAmount] = useState(null);
   const [customAmount, setCustomAmount] = useState('');
   const [receiverUtorid, setReceiverUtorid] = useState('');
-  const [foundReceiver, setFoundReceiver] = useState(null);
-  const [isSearching, setIsSearching] = useState(false);
   const [remark, setRemark] = useState('');
   const [error, setError] = useState('');
-  const [transferId, setTransferId] = useState(null);
   
   const { transferPoints, isTransferringPoints } = useUserTransactions();
   
   // Predefined amounts for quick selection
   const presetAmounts = [100, 200, 500, 1000, 2000, 5000];
   
-  // 当用户输入UTORid时，自动搜索用户
-  useEffect(() => {
-    const searchTimeout = setTimeout(() => {
-      if (receiverUtorid.trim().length >= 3) {
-        handleSearchUser();
-      } else if (receiverUtorid.trim().length === 0) {
-        setFoundReceiver(null);
-      }
-    }, 300); // 300ms防抖
-    
-    return () => clearTimeout(searchTimeout);
-  }, [receiverUtorid]);
-  
   const resetForm = () => {
     setStep(1);
     setSelectedAmount(null);
     setCustomAmount('');
     setReceiverUtorid('');
-    setFoundReceiver(null);
     setRemark('');
     setError('');
-    setTransferId(null);
   };
   
   const handleClose = () => {
@@ -251,90 +233,55 @@ const TransferModal = ({ isOpen, onClose, availablePoints = 0 }) => {
     return true;
   };
   
-  const validateReceiver = () => {
-    if (!foundReceiver) {
-      setError('Please search for a valid user first');
-      return false;
-    }
-    
-    return true;
-  };
-  
-  const handleSearchUser = async () => {
-    if (!receiverUtorid.trim()) {
-      return;
-    }
-    
-    // Check if user is trying to transfer to themselves
-    if (receiverUtorid.toLowerCase() === currentUser.utorid.toLowerCase()) {
-      setError('You cannot transfer points to yourself');
-      setFoundReceiver(null);
-      return;
-    }
-    
-    setIsSearching(true);
-    setError('');
-    
-    try {
-      const user = await UserService.searchUserByUTORid(receiverUtorid);
-      if (user) {
-        // Double check that the user isn't transferring to themselves
-        if (user.id === currentUser.id) {
-          setError('You cannot transfer points to yourself');
-          setFoundReceiver(null);
-          return;
-        }
-        setFoundReceiver(user);
-      } else {
-        setFoundReceiver(null);
-        if (receiverUtorid.trim().length >= 5) {
-          setError('User not found. Please check the UTORid');
-        }
-      }
-    } catch (err) {
-      setError(err.message || 'Failed to search for user');
-      setFoundReceiver(null);
-    } finally {
-      setIsSearching(false);
-    }
-  };
-  
   const handleProceed = () => {
+    setError(''); // Clear previous errors
     if (validateAmount()) {
       setStep(2);
     }
   };
   
   const handleTransfer = async () => {
+    setError(''); // Clear previous errors
+    const recipientUtoridTrimmed = receiverUtorid.trim();
+
+    if (!recipientUtoridTrimmed) {
+      setError('Please enter the recipient UTORid');
+      return;
+    }
+
+    if (recipientUtoridTrimmed.toLowerCase() === currentUser.utorid.toLowerCase()) {
+      setError('You cannot transfer points to yourself');
+      return;
+    }
+
+    if (!validateAmount()) {
+      return;
+    }
+    
+    const amount = getTransferAmount();
+    
     try {
-      if (!validateAmount() || !validateReceiver()) {
-        return;
-      }
-      
-      const amount = getTransferAmount();
-      
-      // 先关闭模态框，再调用转账函数
-      handleClose();
-      
-      // 调用转账函数
-      transferPoints({
-        userId: foundReceiver.id,
+      // Call transferPoints directly with the UTORid string
+      // The hook will handle success/error toasts and state updates
+      await transferPoints({
+        userId: recipientUtoridTrimmed, // Pass UTORid directly
         amount,
         remark,
+      }, {
+        onSuccess: () => {
+          handleClose(); // Close modal on success
+        },
+        onError: (err) => {
+          // Specific error handling for transfer can be done here if needed,
+          // otherwise the hook's default error toast will show.
+          setError(err.message || 'Failed to transfer points. Please check the UTORid and try again.');
+        }
       });
     } catch (err) {
-      setError(err.message || 'Failed to transfer points');
+      // This catch block might be redundant if the mutation handles errors,
+      // but kept for safety.
+      setError(err.message || 'An unexpected error occurred during the transfer.');
     }
-  };
-  
-  const getInitials = (name) => {
-    if (!name) return 'U';
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
   };
   
   const renderStep1 = () => (
@@ -389,35 +336,13 @@ const TransferModal = ({ isOpen, onClose, availablePoints = 0 }) => {
       
       {error && <ErrorMessage>{error}</ErrorMessage>}
       
-      <SearchContainer>
-        <Input
-          label="Recipient UTORid"
-          value={receiverUtorid}
-          onChange={(e) => setReceiverUtorid(e.target.value)}
-          placeholder="Enter recipient's UTORid"
-          style={{ flex: 1 }}
-        />
-      </SearchContainer>
-      
-      {isSearching && <div style={{ textAlign: 'center', margin: '10px 0' }}>Searching...</div>}
-      
-      {foundReceiver && (
-        <UserSection>
-          <UserInfo>
-            <Avatar>{getInitials(foundReceiver.name)}</Avatar>
-            <UserInfoText>
-              <h3>{foundReceiver.name}</h3>
-              <p>
-                {foundReceiver.utorid}
-                <Badge verified={foundReceiver.verified}>
-                  {foundReceiver.verified ? 'Verified' : 'Not Verified'}
-                </Badge>
-              </p>
-              <p>Current Points: {foundReceiver.points || 0}</p>
-            </UserInfoText>
-          </UserInfo>
-        </UserSection>
-      )}
+      <Input
+        label="Recipient UTORid"
+        value={receiverUtorid}
+        onChange={(e) => setReceiverUtorid(e.target.value)}
+        placeholder="Enter recipient's UTORid"
+        required
+      />
       
       <Input
         label="Remark (Optional)"
@@ -431,13 +356,15 @@ const TransferModal = ({ isOpen, onClose, availablePoints = 0 }) => {
           variant="outlined"
           onClick={() => setStep(1)}
           style={{ flex: 1 }}
+          disabled={isTransferringPoints} // Disable Back while processing
         >
           Back
         </Button>
         
         <Button 
           onClick={handleTransfer}
-          disabled={!foundReceiver || isTransferringPoints}
+          // Enable if UTORid is entered and not transferring to self
+          disabled={!receiverUtorid.trim() || receiverUtorid.trim().toLowerCase() === currentUser.utorid.toLowerCase() || isTransferringPoints}
           loading={isTransferringPoints}
           style={{ flex: 1 }}
         >
@@ -447,41 +374,15 @@ const TransferModal = ({ isOpen, onClose, availablePoints = 0 }) => {
     </>
   );
   
-  const renderStep3 = () => (
-    <TransferSuccessContainer>
-      <SuccessIcon>
-        <FaCheck />
-      </SuccessIcon>
-      
-      <h2>Transfer Successful!</h2>
-      <p>You have successfully transferred {getTransferAmount()} points to {foundReceiver?.name || 'the recipient'}.</p>
-      
-      <TransferInfo>
-        <p><strong>Transaction ID:</strong> {transferId}</p>
-        <p><strong>Amount:</strong> {getTransferAmount()} points</p>
-        <p><strong>Recipient:</strong> {foundReceiver?.name} ({foundReceiver?.utorid})</p>
-        {remark && <p><strong>Remark:</strong> {remark}</p>}
-      </TransferInfo>
-      
-      <Button 
-        onClick={handleClose}
-        style={{ marginTop: theme.spacing.lg }}
-      >
-        Close
-      </Button>
-    </TransferSuccessContainer>
-  );
-  
   return (
     <Modal 
       isOpen={isOpen} 
       onClose={handleClose}
-      title={step === 3 ? "Transfer Complete" : "Transfer Points"}
+      title={"Transfer Points"} // Simplified title
       size="medium"
     >
       {step === 1 && renderStep1()}
       {step === 2 && renderStep2()}
-      {step === 3 && renderStep3()}
     </Modal>
   );
 };

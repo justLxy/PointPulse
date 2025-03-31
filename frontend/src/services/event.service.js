@@ -37,8 +37,17 @@ const EventService = {
   // Get all events (Regular+)
   getEvents: async (params = {}) => {
     try {
-      // 添加includeUnpublished参数，确保组织者能看到自己负责的未发布活动
-      const apiParams = { ...params, includeMyOrganizedEvents: true };
+      // 创建新的参数对象，默认包含用户组织的活动
+      const apiParams = { ...params };
+      
+      // 如果 organizing 参数为 true，则明确请求只返回用户组织的活动
+      if (apiParams.organizing) {
+        apiParams.organizing = true;
+      } else {
+        // 如果不是专门过滤组织的活动，但仍然希望包含组织的活动在结果中
+        apiParams.includeMyOrganizedEvents = true;
+      }
+      
       const response = await api.get('/events', { params: apiParams });
       return response.data;
     } catch (error) {

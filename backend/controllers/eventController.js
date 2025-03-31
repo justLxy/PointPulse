@@ -98,7 +98,10 @@ const getEvents = async (req, res) => {
             location: req.query.location,
             started: req.query.started,
             ended: req.query.ended,
-            showFull: req.query.showFull === 'true' ? 'true' : undefined
+            showFull: req.query.showFull === 'true' ? 'true' : undefined,
+            userId: req.auth.id,
+            organizing: req.query.organizing === 'true' ? 'true' : undefined,
+            attending: req.query.attending === 'true' ? 'true' : undefined
         };
         
         console.log('Initial filters:', JSON.stringify(filters, null, 2));
@@ -116,10 +119,7 @@ const getEvents = async (req, res) => {
         const includeMyOrganizedEvents = req.query.includeMyOrganizedEvents === 'true';
         console.log('Include my organized events:', includeMyOrganizedEvents);
         
-        if (includeMyOrganizedEvents) {
-            filters.userId = req.auth.id; // 用于查找用户是组织者的活动
-            console.log('Added filter for user organized events, userId:', req.auth.id);
-        }
+        // Note: userId is now always passed in filters object
 
         // Check for conflicting parameters
         if (filters.started === 'true' && filters.ended === 'true') {
@@ -135,11 +135,11 @@ const getEvents = async (req, res) => {
         try {
             console.log('Calling eventService.getEvents with filters:', JSON.stringify(filters, null, 2));
             const result = await eventService.getEvents(
-                filters,
-                isManager,
-                page,
-                limit,
-                includeMyOrganizedEvents
+                filters, 
+                isManager, 
+                page, 
+                limit, 
+                includeMyOrganizedEvents // This might be redundant now but keep for consistency
             );
             
             console.log('Events retrieved successfully. Count:', result.count);

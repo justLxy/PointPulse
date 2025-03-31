@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useEvents } from '../../hooks/useEvents';
 import { useAuth } from '../../contexts/AuthContext';
 import EventFilters from '../../components/events/EventFilters';
@@ -82,7 +82,9 @@ const Events = () => {
       } else if (filters.status === 'past') {
         apiParams.ended = true;
       } else if (filters.status === 'attending') {
-        apiParams.attending = true;
+        apiParams.attending = true; // Send attending=true to backend
+      } else if (filters.status === 'organizing') {
+        apiParams.organizing = true; // Send organizing=true to backend
       }
     }
     
@@ -95,12 +97,15 @@ const Events = () => {
       }
     }
     
-    // Add capacity filter
+    // Add capacity filter (showFull parameter)
     if (filters.capacityStatus === 'available') {
       apiParams.showFull = false;
-    } else {
+    } else { // 'all'
       apiParams.showFull = true;
     }
+    
+    // includeMyOrganizedEvents is likely redundant now backend handles organizing param, but harmless to keep
+    // apiParams.includeMyOrganizedEvents = true; 
     
     return apiParams;
   };
@@ -122,9 +127,9 @@ const Events = () => {
     isCancellingRsvp 
   } = useEvents(getApiParams());
   
-  // Calculate pagination values
+  // Calculate pagination values based on API results
   const startIndex = (filters.page - 1) * filters.limit + 1;
-  const endIndex = Math.min(startIndex + filters.limit - 1, totalCount);
+  const endIndex = Math.min(startIndex + (events?.length || 0) - 1, totalCount);
   const totalPages = Math.ceil(totalCount / filters.limit);
   
   // Format date for display
@@ -400,7 +405,7 @@ const Events = () => {
         formatTime={formatTime}
         getEventCardDate={getEventCardDate}
         getEventStatus={getEventStatus}
-        isRsvpd={isRsvpd}
+        isRsvpd={(event) => !!event.isAttending}
         handleEditEvent={handleEditEvent}
         handleDeleteEventClick={handleDeleteEventClick}
         handleRsvpClick={handleRsvpClick}
@@ -452,7 +457,7 @@ const Events = () => {
           setSelectedEvent(null);
         }}
         selectedEvent={selectedEvent}
-        isRsvpd={isRsvpd}
+        isRsvpd={(event) => !!(event && event.isAttending)}
         handleRsvp={handleRsvp}
         handleCancelRsvp={handleCancelRsvp}
         isRsvping={isRsvping}

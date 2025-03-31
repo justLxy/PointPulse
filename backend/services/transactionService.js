@@ -537,7 +537,7 @@ const processRedemption = async (transactionId, processorId) => {
 /**
  * Create a transfer transaction
  */
-const createTransfer = async (data, senderId, recipientId) => {
+const createTransfer = async (data, senderId, recipientUtorid) => {
     const { type, amount, remark } = data;
 
     if (type !== 'transfer') {
@@ -573,9 +573,9 @@ const createTransfer = async (data, senderId, recipientId) => {
         throw new Error('Insufficient points');
     }
 
-    // Find the recipient
+    // Find the recipient using UTORid
     const recipient = await prisma.user.findUnique({
-        where: { id: parseInt(recipientId) },
+        where: { utorid: recipientUtorid },
         select: {
             id: true,
             utorid: true
@@ -586,6 +586,11 @@ const createTransfer = async (data, senderId, recipientId) => {
         throw new Error('Recipient not found');
     }
     
+    // Check if sender and recipient are the same
+    if (sender.id === recipient.id) {
+      throw new Error('Cannot transfer points to yourself');
+    }
+
     // Begin transaction
     return prisma.$transaction(async (tx) => {
         // Create the sender's transaction (negative amount)
@@ -753,6 +758,7 @@ const getTransactions = async (filters = {}, page = 1, limit = 10) => {
             suspicious: tx.suspicious,
             remark: tx.remark,
             createdBy: tx.creator.utorid,
+            createdAt: tx.createdAt.toISOString(),
             promotionIds: tx.promotions.map(p => p.promotionId)
         };
 
@@ -810,6 +816,7 @@ const getTransaction = async (transactionId) => {
         suspicious: transaction.suspicious,
         remark: transaction.remark,
         createdBy: transaction.creator.utorid,
+        createdAt: transaction.createdAt.toISOString(),
         promotionIds: transaction.promotions.map(p => p.promotionId)
     };
 
@@ -943,6 +950,7 @@ const updateTransactionSuspicious = async (transactionId, suspiciousStatus) => {
             suspicious: fullUpdatedTransaction.suspicious,
             remark: fullUpdatedTransaction.remark,
             createdBy: fullUpdatedTransaction.creator.utorid,
+            createdAt: fullUpdatedTransaction.createdAt.toISOString(),
             promotionIds: fullUpdatedTransaction.promotions.map(p => p.promotionId),
             ...(fullUpdatedTransaction.spent && { spent: fullUpdatedTransaction.spent }),
             ...(fullUpdatedTransaction.relatedId && { relatedId: fullUpdatedTransaction.relatedId }),
@@ -1044,7 +1052,7 @@ const getUserTransactions = async (userId, filters = {}, page = 1, limit = 10) =
             remark: tx.remark,
             createdBy: tx.creator.utorid,
             promotionIds: tx.promotions.map(p => p.promotionId),
-            createdAt: tx.createdAt
+            createdAt: tx.createdAt.toISOString()
         };
 
         // Add transaction-specific fields

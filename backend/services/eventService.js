@@ -165,7 +165,7 @@ const createEvent = async (eventData) => {
  */
 const getEvents = async (filters = {}, isManager = false, page = 1, limit = 10, includeOrganizedEvents = false) => {
     try {
-        const { name, location, started, ended, showFull, published, userId } = filters;
+        const { name, location, started, ended, showFull, published, userId, organizing, attending } = filters;
         const parsedPage = parseInt(page);
         const parsedLimit = parseInt(limit);
 
@@ -184,32 +184,52 @@ const getEvents = async (filters = {}, isManager = false, page = 1, limit = 10, 
         // Build where clause
         let where = {};
 
-        // Handle published filter based on user role and request params
-        if (!isManager) {
-            // 默认非管理员只能看到已发布活动
+        // Handle organizing and attending filters FIRST if present
+        if (organizing === 'true' && userId) {
+            where.organizers = {
+                some: {
+                    id: parseInt(userId)
+                }
+            };
+            // Organizer can see unpublished events they organize
+            where.published = undefined; // Override default published filter
+        } else if (attending === 'true' && userId) {
+            where.guests = {
+                some: {
+                    id: parseInt(userId)
+                }
+            };
+            // Guests can only see published events
             where.published = true;
-            
-            // 但是如果请求包含查看自己组织的活动，则添加OR条件
-            if (includeOrganizedEvents && userId) {
-                where = {
-                    OR: [
-                        { published: true },
-                        {
-                            published: false,
-                            organizers: {
-                                some: {
-                                    id: parseInt(userId)
+        } else {
+            // Default: Handle published filter based on user role and request params
+            if (!isManager) {
+                // Regular users normally only see published events
+                where.published = true;
+                
+                // BUT, if includeOrganizedEvents is true, also show unpublished events they organize
+                if (includeOrganizedEvents && userId) {
+                    where = {
+                        OR: [
+                            { published: true },
+                            {
+                                published: false,
+                                organizers: {
+                                    some: {
+                                        id: parseInt(userId)
+                                    }
                                 }
                             }
-                        }
-                    ]
-                };
+                        ]
+                    };
+                }
+            } else if (published !== undefined) {
+                // Managers can filter by published status explicitly
+                where.published = published === 'true';
             }
-        } else if (published !== undefined) {
-            // 管理员可以根据参数筛选已发布或未发布活动
-            where.published = published === 'true';
         }
 
+        // Apply other filters on top
         if (name) {
             where = {
                 ...where,
@@ -300,7 +320,7 @@ const getEvents = async (filters = {}, isManager = false, page = 1, limit = 10, 
         const endIndex = startIndex + parsedLimit;
         const paginatedEvents = filteredEvents.slice(startIndex, endIndex);
 
-        // Format events for response
+        // Format events for response, including isAttending and isOrganizer flags
         const results = paginatedEvents.map(event => {
             const formattedEvent = {
                 id: event.id,
@@ -310,8 +330,9 @@ const getEvents = async (filters = {}, isManager = false, page = 1, limit = 10, 
                 endTime: event.endTime.toISOString(),
                 capacity: event.capacity,
                 numGuests: event.guests.length,
-                published: event.published, // 添加published字段以便前端区分
-                isOrganizer: userId ? event.organizers.some(org => org.id === parseInt(userId)) : false // 添加isOrganizer字段
+                published: event.published,
+                isOrganizer: userId ? event.organizers.some(org => org.id === parseInt(userId)) : false,
+                isAttending: userId ? event.guests.some(guest => guest.id === parseInt(userId)) : false // Add isAttending
             };
 
             // Add manager-specific fields

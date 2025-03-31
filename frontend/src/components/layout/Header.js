@@ -279,7 +279,10 @@ const RoleDropdownToggle = styled.button`
 const RoleDropdownMenu = styled.div`
   position: absolute;
   top: 100%;
-  right: 0;
+  left: 50%;
+  transform: ${({ isOpen }) => (isOpen 
+    ? 'translateX(-50%) translateY(0)' 
+    : 'translateX(-50%) translateY(-10px)')};
   margin-top: ${theme.spacing.xs};
   background-color: ${theme.colors.background.paper};
   border-radius: ${theme.radius.md};
@@ -288,9 +291,6 @@ const RoleDropdownMenu = styled.div`
   z-index: ${theme.zIndex.dropdown};
   opacity: ${({ isOpen }) => (isOpen ? 1 : 0)};
   visibility: ${({ isOpen }) => (isOpen ? 'visible' : 'hidden')};
-  transform: ${({ isOpen }) => (isOpen 
-    ? 'translateY(0)' 
-    : 'translateY(-10px)')};
   transition: 
     opacity 0.2s ease, 
     visibility 0.2s ease, 

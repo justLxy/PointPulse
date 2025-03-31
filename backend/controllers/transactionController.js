@@ -643,77 +643,127 @@ const processRedemption = async (req, res) => {
  * Create a transfer transaction between users
  */
 const createTransfer = async (req, res) => {
+    console.log('\n\n===== CREATE TRANSFER REQUEST START =====');
+    console.log('Time:', new Date().toISOString());
+    console.log('URL:', req.originalUrl);
+    console.log('Method:', req.method);
+    console.log('Params:', JSON.stringify(req.params, null, 2));
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+    console.log('Auth user:', JSON.stringify(req.auth, null, 2));
+    
     try {
         // Check for empty payload
         if (!req.body || Object.keys(req.body).length === 0) {
+            console.log('No transaction data provided');
+            console.log('===== CREATE TRANSFER REQUEST END (400) =====\n\n');
             return res.status(400).json({ error: 'No transaction data provided' });
         }
 
         const senderId = req.auth.id;
-        const recipientId = parseInt(req.params.userId);
+        // The userId parameter in the route actually represents the UTORid of the recipient
+        const recipientUtorid = req.params.userId; 
+        console.log('Sender ID:', senderId);
+        console.log('Recipient UTORid:', recipientUtorid);
         
-        if (isNaN(recipientId) || recipientId <= 0) {
-            return res.status(400).json({ error: 'Invalid recipient ID' });
+        // Basic validation for recipientUtorid
+        if (!recipientUtorid || typeof recipientUtorid !== 'string' || recipientUtorid.trim() === '') {
+            console.log('Invalid recipient UTORid provided in URL parameter');
+            console.log('===== CREATE TRANSFER REQUEST END (400) =====\n\n');
+            return res.status(400).json({ error: 'Invalid recipient UTORid in URL' });
         }
         
         const { type, amount, remark } = req.body;
+        console.log('Request body parsed:', { type, amount, remark });
 
         if (type !== 'transfer') {
+            console.log('Invalid transaction type:', type);
+            console.log('===== CREATE TRANSFER REQUEST END (400) =====\n\n');
             return res.status(400).json({ error: 'Transaction type must be "transfer"' });
         }
 
         if (!amount || isNaN(amount) || amount <= 0) {
+            console.log('Invalid amount:', amount);
+            console.log('===== CREATE TRANSFER REQUEST END (400) =====\n\n');
             return res.status(400).json({ error: 'Amount must be a positive number' });
         }
 
-        // Check if sender is verified
+        // Check if sender is verified (redundant check as service layer does it, but good for early exit)
+        console.log('Fetching sender details for verification check');
         const sender = await prisma.user.findUnique({
             where: { id: senderId },
-            select: { verified: true, points: true }
+            select: { verified: true, points: true, utorid: true }
         });
 
         if (!sender) {
+            console.log('Sender not found, ID:', senderId);
+            console.log('===== CREATE TRANSFER REQUEST END (404) =====\n\n');
             return res.status(404).json({ error: 'Sender not found' });
         }
+        console.log('Sender found:', sender.utorid, 'Verified:', sender.verified, 'Points:', sender.points);
 
         if (!sender.verified) {
+            console.log('Sender is not verified');
+            console.log('===== CREATE TRANSFER REQUEST END (403) =====\n\n');
             return res.status(403).json({ error: 'User is not verified' });
         }
 
-        // Check if sender has enough points
+        // Check if sender has enough points (redundant check, service layer does it)
         if (sender.points < amount) {
+            console.log('Insufficient points. Sender has:', sender.points, 'Amount needed:', amount);
+            console.log('===== CREATE TRANSFER REQUEST END (400) =====\n\n');
             return res.status(400).json({ error: 'Insufficient points' });
         }
         
-        // Check if recipient exists and is active
-        const recipient = await prisma.user.findUnique({
-            where: { id: recipientId }
-        });
-        
-        if (!recipient) {
-            return res.status(404).json({ error: 'Recipient not found' });
+        // Prevent self-transfer (redundant check, service layer does it)
+        if (sender.utorid === recipientUtorid) {
+            console.log('Attempting self-transfer');
+            console.log('===== CREATE TRANSFER REQUEST END (400) =====\n\n');
+            return res.status(400).json({ error: 'Cannot transfer points to yourself' });
         }
 
         try {
+            console.log('Calling transactionService.createTransfer');
             const result = await transactionService.createTransfer(
-                { type, amount, remark },
+                req.body, // Contains type, amount, remark
                 senderId,
-                recipientId
+                recipientUtorid // Pass the UTORid from the URL
             );
-
+            console.log('Transfer successful:', JSON.stringify(result, null, 2));
+            console.log('===== CREATE TRANSFER REQUEST END (201) =====\n\n');
             return res.status(201).json(result);
         } catch (error) {
+            console.log('Error during transfer service call:', error.message);
+            console.log('Error stack:', error.stack);
+            
+            // Handle specific errors from the service layer
             if (error.message === 'Recipient not found') {
+                console.log('===== CREATE TRANSFER REQUEST END (404) =====\n\n');
                 return res.status(404).json({ error: 'Recipient not found' });
             }
             if (error.message === 'Insufficient points') {
+                console.log('===== CREATE TRANSFER REQUEST END (400) =====\n\n');
                 return res.status(400).json({ error: 'Insufficient points' });
             }
-            throw error;
+            if (error.message === 'Sender is not verified') {
+                console.log('===== CREATE TRANSFER REQUEST END (403) =====\n\n');
+                return res.status(403).json({ error: 'User is not verified' });
+            }
+             if (error.message === 'Cannot transfer points to yourself') {
+                console.log('===== CREATE TRANSFER REQUEST END (400) =====\n\n');
+                return res.status(400).json({ error: 'Cannot transfer points to yourself' });
+            }
+            // Add other specific errors if needed
+            
+            console.log('Unknown error during transfer service');
+            console.log('===== CREATE TRANSFER REQUEST END (500) =====\n\n');
+            // Generic error for unexpected issues
+            return res.status(500).json({ error: 'Failed to transfer points' });
         }
     } catch (error) {
-        console.error('Error creating transfer:', error);
-        res.status(400).json({ error: error.message });
+        console.error('Unexpected error in createTransfer controller:', error);
+        console.log('Error stack:', error.stack);
+        console.log('===== CREATE TRANSFER REQUEST END (500) =====\n\n');
+        res.status(500).json({ error: 'Failed to transfer points due to an unexpected error' });
     }
 };
 

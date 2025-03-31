@@ -136,6 +136,7 @@ const EventFilters = ({
               <option value="ongoing">Ongoing Events</option>
               <option value="past">Past Events</option>
               <option value="attending">My RSVPs</option>
+              <option value="organizing">My Organized Events</option>
             </EnhancedSelect>
           </FilterInput>
           

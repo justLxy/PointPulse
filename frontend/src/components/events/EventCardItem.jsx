@@ -145,7 +145,7 @@ const EventCardItem = ({
               
               {isUserRsvpd && <Badge color="info">RSVP'd</Badge>}
               
-              {isManager && event.isOrganizer && (
+              {event.isOrganizer && (
                 <Badge color="primary">Organizer</Badge>
               )}
               

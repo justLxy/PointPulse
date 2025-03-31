@@ -213,25 +213,12 @@ const Users = () => {
   const isSuperuser = currentUser?.role === 'superuser';
   const isManager = currentUser?.role === 'manager' || currentUser?.role === 'superuser';
   
-  // API and state
-  const {
-    users,
-    totalCount,
-    isLoading,
-    error,
-    refetch,
-    createUser,
-    updateUser,
-    isCreatingUser,
-    isUpdatingUser,
-  } = useUsers();
-  
   // State for filters and modals
   const [filters, setFilters] = useState({
     search: '',
     role: '',
     verified: '',
-    suspicious: '',
+    active: '',
     page: 1,
     limit: 10,
   });
@@ -295,12 +282,23 @@ const Users = () => {
     return apiParams;
   };
 
-  const { users: filteredUsers, totalCount: filteredTotalCount, isLoading: filteredIsLoading, createUser: filteredCreateUser, isCreatingUser: filteredIsCreatingUser, updateUser: filteredUpdateUser, isUpdatingUser: filteredIsUpdatingUser, refetch: filteredRefetch } = useUsers(getApiParams());
+  // Call useUsers hook ONCE with the generated API parameters
+  const { 
+    users, 
+    totalCount, 
+    isLoading, 
+    error, 
+    refetch, 
+    createUser, 
+    updateUser, 
+    isCreatingUser, 
+    isUpdatingUser 
+  } = useUsers(getApiParams()); 
   
   // 打印数据用于调试
   React.useEffect(() => {
-    console.log('Users data:', { users: filteredUsers, totalCount: filteredTotalCount });
-  }, [filteredUsers, filteredTotalCount]);
+    console.log('Users data:', { users, totalCount });
+  }, [users, totalCount]);
   
   // Handle filter changes
   const handleFilterChange = (key, value) => {
@@ -424,7 +422,7 @@ const Users = () => {
         onCreateClick={() => setCreateModalOpen(true)}
       />
       
-      {/* User List Component */}
+      {/* User List Component - Pass data from the single useUsers call */}
       <UserList
         users={users}
         totalCount={totalCount}
