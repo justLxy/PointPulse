@@ -395,6 +395,7 @@ const CreateAdjustment = () => {
       
       const adjustmentData = {
         utorid: selectedUser.utorid,
+        type: "adjustment", // Ensure type is explicitly set
         amount: Number(adjustmentAmount),
         relatedId: selectedTransaction.id,
         remark: remark || '',
@@ -402,15 +403,19 @@ const CreateAdjustment = () => {
       
       const result = await TransactionService.createAdjustment(adjustmentData);
       
-      // Clear cache to ensure fresh data on next visit
+      // Clear cache for transactions and the current user
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['userTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['user', 'me'] }); // Invalidate current user data
       
       setCreatedTransaction(result);
       setIsSuccess(true);
     } catch (error) {
       console.error('Error creating adjustment:', error);
-      setError(error.message || 'Failed to create adjustment transaction');
+      // Display specific backend error message if available
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to create adjustment transaction';
+      setError(errorMessage);
+      toast.error(errorMessage); // Show error toast
     } finally {
       setIsLoading(false);
     }

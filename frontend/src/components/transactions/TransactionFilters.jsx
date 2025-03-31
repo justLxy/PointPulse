@@ -3,7 +3,9 @@ import styled from '@emotion/styled';
 import Input from '../common/Input';
 import Select from '../common/Select';
 import theme from '../../styles/theme';
-import { FaSearch } from 'react-icons/fa';
+import { FaSearch, FaPlus } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
+import Button from '../common/Button';
 
 const PageHeader = styled.div`
   display: flex;
@@ -23,6 +25,30 @@ const PageTitle = styled.h1`
   font-weight: ${theme.typography.fontWeights.bold};
   color: ${theme.colors.text.primary};
   margin: 0;
+`;
+
+const PageActions = styled.div`
+  display: flex;
+  gap: ${theme.spacing.md};
+`;
+
+const CreateButton = styled(Button)`
+  background: linear-gradient(135deg, ${theme.colors.primary.main}, ${theme.colors.primary.dark});
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: ${theme.shadows.md};
+  }
+  
+  svg {
+    margin-right: ${theme.spacing.xs};
+  }
+  
+  @media (max-width: 768px) {
+    width: 100%;
+    margin-top: ${theme.spacing.md};
+  }
 `;
 
 const FilterContainer = styled.div`
@@ -96,6 +122,13 @@ const TransactionFilters = ({
     <>
       <PageHeader>
         <PageTitle>{title}</PageTitle>
+        {isManager && (
+          <PageActions>
+            <CreateButton as={Link} to="/transactions/adjustment">
+              <FaPlus /> Create Adjustment
+            </CreateButton>
+          </PageActions>
+        )}
       </PageHeader>
       
       <FilterContainer>
