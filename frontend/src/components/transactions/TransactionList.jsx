@@ -57,6 +57,11 @@ const Pagination = styled.div`
 const PageInfo = styled.div`
   color: ${theme.colors.text.secondary};
   font-size: ${theme.typography.fontSize.sm};
+  
+  @media (max-width: 768px) {
+    text-align: center;
+    width: 100%;
+  }
 `;
 
 const EmptyState = styled(Card)`
@@ -160,11 +165,16 @@ const TransactionList = ({
             variant="outlined"
             onClick={() => handleFilterChange('page', Math.max(1, filters.page - 1))}
             disabled={filters.page === 1}
+            style={{ minWidth: '80px' }}
           >
             <FaChevronLeft /> Previous
           </Button>
           
-          <PageInfo>
+          <PageInfo style={{ 
+            minWidth: '100px', 
+            textAlign: 'center', 
+            whiteSpace: 'nowrap' 
+          }}>
             Page {filters.page} of {totalPages > 0 ? totalPages : 1}
           </PageInfo>
           
@@ -173,6 +183,7 @@ const TransactionList = ({
             variant="outlined"
             onClick={() => handleFilterChange('page', filters.page + 1)}
             disabled={filters.page >= totalPages}
+            style={{ minWidth: '80px' }}
           >
             Next <FaChevronRight />
           </Button>

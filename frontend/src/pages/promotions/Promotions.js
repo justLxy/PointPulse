@@ -33,17 +33,38 @@ const PageControls = styled.div`
   align-items: center;
   margin-top: ${theme.spacing.xl};
   margin-bottom: ${theme.spacing.md};
+  
+  @media (max-width: 640px) {
+    flex-direction: column;
+    gap: ${theme.spacing.md};
+  }
 `;
 
 const Pagination = styled.div`
   display: flex;
   align-items: center;
   gap: ${theme.spacing.md};
+  
+  @media (max-width: 640px) {
+    width: 100%;
+    justify-content: center;
+  }
 `;
 
 const PageInfo = styled.div`
   color: ${theme.colors.text.secondary};
   font-size: ${theme.typography.fontSize.sm};
+  
+  @media (max-width: 640px) {
+    text-align: center;
+    width: 100%;
+  }
+`;
+
+const ShowingInfo = styled(PageInfo)`
+  @media (max-width: 640px) {
+    margin-bottom: ${theme.spacing.sm};
+  }
 `;
 
 const EmptyState = styled.div`
@@ -331,9 +352,9 @@ const Promotions = () => {
           />
           
           <PageControls>
-            <PageInfo>
+            <ShowingInfo>
               Showing {startIndex} to {endIndex} of {totalCount} promotions
-            </PageInfo>
+            </ShowingInfo>
             
             <Pagination>
               <Button
@@ -341,11 +362,16 @@ const Promotions = () => {
                 variant="outlined"
                 onClick={() => handleFilterChange('page', filters.page - 1)}
                 disabled={filters.page === 1}
+                style={{ minWidth: '80px' }}
               >
                 Previous
               </Button>
               
-              <PageInfo>
+              <PageInfo style={{ 
+                minWidth: '100px', 
+                textAlign: 'center', 
+                whiteSpace: 'nowrap' 
+              }}>
                 Page {filters.page} of {totalPages || 1}
               </PageInfo>
               
@@ -354,6 +380,7 @@ const Promotions = () => {
                 variant="outlined"
                 onClick={() => handleFilterChange('page', Math.min(totalPages, filters.page + 1))}
                 disabled={filters.page >= totalPages}
+                style={{ minWidth: '80px' }}
               >
                 Next
               </Button>

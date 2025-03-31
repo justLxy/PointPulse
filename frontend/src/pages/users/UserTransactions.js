@@ -50,17 +50,33 @@ const PageControls = styled.div`
   align-items: center;
   margin-top: ${theme.spacing.xl};
   margin-bottom: ${theme.spacing.md};
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: ${theme.spacing.md};
+    align-items: flex-start;
+  }
 `;
 
 const Pagination = styled.div`
   display: flex;
   align-items: center;
   gap: ${theme.spacing.md};
+  
+  @media (max-width: 768px) {
+    width: 100%;
+    justify-content: center;
+  }
 `;
 
 const PageInfo = styled.div`
   color: ${theme.colors.text.secondary};
   font-size: ${theme.typography.fontSize.sm};
+  
+  @media (max-width: 768px) {
+    text-align: center;
+    width: 100%;
+  }
 `;
 
 const TableHeader = styled.div`
@@ -395,11 +411,16 @@ const UserTransactions = () => {
               variant="outlined"
               onClick={() => handleFilterChange('page', filters.page - 1)}
               disabled={filters.page === 1}
+              style={{ minWidth: '80px' }}
             >
               <FaChevronLeft /> Previous
             </Button>
             
-            <PageInfo>
+            <PageInfo style={{ 
+              minWidth: '100px', 
+              textAlign: 'center', 
+              whiteSpace: 'nowrap' 
+            }}>
               Page {filters.page} of {totalPages}
             </PageInfo>
             
@@ -408,6 +429,7 @@ const UserTransactions = () => {
               variant="outlined"
               onClick={() => handleFilterChange('page', filters.page + 1)}
               disabled={filters.page === totalPages}
+              style={{ minWidth: '80px' }}
             >
               Next <FaChevronRight />
             </Button>
