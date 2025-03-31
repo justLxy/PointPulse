@@ -134,21 +134,40 @@ const ActionButtons = styled.div`
   }
 `;
 
+const TransactionDetails = styled.div`
+  @media (max-width: 768px) {
+    margin-bottom: ${theme.spacing.sm};
+  }
+`;
+
+const InfoLabel = styled.span`
+  color: ${theme.colors.text.secondary};
+  font-size: ${theme.typography.fontSize.sm};
+  margin-right: ${theme.spacing.xs};
+  
+  @media (max-width: 768px) {
+    display: block;
+    margin-bottom: ${theme.spacing.xs};
+  }
+`;
+
 const TransactionItem = ({ 
   transaction, 
   getTransactionIcon, 
-  getRelatedDescription, 
+  getTransactionDetailsLabel,
   isSuperuser,
   isManager,
   handleViewTransaction, 
   handleMarkAsSuspiciousClick, 
-  handleApproveTransactionClick 
+  handleApproveTransactionClick,
+  formatDate,
+  formatTime
 }) => {
   // Check if transaction exists
   if (!transaction) return null;
   
   // For formatting positive/negative amounts
-  const isPositive = ['purchase', 'transfer_in', 'adjustment_add', 'event'].includes(transaction.type);
+  const isPositive = transaction.amount > 0;
   
   // Display transaction type in more user-friendly format
   const formatTransactionType = (type) => {
@@ -170,7 +189,7 @@ const TransactionItem = ({
       <TransactionInfo>
         <div>
           <MobileLabel>ID:</MobileLabel>
-          <TransactionId>{transaction.id}</TransactionId>
+          <TransactionId>Transaction #{transaction.id}</TransactionId>
           <TransactionType>{formatTransactionType(transaction.type)}</TransactionType>
         </div>
         {transaction.suspicious && (
@@ -187,13 +206,19 @@ const TransactionItem = ({
         )}
       </TransactionInfo>
       
-      <TransactionUser>
-        <MobileLabel>User:</MobileLabel>
-        <div>{transaction.userName || transaction.userEmail || transaction.utorid || 'Unknown User'}</div>
-        <div style={{ fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary }}>
-          {getRelatedDescription(transaction)}
+      <TransactionDetails>
+        <MobileLabel>Details:</MobileLabel>
+        <div>
+          <div style={{ fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary }}>
+            {getTransactionDetailsLabel(transaction)}
+          </div>
+          {transaction.createdAt && (
+            <div style={{ fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary }}>
+              <InfoLabel>Date:</InfoLabel> {formatDate(transaction.createdAt)} at {formatTime(transaction.createdAt)}
+            </div>
+          )}
         </div>
-      </TransactionUser>
+      </TransactionDetails>
       
       <TransactionAmount positive={isPositive}>
         <MobileLabel>Amount:</MobileLabel>

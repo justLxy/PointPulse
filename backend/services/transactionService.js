@@ -748,32 +748,49 @@ const getTransactions = async (filters = {}, page = 1, limit = 10) => {
         },
     });
 
-    // Format the transactions for response
-    const results = transactions.map(tx => {
+    // Map transactions to include related user info for transfers
+    const results = await Promise.all(transactions.map(async (transaction) => {
         const formattedTx = {
-            id: tx.id,
-            utorid: tx.user.utorid,
-            amount: tx.amount,
-            type: tx.type,
-            suspicious: tx.suspicious,
-            remark: tx.remark,
-            createdBy: tx.creator.utorid,
-            createdAt: tx.createdAt.toISOString(),
-            promotionIds: tx.promotions.map(p => p.promotionId)
+            id: transaction.id,
+            userName: transaction.user.name,
+            userEmail: transaction.user.email,
+            utorid: transaction.user.utorid,
+            type: transaction.type,
+            amount: transaction.amount,
+            suspicious: transaction.suspicious,
+            remark: transaction.remark,
+            createdBy: transaction.creator.utorid,
+            createdAt: transaction.createdAt.toISOString(),
+            promotionIds: transaction.promotions.map(p => p.promotionId)
         };
+        
+        // Fetch related user details for transfers if relatedId exists
+        if ((transaction.type === 'transfer' || transaction.type === 'transfer_in' || transaction.type === 'transfer_out') && transaction.relatedId) {
+            const relatedUser = await prisma.user.findUnique({
+                where: { id: transaction.relatedId },
+                select: { utorid: true, name: true, email: true } 
+            });
+            if (relatedUser) {
+                formattedTx.relatedUser = {
+                    utorid: relatedUser.utorid,
+                    name: relatedUser.name,
+                    email: relatedUser.email
+                };
+            }
+        }
 
         // Add transaction-specific fields
-        if (tx.type === 'purchase') {
-            formattedTx.spent = tx.spent;
-        } else if (tx.type === 'redemption') {
-            formattedTx.redeemed = tx.redeemed;
-            formattedTx.relatedId = tx.relatedId;
-        } else if (tx.type === 'adjustment' || tx.type === 'transfer' || tx.type === 'event') {
-            formattedTx.relatedId = tx.relatedId;
+        if (transaction.type === 'purchase') {
+            formattedTx.spent = transaction.spent;
+        } else if (transaction.type === 'redemption') {
+            formattedTx.redeemed = transaction.redeemed;
+            formattedTx.relatedId = transaction.relatedId;
+        } else if (transaction.type === 'adjustment' || transaction.type === 'event') {
+            formattedTx.relatedId = transaction.relatedId;
         }
 
         return formattedTx;
-    });
+    }));
 
     return { count, results };
 };

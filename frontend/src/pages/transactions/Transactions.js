@@ -90,28 +90,36 @@ const Transactions = () => {
   };
   
   // Get description for related entity
-  const getRelatedDescription = (transaction) => {
-    if (transaction.type === 'purchase' && transaction.relatedPromotion) {
-      return `${transaction.relatedPromotion.name || 'Promotion'}`;
-    }
-    
-    if (transaction.type === 'redemption' && transaction.relatedPromotion) {
-      return `${transaction.relatedPromotion.name || 'Redemption'}`;
-    }
-    
+  const getTransactionDetailsLabel = (transaction) => {
     if (transaction.type.includes('transfer')) {
-      return `${transaction.type === 'transfer_in' ? 'From' : 'To'}: ${transaction.relatedUser?.name || transaction.relatedUser?.email || 'Unknown User'}`;
+      console.log('Inspecting transfer transaction:', transaction);
     }
-    
-    if (transaction.type.includes('adjustment')) {
-      return transaction.note || (transaction.type === 'adjustment_add' ? 'Points added' : 'Points removed');
+    switch(transaction.type) {
+      case 'purchase':
+        return transaction.relatedPromotion 
+          ? `Promotion: ${transaction.relatedPromotion.name || 'Applied'}` 
+          : `Purchase - $${transaction.spent?.toFixed(2) || '0.00'}`;
+      case 'redemption':
+        const status = transaction.processedBy ? 'Completed' : 'Pending';
+        return `Redemption - ${status}`;
+      case 'transfer': 
+        if (transaction.amount < 0) {
+          return `Transfer to: ${transaction.relatedUser?.name || transaction.relatedUser?.utorid || 'Unknown User'}`;
+        } else {
+          return `Transfer from: ${transaction.relatedUser?.name || transaction.relatedUser?.utorid || 'Unknown User'}`;
+        }
+      case 'transfer_in':
+        return `Transfer from: ${transaction.relatedUser?.name || transaction.relatedUser?.utorid || 'Unknown User'}`;
+      case 'transfer_out':
+        return `Transfer to: ${transaction.relatedUser?.name || transaction.relatedUser?.utorid || 'Unknown User'}`;
+      case 'adjustment_add':
+      case 'adjustment_remove':
+        return transaction.note || (transaction.type === 'adjustment_add' ? 'Points Added' : 'Points Removed');
+      case 'event':
+        return `Event Reward: ${transaction.relatedEvent?.name || 'Event'}`;
+      default:
+        return transaction.description || '';
     }
-    
-    if (transaction.type === 'event' && transaction.relatedEvent) {
-      return `Event: ${transaction.relatedEvent.name || 'Unknown Event'}`;
-    }
-    
-    return transaction.description || '';
   };
   
   // Handle view transaction details
@@ -198,12 +206,14 @@ const Transactions = () => {
         filters={filters}
         handleFilterChange={handleFilterChange}
         getTransactionIcon={getTransactionIcon}
-        getRelatedDescription={getRelatedDescription}
+        getTransactionDetailsLabel={getTransactionDetailsLabel}
         isSuperuser={isSuperuser}
         isManager={isManager}
         handleViewTransaction={handleViewTransaction}
         handleMarkAsSuspiciousClick={handleMarkAsSuspiciousClick}
         handleApproveTransactionClick={handleApproveTransactionClick}
+        formatDate={formatDate}
+        formatTime={formatTime}
       />
       
       {/* Modals */}

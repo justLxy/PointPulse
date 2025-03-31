@@ -94,12 +94,14 @@ const TransactionList = ({
   filters,
   handleFilterChange,
   getTransactionIcon,
-  getRelatedDescription,
+  getTransactionDetailsLabel,
   isSuperuser,
   isManager,
   handleViewTransaction,
   handleMarkAsSuspiciousClick,
-  handleApproveTransactionClick
+  handleApproveTransactionClick,
+  formatDate,
+  formatTime
 }) => {
   if (isLoading) {
     return <LoadingSpinner text="Loading transactions..." />;
@@ -123,8 +125,8 @@ const TransactionList = ({
         <Card.Body>
           <TableHeader>
             <div>Type</div>
-            <div>ID</div>
-            <div>User</div>
+            <div>Transaction</div>
+            <div>Details</div>
             <div>Amount</div>
             <div>Actions</div>
           </TableHeader>
@@ -134,12 +136,14 @@ const TransactionList = ({
               key={transaction.id}
               transaction={transaction}
               getTransactionIcon={getTransactionIcon}
-              getRelatedDescription={getRelatedDescription}
+              getTransactionDetailsLabel={getTransactionDetailsLabel}
               isSuperuser={isSuperuser}
               isManager={isManager}
               handleViewTransaction={handleViewTransaction}
               handleMarkAsSuspiciousClick={handleMarkAsSuspiciousClick}
               handleApproveTransactionClick={handleApproveTransactionClick}
+              formatDate={formatDate}
+              formatTime={formatTime}
             />
           ))}
         </Card.Body>
