@@ -220,6 +220,14 @@ export const EditEventModal = ({
   isUpdating,
   isManager
 }) => {
+  // Add console logs to debug
+  React.useEffect(() => {
+    if (isOpen && selectedEvent) {
+      console.log("EditModal opened with description:", eventData.description);
+      console.log("Selected event data:", selectedEvent);
+    }
+  }, [isOpen, eventData.description, selectedEvent]);
+
   return (
     <Modal
       isOpen={isOpen}
@@ -239,12 +247,13 @@ export const EditEventModal = ({
           
           <StyledInput
             label="Description"
-            value={eventData.description}
+            value={eventData.description || ''}
             onChange={(e) => handleFormChange('description', e.target.value)}
             placeholder="Enter event description"
             multiline
             rows={3}
             required
+            key={`description-${isOpen}-${selectedEvent?.id}`}
           />
           
           <StyledInput

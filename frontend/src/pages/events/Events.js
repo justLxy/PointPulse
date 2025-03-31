@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import EventFilters from '../../components/events/EventFilters';
 import EventList from '../../components/events/EventList';
 import { CreateEventModal, EditEventModal, DeleteEventModal, RsvpEventModal } from '../../components/events/EventModals';
+import EventService from '../../services/event.service';
 
 const Events = () => {
   const { activeRole } = useAuth();
@@ -124,7 +125,8 @@ const Events = () => {
     isUpdating, 
     isDeleting, 
     isRsvping, 
-    isCancellingRsvp 
+    isCancellingRsvp,
+    refetch
   } = useEvents(getApiParams());
   
   // Calculate pagination values based on API results
@@ -261,9 +263,13 @@ const Events = () => {
   
   // Set up event for editing
   const handleEditEvent = (event) => {
+    console.log("Original event data:", event);
+    
+    // Immediately set the selected event and what we have
     setSelectedEvent(event);
     
-    setEventData({
+    // Create a new object for the form data to ensure React detects the change
+    const initialFormData = {
       name: event.name || '',
       description: event.description || '',
       location: event.location || '',
@@ -272,9 +278,39 @@ const Events = () => {
       startTime: event.startTime ? new Date(event.startTime).toISOString().slice(0, 16) : '',
       endTime: event.endTime ? new Date(event.endTime).toISOString().slice(0, 16) : '',
       published: event.published || false,
-    });
+    };
     
+    // Set initial form data
+    setEventData(initialFormData);
+    
+    // Always open the modal immediately 
     setEditModalOpen(true);
+    
+    // Then fetch full event data to update fields if needed
+    if (event.id) {
+      console.log("Fetching complete event data for ID:", event.id);
+      
+      // Use the service directly to get full event details
+      EventService.getEvent(event.id)
+        .then(fullEvent => {
+          console.log("Received complete event data:", fullEvent);
+          
+          // Update the form if we got new data
+          if (fullEvent && fullEvent.description) {
+            setEventData(prevData => ({
+              ...prevData,
+              description: fullEvent.description || '',
+              // Update any other fields that might have more complete data
+              name: fullEvent.name || prevData.name,
+              location: fullEvent.location || prevData.location
+            }));
+          }
+        })
+        .catch(err => {
+          console.error("Error fetching complete event:", err);
+          // Continue with what we have
+        });
+    }
   };
   
   // Set up event for deletion
@@ -359,8 +395,15 @@ const Events = () => {
     
     rsvpToEvent(selectedEvent.id, {
       onSuccess: () => {
+        // Close the modal and clear selection
         setRsvpModalOpen(false);
         setSelectedEvent(null);
+        
+        // Trigger a refetch to update the UI state
+        setTimeout(() => {
+          // Force a refetch to get latest data from server
+          refetch();
+        }, 100);
       },
     });
   };
@@ -371,8 +414,24 @@ const Events = () => {
     
     cancelRsvp(selectedEvent.id, {
       onSuccess: () => {
+        // Close the modal and clear selection
         setRsvpModalOpen(false);
         setSelectedEvent(null);
+        
+        // Manually trigger a refetch to update the UI state
+        setTimeout(() => {
+          // Find the event in the list and update its status
+          const eventIndex = events.findIndex(e => e.id === selectedEvent.id);
+          if (eventIndex !== -1) {
+            const updatedEvents = [...events];
+            updatedEvents[eventIndex] = {
+              ...updatedEvents[eventIndex],
+              isAttending: false
+            };
+          }
+          // Force a refetch to get latest data from server
+          refetch();
+        }, 100);
       },
     });
   };

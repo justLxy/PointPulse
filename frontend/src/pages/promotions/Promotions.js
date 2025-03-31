@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styled from '@emotion/styled';
 import { usePromotions } from '../../hooks/usePromotions';
 import { useAuth } from '../../contexts/AuthContext';
+import PromotionService from '../../services/promotion.service';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
@@ -61,10 +62,15 @@ const Promotions = () => {
     type: '',
     page: 1,
     limit: 9,
-    ...(isManager ? {
+    // For regular users, we want to show only active promotions they haven't used
+    // Active means started=true and ended=false
+    ...(!isManager ? {
+      started: true,
+      ended: false
+    } : {
       started: null,
       ended: null
-    } : {})
+    })
   });
   
   // Modals state
@@ -72,6 +78,7 @@ const Promotions = () => {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedPromotion, setSelectedPromotion] = useState(null);
+  const [editingPromotionId, setEditingPromotionId] = useState(null);
   
   // Form state
   const [promotionData, setPromotionData] = useState({
@@ -90,6 +97,7 @@ const Promotions = () => {
     promotions, 
     totalCount, 
     isLoading, 
+    getPromotion,
     createPromotion, 
     updatePromotion, 
     deletePromotion, 
@@ -105,16 +113,48 @@ const Promotions = () => {
   
   // Handle filter changes
   const handleFilterChange = (key, value) => {
-    setFilters((prev) => ({
-      ...prev,
-      [key]: value,
-      ...(key !== 'page' ? { page: 1 } : {}),
-    }));
+    // Handle special case for started and ended filters
+    // Backend returns 400 if both are specified
+    if (key === 'started' && value === true) {
+      setFilters((prev) => ({
+        ...prev,
+        [key]: value,
+        // When setting started=true, ensure ended=null or ended=false
+        ...(prev.ended === true ? { ended: null } : {}),
+        ...(key !== 'page' ? { page: 1 } : {}),
+      }));
+    } else if (key === 'ended' && value === true) {
+      setFilters((prev) => ({
+        ...prev,
+        [key]: value,
+        // When setting ended=true, ensure started=null
+        started: null,
+        ...(key !== 'page' ? { page: 1 } : {}),
+      }));
+    } else {
+      setFilters((prev) => ({
+        ...prev,
+        [key]: value,
+        ...(key !== 'page' ? { page: 1 } : {}),
+      }));
+    }
+  };
+  
+  // Format date for datetime-local input
+  const formatDateTimeLocal = (dateStr) => {
+    if (!dateStr) return '';
+    try {
+      const date = new Date(dateStr);
+      return date.toISOString().slice(0, 16); // Format as YYYY-MM-DDTHH:MM
+    } catch (error) {
+      console.error("Error formatting date for input:", error);
+      return '';
+    }
   };
   
   // Format date
   const formatDate = (dateStr) => {
-    if (!dateStr) return 'N/A';
+    if (!dateStr) return '';
     try {
       const date = new Date(dateStr);
       return date.toLocaleDateString('en-CA', { // YYYY-MM-DD format
@@ -152,8 +192,12 @@ const Promotions = () => {
   };
   
   // Set up promotion for editing
-  const handleEditPromotion = (promotion) => {
+  const handleEditPromotion = async (promotion) => {
+    console.log("Original promotion data:", promotion);
     setSelectedPromotion(promotion);
+    setEditingPromotionId(promotion.id);
+    
+    // First populate with available data
     setPromotionData({
       name: promotion.name || '',
       description: promotion.description || '',
@@ -161,11 +205,38 @@ const Promotions = () => {
       minSpending: promotion.minSpending === null ? '' : promotion.minSpending,
       rate: promotion.rate === null ? '' : promotion.rate,
       points: promotion.points === null ? '' : promotion.points,
-      startDate: promotion.startDate ? formatDate(promotion.startDate) : '',
-      endDate: promotion.endDate ? formatDate(promotion.endDate) : '',
+      startDate: promotion.startTime ? formatDateTimeLocal(promotion.startTime) : '',
+      endDate: promotion.endTime ? formatDateTimeLocal(promotion.endTime) : '',
     });
+    
+    // Open modal right away with available data
     setEditModalOpen(true);
+    
+    try {
+      // Use the promotion service directly to fetch the complete data
+      const completeData = await PromotionService.getPromotion(promotion.id);
+      console.log("Fetched complete promotion data:", completeData);
+      
+      if (completeData) {
+        // Update with complete data after modal is already open
+        setPromotionData(prevData => ({
+          ...prevData,
+          description: completeData.description || '',
+          startDate: completeData.startTime ? formatDateTimeLocal(completeData.startTime) : prevData.startDate,
+          endDate: completeData.endTime ? formatDateTimeLocal(completeData.endTime) : prevData.endDate,
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching complete promotion data:", error);
+    }
   };
+  
+  // Reset editing state when modal closes
+  useEffect(() => {
+    if (!editModalOpen) {
+      setEditingPromotionId(null);
+    }
+  }, [editModalOpen]);
   
   // Set up promotion for deletion
   const handleDeletePromotionClick = (promotion) => {

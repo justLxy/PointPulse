@@ -174,16 +174,37 @@ const PromotionCardItem = ({ promotion, isManager, onEdit, onDelete, formatDate 
             </PromotionDetail>
           )}
           
-          {promotion.startDate && (
-            <PromotionDetail type={promotion.type}>
-              <FaClock />
-              <div>
-                <ValueText>
-                  {formatDate(promotion.startDate)}
-                  {promotion.endDate ? ` - ${formatDate(promotion.endDate)}` : ""}
-                </ValueText>
-              </div>
-            </PromotionDetail>
+          {/* Show different date information based on user role */}
+          {isManager ? (
+            // For managers, show both start and end dates
+            <>
+              {promotion.startTime && (
+                <PromotionDetail type={promotion.type}>
+                  <FaCalendarAlt />
+                  <div>
+                    Starts: <ValueText>{formatDate(promotion.startTime)}</ValueText>
+                  </div>
+                </PromotionDetail>
+              )}
+              {promotion.endTime && (
+                <PromotionDetail type={promotion.type}>
+                  <FaClock />
+                  <div>
+                    Ends: <ValueText>{formatDate(promotion.endTime)}</ValueText>
+                  </div>
+                </PromotionDetail>
+              )}
+            </>
+          ) : (
+            // For regular users, only show end date
+            promotion.endTime && (
+              <PromotionDetail type={promotion.type}>
+                <FaClock />
+                <div>
+                  Available until: <ValueText>{formatDate(promotion.endTime)}</ValueText>
+                </div>
+              </PromotionDetail>
+            )
           )}
         </PromotionDetails>
 

@@ -444,6 +444,26 @@ const EmptyAudienceSeat = styled.div`
   }
 `;
 
+// Define styled components for the action buttons
+const ActionButton = styled(Button)`
+  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(5px);
+  border: 0.5px solid rgba(0, 0, 0, 0.1);
+  color: ${props => props.color === 'error' ? theme.colors.error.main : theme.colors.primary.main};
+  font-size: 12px;
+  padding: 3px 8px;
+  border-radius: 16px;
+  margin: 0 2px;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.95);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+`;
+
 const EventDetail = () => {
   const { eventId } = useParams();
   const navigate = useNavigate();
@@ -502,6 +522,7 @@ const EventDetail = () => {
   const [userSearchParams, setUserSearchParams] = useState({
     name: '',
     limit: 5,
+    forSearch: true
   });
   
   const { users } = useUsers(userSearchParams);
@@ -787,6 +808,7 @@ const EventDetail = () => {
       setUserSearchParams({
         name: searchQuery,
         limit: 5,
+        forSearch: true
       });
     }
   }, [searchQuery]);
@@ -1005,14 +1027,12 @@ const EventDetail = () => {
                       >
                         <FaUserPlus /> Add Guest
                       </Button>
-                      {isManager && (
-                        <Button 
-                          size="small" 
-                          onClick={() => setAwardPointsModalOpen(true)}
-                        >
-                          <FaTrophy /> Award Points
-                        </Button>
-                      )}
+                      <Button 
+                        size="small" 
+                        onClick={() => setAwardPointsModalOpen(true)}
+                      >
+                        <FaTrophy /> Award Points
+                      </Button>
                     </div>
                   )}
                 </Card.Header>
@@ -1049,8 +1069,8 @@ const EventDetail = () => {
                               <AudienceRole>
                                 {guest.pointsAwarded ? (
                                   <Badge color="success">{guest.pointsAwarded}pt</Badge>
-                                ) : canEditEvent() && eventStatus.text === 'Upcoming' && isManager ? (
-                                  <Button 
+                                ) : canEditEvent() && eventStatus.text === 'Upcoming' ? (
+                                  <ActionButton 
                                     size="tiny" 
                                     onClick={() => {
                                       setSelectedUserId(guest.id);
@@ -1059,17 +1079,16 @@ const EventDetail = () => {
                                     }}
                                   >
                                     🏆
-                                  </Button>
+                                  </ActionButton>
                                 ) : null}
                                 {canEditEvent() && (
-                                  <Button 
+                                  <ActionButton 
                                     size="tiny" 
                                     color="error"
                                     onClick={() => handleRemoveGuest(guest.id)}
-                                    style={{ marginLeft: '2px' }}
                                   >
                                     ❌
-                                  </Button>
+                                  </ActionButton>
                                 )}
                               </AudienceRole>
                             </AudienceSeat>
@@ -1438,6 +1457,7 @@ const EventDetail = () => {
               multiline
               rows={3}
               required
+              key={`description-${editModalOpen}-${eventData.description}`}
             />
             
             <Input

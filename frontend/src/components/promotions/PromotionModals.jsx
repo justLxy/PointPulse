@@ -124,6 +124,7 @@ const DeleteWarning = styled.div`
 
 // Form component
 const PromotionFormFields = ({ promotionData, onChange }) => {
+  console.log("PromotionFormFields rendering with data:", JSON.stringify(promotionData, null, 2));
   return (
     <FormContainer>
       <FormSection>
@@ -139,7 +140,7 @@ const PromotionFormFields = ({ promotionData, onChange }) => {
         <FormField>
           <StyledInput
             label="Description"
-            value={promotionData.description}
+            value={promotionData.description || ''}
             onChange={(e) => onChange('description', e.target.value)}
             multiline
             rows={3}

@@ -46,7 +46,9 @@ export const useEvents = (params = {}) => {
     mutationFn: (eventId) => EventService.rsvpToEvent(eventId),
     onSuccess: (_, eventId) => {
       toast.success('Successfully RSVP\'d to event');
+      // Invalidate both the specific event and the events list
       queryClient.invalidateQueries({ queryKey: ['event', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['events'] });
     },
     onError: (error) => {
       toast.error(error.message || 'Failed to RSVP to event');
@@ -57,7 +59,9 @@ export const useEvents = (params = {}) => {
     mutationFn: (eventId) => EventService.cancelRsvp(eventId),
     onSuccess: (_, eventId) => {
       toast.success('Successfully cancelled RSVP');
+      // Invalidate both the specific event and the events list
       queryClient.invalidateQueries({ queryKey: ['event', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['events'] });
     },
     onError: (error) => {
       toast.error(error.message || 'Failed to cancel RSVP');

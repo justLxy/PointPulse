@@ -107,6 +107,53 @@ const PromotionFilters = ({ filters, onFilterChange, isManager, onCreateClick })
         </FilterInput>
 
         {isManager && (
+          <>
+            <FilterInput>
+              <EnhancedSelect
+                placeholder="Started Status"
+                value={filters.started === null ? '' : String(filters.started)}
+                onChange={(e) => {
+                  const value = e.target.value === '' ? null : e.target.value === 'true';
+                  onFilterChange('started', value);
+                  // Clear ended if started is set to false (not started yet)
+                  if (value === false) {
+                    onFilterChange('ended', null);
+                  }
+                }}
+              >
+                <option value="">All Promotions</option>
+                <option value="true">Started</option>
+                <option value="false">Not Started</option>
+              </EnhancedSelect>
+            </FilterInput>
+
+            <FilterInput>
+              <EnhancedSelect
+                placeholder="Ended Status"
+                value={filters.ended === null ? '' : String(filters.ended)}
+                onChange={(e) => {
+                  const value = e.target.value === '' ? null : e.target.value === 'true';
+                  onFilterChange('ended', value);
+                  // Clear started if ended is set to true (already ended)
+                  if (value === true) {
+                    onFilterChange('started', null);
+                  }
+                }}
+                disabled={filters.started === false}
+              >
+                <option value="">All Promotions</option>
+                <option value="true">Ended</option>
+                <option value="false">Not Ended</option>
+              </EnhancedSelect>
+            </FilterInput>
+            
+            <CreateButton onClick={onCreateClick}>
+              <FaPlus /> Create Promotion
+            </CreateButton>
+          </>
+        )}
+        
+        {!isManager && (
           <CreateButton onClick={onCreateClick}>
             <FaPlus /> Create Promotion
           </CreateButton>
