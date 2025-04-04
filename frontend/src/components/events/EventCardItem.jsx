@@ -189,10 +189,11 @@ const EventCardItem = ({
           <EventDetail>
             <FaUsers />
             <span>
-              {event.guests && Array.isArray(event.guests) ? `${event.guests.length} attendees` : '0 attendees'}
+              {event.numGuests ?? (event.guests?.length ?? 0)} attendees
               {event.capacity ? ` (max: ${event.capacity})` : ''}
             </span>
           </EventDetail>
+          
           
           <EventDetail>
             <FaCoins />

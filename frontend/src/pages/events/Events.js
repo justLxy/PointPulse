@@ -237,6 +237,9 @@ const Events = () => {
     }
     return { text: 'Ongoing', color: '#2ecc71' }; // Green for ongoing
   };
+  const isEventEnded = (endTime) => {
+    return new Date(endTime) < new Date();
+  };
   
   // Handle create/edit form changes
   const handleFormChange = (key, value) => {
@@ -496,6 +499,7 @@ const Events = () => {
         handleUpdateEvent={handleUpdateEvent}
         isUpdating={isUpdating}
         isManager={isManager}
+        isDisabled={selectedEvent && isEventEnded(selectedEvent.endTime)}
       />
       
       <DeleteEventModal

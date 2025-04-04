@@ -7,6 +7,7 @@ import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Select from '../../components/common/Select';
+
 import Modal from '../../components/common/Modal';
 import Badge from '../../components/common/Badge';
 import theme from '../../styles/theme';
@@ -336,7 +337,7 @@ const Promotions = () => {
         filters={filters}
         onFilterChange={handleFilterChange}
         isManager={isManager}
-        onCreateClick={() => setCreateModalOpen(true)}
+        onCreateClick={isManager ? () => setCreateModalOpen(true) : undefined}
       />
       
       {isLoading ? (
