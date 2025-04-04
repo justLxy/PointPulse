@@ -194,6 +194,7 @@ const EventCardItem = ({
             </span>
           </EventDetail>
           
+          
           <EventDetail>
             <FaCoins />
             <span>{event.pointsRemain ?? 0} points available</span>
