@@ -1,9 +1,9 @@
 import React from 'react';
 import styled from '@emotion/styled';
 import Modal from '../common/Modal';
-import Button from '../../components/common/Button';
-import Input from '../../components/common/Input';
-import Select from '../../components/common/Select';
+import Button from '../common/Button';
+import Input from '../common/Input';
+import Select from '../common/Select';
 import { FaExclamationTriangle } from 'react-icons/fa';
 import theme from '../../styles/theme';
 

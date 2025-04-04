@@ -47,7 +47,7 @@ const EmptyState = styled.div`
   }
 `;
 
-// Animation variants for cards
+
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {

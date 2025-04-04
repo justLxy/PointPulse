@@ -218,7 +218,8 @@ export const EditEventModal = ({
   handleFormChange, 
   handleUpdateEvent, 
   isUpdating,
-  isManager
+  isManager,
+  isDisabled
 }) => {
   // Add console logs to debug
   React.useEffect(() => {
@@ -356,6 +357,8 @@ export const EditEventModal = ({
           <Button
             onClick={handleUpdateEvent}
             loading={isUpdating}
+            disabled={isDisabled}
+            title={isDisabled ? "Cannot update a past event" : ""}
           >
             Update Event
           </Button>

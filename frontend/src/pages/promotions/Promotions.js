@@ -12,13 +12,13 @@ import Badge from '../../components/common/Badge';
 import theme from '../../styles/theme';
 import { FaPlus, FaEdit, FaTrash, FaCalendarAlt, FaPercent, FaTags, FaCoins, FaFilter } from 'react-icons/fa';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
-import PromotionFilters from '../../components/Promotions/PromotionFilters';
-import PromotionList from '../../components/Promotions/PromotionList';
+import PromotionFilters from '../../components/promotions/PromotionFilters';
+import PromotionList from '../../components/promotions/PromotionList';
 import {
   CreatePromotionModal,
   EditPromotionModal,
   DeletePromotionModal
-} from '../../components/Promotions/PromotionModals';
+} from '../../components/promotions/PromotionModals';
 
 const PageTitle = styled.h1`
   font-size: ${theme.typography.fontSize['3xl']};
