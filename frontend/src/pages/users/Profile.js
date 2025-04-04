@@ -1,13 +1,13 @@
 import { useState, useRef } from 'react';
 import styled from '@emotion/styled';
 import { css } from '@emotion/react';
-import { useAuth } from '../contexts/AuthContext';
-import useUserProfile from '../hooks/useUserProfile';
-import Card from '../components/common/Card';
-import Button from '../components/common/Button';
-import Input from '../components/common/Input';
-import LoadingSpinner from '../components/common/LoadingSpinner';
-import theme from '../styles/theme';
+import { useAuth } from '../../contexts/AuthContext';
+import useUserProfile from '../../hooks/useUserProfile';
+import Card from '../../components/common/Card';
+import Button from '../../components/common/Button';
+import Input from '../../components/common/Input';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
+import theme from '../../styles/theme';
 import { 
   FaUser, 
   FaEnvelope, 
@@ -17,8 +17,8 @@ import {
   FaSave, 
   FaTimes 
 } from 'react-icons/fa';
-import QRCode from '../components/common/QRCode';
-import { API_URL } from '../services/api';
+import QRCode from '../../components/common/QRCode';
+import { API_URL } from '../../services/api';
 
 const ProfileContainer = styled.div`
   display: grid;

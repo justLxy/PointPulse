@@ -53,12 +53,6 @@ const createPromotion = async (promotionData) => {
         throw new Error('End time must be after start time');
     }
 
-    if (startDate < new Date()) {
-        console.log('Validation failed: Start time cannot be in the past');
-        console.log('===== PROMOTION SERVICE: CREATE PROMOTION FAILED =====\n');
-        throw new Error('Start time cannot be in the past');
-    }
-
     // Either rate or points must be specified
     if ((rate === undefined || rate === null) && (points === undefined || points === null)) {
         console.log('Validation failed: Either rate or points must be specified');
@@ -499,12 +493,6 @@ const updatePromotion = async (promotionId, updateData) => {
                 console.log('Invalid date format for start time');
                 console.log('===== PROMOTION SERVICE: UPDATE PROMOTION FAILED =====\n');
                 throw new Error('Invalid date format for start time');
-            }
-
-            if (startDate < now) {
-                console.log('Start time cannot be in the past');
-                console.log('===== PROMOTION SERVICE: UPDATE PROMOTION FAILED =====\n');
-                throw new Error('Start time cannot be in the past');
             }
 
             updateObj.startTime = startDate;

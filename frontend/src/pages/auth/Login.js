@@ -6,7 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
 import theme from '../../styles/theme';
-import { FaLock, FaUser, FaSignInAlt, FaEye, FaEyeSlash, FaExclamationTriangle } from 'react-icons/fa';
+import { FaLock, FaUser, FaSignInAlt, FaEye, FaEyeSlash, FaExclamationTriangle, FaUserPlus } from 'react-icons/fa';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import AnimatedLogo from '../../components/common/AnimatedLogo';
 
@@ -135,6 +135,28 @@ const ForgotPassword = styled(Link)`
   font-size: ${theme.typography.fontSize.sm};
   text-align: right;
   margin-top: -${theme.spacing.sm};
+  
+  &:hover {
+    text-decoration: underline;
+    color: ${theme.colors.primary.dark};
+  }
+`;
+
+const AccountActions = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: -${theme.spacing.sm};
+  margin-bottom: ${theme.spacing.md};
+`;
+
+const LinkButton = styled(Link)`
+  color: ${theme.colors.primary.main};
+  font-size: ${theme.typography.fontSize.sm};
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 5px;
   
   &:hover {
     text-decoration: underline;
@@ -289,7 +311,14 @@ const Login = () => {
             </PasswordToggle>
           </InputGroup>
           
-          <ForgotPassword to="/password-reset">Forgot your password?</ForgotPassword>
+          <AccountActions>
+            <LinkButton to="/password-reset">
+              Forgot Password?
+            </LinkButton>
+            <LinkButton to="/account-activation">
+              <FaUserPlus size={14} /> Activate Account
+            </LinkButton>
+          </AccountActions>
           
           <Button type="submit" fullWidth>
             <FaSignInAlt /> Login

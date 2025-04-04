@@ -2,24 +2,21 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import styled from '@emotion/styled';
 import { css } from '@emotion/react';
-import useUserTransactions from '../hooks/useUserTransactions';
-import Card from '../components/common/Card';
-import Button from '../components/common/Button';
-import Input from '../components/common/Input';
-import Select from '../components/common/Select';
-import theme from '../styles/theme';
+import useUserTransactions from '../../hooks/useUserTransactions';
+import Card from '../../components/common/Card';
+import Button from '../../components/common/Button';
+import theme from '../../styles/theme';
 import {
-  FaSearch,
   FaPlus,
   FaMinus,
   FaExchangeAlt,
   FaCalendarAlt,
-  FaFilter,
   FaChevronRight,
   FaChevronLeft,
   FaInfoCircle
 } from 'react-icons/fa';
-import LoadingSpinner from '../components/common/LoadingSpinner';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
+import TransactionFilters from '../../components/transactions/TransactionFilters';
 
 const PageTitle = styled.h1`
   font-size: ${theme.typography.fontSize['3xl']};
@@ -53,17 +50,33 @@ const PageControls = styled.div`
   align-items: center;
   margin-top: ${theme.spacing.xl};
   margin-bottom: ${theme.spacing.md};
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: ${theme.spacing.md};
+    align-items: flex-start;
+  }
 `;
 
 const Pagination = styled.div`
   display: flex;
   align-items: center;
   gap: ${theme.spacing.md};
+  
+  @media (max-width: 768px) {
+    width: 100%;
+    justify-content: center;
+  }
 `;
 
 const PageInfo = styled.div`
   color: ${theme.colors.text.secondary};
   font-size: ${theme.typography.fontSize.sm};
+  
+  @media (max-width: 768px) {
+    text-align: center;
+    width: 100%;
+  }
 `;
 
 const TableHeader = styled.div`
@@ -320,44 +333,11 @@ const UserTransactions = () => {
   
   return (
     <div>
-      <PageTitle>My Transactions</PageTitle>
-      
-      <FilterSection>
-        <FilterInput>
-          <Select
-            value={filters.type}
-            onChange={(e) => handleFilterChange('type', e.target.value)}
-            placeholder="Transaction Type"
-          >
-            <option value="">All Types</option>
-            <option value="purchase">Purchase</option>
-            <option value="redemption">Redemption</option>
-            <option value="transfer">Transfer</option>
-            <option value="adjustment">Adjustment</option>
-            <option value="event">Event</option>
-          </Select>
-        </FilterInput>
-        
-        <FilterInput>
-          <Select
-            value={filters.operator}
-            onChange={(e) => handleFilterChange('operator', e.target.value)}
-            placeholder="Amount Operator"
-          >
-            <option value="gte">Greater than or equal</option>
-            <option value="lte">Less than or equal</option>
-          </Select>
-        </FilterInput>
-        
-        <FilterInput>
-          <Input
-            placeholder="Amount"
-            value={filters.amount}
-            onChange={(e) => handleFilterChange('amount', e.target.value)}
-            type="number"
-          />
-        </FilterInput>
-      </FilterSection>
+      <TransactionFilters
+        filters={filters}
+        handleFilterChange={handleFilterChange}
+        title="My Transactions"
+      />
       
       <Card>
         {isLoading ? (
@@ -398,8 +378,7 @@ const UserTransactions = () => {
                     )}
                     {transaction.createdAt && (
                       <div>
-                        <InfoLabel>Date:</InfoLabel> 
-                        {formatDate(transaction.createdAt)} {formatTime(transaction.createdAt)}
+                        <InfoLabel>Date:</InfoLabel> {formatDate(transaction.createdAt)} at {formatTime(transaction.createdAt)}
                       </div>
                     )}
                   </div>
@@ -408,57 +387,55 @@ const UserTransactions = () => {
                 <TransactionAmount positive={isPositiveTransaction(transaction)}>
                   <MobileLabel>Amount:</MobileLabel>
                   {formatAmount(transaction.amount)}
-                  {transaction.spent && (
-                    <div style={{ fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary }}>
-                      ${transaction.spent.toFixed(2)}
-                    </div>
-                  )}
                 </TransactionAmount>
               </TableRow>
             ))}
-            
-            <PageControls>
-              <PageInfo>
-                Showing {startIndex} to {endIndex} of {totalCount} transactions
-              </PageInfo>
-              
-              <Pagination>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  onClick={() => handleFilterChange('page', Math.max(1, filters.page - 1))}
-                  disabled={filters.page === 1}
-                >
-                  <FaChevronLeft /> Previous
-                </Button>
-                
-                <PageInfo>
-                  Page {filters.page} of {totalPages || 1}
-                </PageInfo>
-                
-                <Button
-                  size="small"
-                  variant="outlined"
-                  onClick={() => handleFilterChange('page', Math.min(totalPages, filters.page + 1))}
-                  disabled={filters.page >= totalPages}
-                >
-                  Next <FaChevronRight />
-                </Button>
-              </Pagination>
-            </PageControls>
           </>
         ) : (
           <EmptyState>
-            <FaInfoCircle size={32} />
-            <p>No transactions found</p>
-            {filters.type || filters.amount ? (
-              <p>Try changing your filters to see more results</p>
-            ) : (
-              <p>Complete transactions to view your history</p>
-            )}
+            <FaInfoCircle size={48} />
+            <p>No transactions found matching your criteria.</p>
           </EmptyState>
         )}
       </Card>
+      
+      {transactions.length > 0 && (
+        <PageControls>
+          <PageInfo>
+            Showing {startIndex} to {endIndex} of {totalCount} transactions
+          </PageInfo>
+          
+          <Pagination>
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={() => handleFilterChange('page', filters.page - 1)}
+              disabled={filters.page === 1}
+              style={{ minWidth: '80px' }}
+            >
+              <FaChevronLeft /> Previous
+            </Button>
+            
+            <PageInfo style={{ 
+              minWidth: '100px', 
+              textAlign: 'center', 
+              whiteSpace: 'nowrap' 
+            }}>
+              Page {filters.page} of {totalPages}
+            </PageInfo>
+            
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={() => handleFilterChange('page', filters.page + 1)}
+              disabled={filters.page === totalPages}
+              style={{ minWidth: '80px' }}
+            >
+              Next <FaChevronRight />
+            </Button>
+          </Pagination>
+        </PageControls>
+      )}
     </div>
   );
 };

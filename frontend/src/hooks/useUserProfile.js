@@ -3,10 +3,12 @@ import { toast } from 'react-hot-toast';
 import UserService from '../services/user.service';
 import AuthService from '../services/auth.service';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 export const useUserProfile = () => {
-  const { updateCurrentUser } = useAuth();
+  const { updateCurrentUser, logout } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   
   const {
     data: profile,
@@ -56,7 +58,19 @@ export const useUserProfile = () => {
       return AuthService.updatePassword(oldPassword, newPassword);
     },
     onSuccess: () => {
-      toast.success('Password updated successfully');
+      toast.success('Password updated successfully. Please log in again with your new password.');
+      
+      // Clear all queries from the cache
+      queryClient.clear();
+      
+      // Small delay before logout to allow toast to be seen
+      setTimeout(() => {
+        // Log out the user
+        logout();
+        
+        // Redirect to login page
+        navigate('/login');
+      }, 1500);
     },
     onError: (error) => {
       toast.error(error.message || 'Failed to update password');

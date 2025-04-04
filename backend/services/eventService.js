@@ -163,9 +163,9 @@ const createEvent = async (eventData) => {
 /**
  * Get events with filtering
  */
-const getEvents = async (filters = {}, isManager = false, page = 1, limit = 10) => {
+const getEvents = async (filters = {}, isManager = false, page = 1, limit = 10, includeOrganizedEvents = false) => {
     try {
-        const { name, location, started, ended, showFull, published } = filters;
+        const { name, location, started, ended, showFull, published, userId, organizing, attending } = filters;
         const parsedPage = parseInt(page);
         const parsedLimit = parseInt(limit);
 
@@ -182,24 +182,69 @@ const getEvents = async (filters = {}, isManager = false, page = 1, limit = 10) 
         }
 
         // Build where clause
-        const where = {};
+        let where = {};
 
-        // If not a manager, only show published events
-        if (!isManager) {
+        // Handle organizing and attending filters FIRST if present
+        if (organizing === 'true' && userId) {
+            where.organizers = {
+                some: {
+                    id: parseInt(userId)
+                }
+            };
+            // Organizer can see unpublished events they organize
+            where.published = undefined; // Override default published filter
+        } else if (attending === 'true' && userId) {
+            where.guests = {
+                some: {
+                    id: parseInt(userId)
+                }
+            };
+            // Guests can only see published events
             where.published = true;
-        } else if (published !== undefined) {
-            where.published = published === 'true';
+        } else {
+            // Default: Handle published filter based on user role and request params
+            if (!isManager) {
+                // Regular users normally only see published events
+                where.published = true;
+                
+                // BUT, if includeOrganizedEvents is true, also show unpublished events they organize
+                if (includeOrganizedEvents && userId) {
+                    where = {
+                        OR: [
+                            { published: true },
+                            {
+                                published: false,
+                                organizers: {
+                                    some: {
+                                        id: parseInt(userId)
+                                    }
+                                }
+                            }
+                        ]
+                    };
+                }
+            } else if (published !== undefined) {
+                // Managers can filter by published status explicitly
+                where.published = published === 'true';
+            }
         }
 
+        // Apply other filters on top
         if (name) {
-            where.name = {
-                contains: name
+            where = {
+                ...where,
+                name: {
+                    contains: name
+                }
             };
         }
 
         if (location) {
-            where.location = {
-                contains: location
+            where = {
+                ...where,
+                location: {
+                    contains: location
+                }
             };
         }
 
@@ -207,25 +252,37 @@ const getEvents = async (filters = {}, isManager = false, page = 1, limit = 10) 
 
         if (started === 'true') {
             // Events that have started
-            where.startTime = {
-                lte: now
+            where = {
+                ...where,
+                startTime: {
+                    lte: now
+                }
             };
         } else if (started === 'false') {
             // Events that have not started
-            where.startTime = {
-                gt: now
+            where = {
+                ...where,
+                startTime: {
+                    gt: now
+                }
             };
         }
 
         if (ended === 'true') {
             // Events that have ended
-            where.endTime = {
-                lte: now
+            where = {
+                ...where,
+                endTime: {
+                    lte: now
+                }
             };
         } else if (ended === 'false') {
             // Events that have not ended
-            where.endTime = {
-                gt: now
+            where = {
+                ...where,
+                endTime: {
+                    gt: now
+                }
             };
         }
 
@@ -234,6 +291,11 @@ const getEvents = async (filters = {}, isManager = false, page = 1, limit = 10) 
             where,
             include: {
                 guests: {
+                    select: {
+                        id: true
+                    }
+                },
+                organizers: {
                     select: {
                         id: true
                     }
@@ -258,7 +320,7 @@ const getEvents = async (filters = {}, isManager = false, page = 1, limit = 10) 
         const endIndex = startIndex + parsedLimit;
         const paginatedEvents = filteredEvents.slice(startIndex, endIndex);
 
-        // Format events for response
+        // Format events for response, including isAttending and isOrganizer flags
         const results = paginatedEvents.map(event => {
             const formattedEvent = {
                 id: event.id,
@@ -267,14 +329,16 @@ const getEvents = async (filters = {}, isManager = false, page = 1, limit = 10) 
                 startTime: event.startTime.toISOString(),
                 endTime: event.endTime.toISOString(),
                 capacity: event.capacity,
-                numGuests: event.guests.length
+                numGuests: event.guests.length,
+                published: event.published,
+                isOrganizer: userId ? event.organizers.some(org => org.id === parseInt(userId)) : false,
+                isAttending: userId ? event.guests.some(guest => guest.id === parseInt(userId)) : false // Add isAttending
             };
 
             // Add manager-specific fields
             if (isManager) {
                 formattedEvent.pointsRemain = event.pointsRemain;
                 formattedEvent.pointsAwarded = event.pointsAwarded;
-                formattedEvent.published = event.published;
             }
 
             return formattedEvent;
@@ -290,7 +354,7 @@ const getEvents = async (filters = {}, isManager = false, page = 1, limit = 10) 
 /**
  * Get a single event
  */
-const getEvent = async (eventId, isManager = false, isOrganizer = false) => {
+const getEvent = async (eventId, isManager = false, isOrganizer = false, includeAsOrganizer = false) => {
     const event = await prisma.event.findUnique({
         where: { id: parseInt(eventId) },
         include: {
@@ -319,8 +383,9 @@ const getEvent = async (eventId, isManager = false, isOrganizer = false) => {
         throw new Error('Event not found');
     }
 
-    // If not a manager or organizer, only allow viewing published events
-    if (!isManager && !isOrganizer && !event.published) {
+    // If not a manager, and not an organizer, and not specifically requesting as an organizer,
+    // only allow viewing published events
+    if (!isManager && !isOrganizer && !includeAsOrganizer && !event.published) {
         throw new Error('Event not found');
     }
 
@@ -333,14 +398,15 @@ const getEvent = async (eventId, isManager = false, isOrganizer = false) => {
         startTime: event.startTime.toISOString(),
         endTime: event.endTime.toISOString(),
         capacity: event.capacity,
-        organizers: event.organizers
+        organizers: event.organizers,
+        published: event.published, // 添加published状态
+        isOrganizer: isOrganizer // 添加用户是否为组织者的标志
     };
 
     // Add different fields based on user role
     if (isManager || isOrganizer) {
         formattedEvent.pointsRemain = event.pointsRemain;
         formattedEvent.pointsAwarded = event.pointsAwarded;
-        formattedEvent.published = event.published;
         formattedEvent.guests = event.guests;
     } else {
         formattedEvent.numGuests = event.guests.length;

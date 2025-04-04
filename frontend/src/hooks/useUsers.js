@@ -14,7 +14,7 @@ export const useUsers = (params = {}) => {
   const getAllUsersQuery = useQuery({
     queryKey: ['allUsers', params],
     queryFn: () => UserService.getUsers(params),
-    enabled: isManager,
+    enabled: isManager || params.forSearch === true, // Also enable for organizers when specifically searching
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
   
@@ -61,6 +61,9 @@ export const useUsers = (params = {}) => {
     createUser: createUserMutation.mutate,
     isCreatingUser: createUserMutation.isPending,
     
+    // Available to everyone when searching users for events
+    users: params.forSearch ? getAllUsersQuery.data?.results || [] : null,
+    
     // Available to managers only
     ...(isManager ? {
       users: getAllUsersQuery.data?.results || [],
@@ -70,7 +73,14 @@ export const useUsers = (params = {}) => {
       refetch: getAllUsersQuery.refetch,
       updateUser: updateUserMutation.mutate,
       isUpdatingUser: updateUserMutation.isPending,
-    } : {}),
+    } : {
+      // Still provide these for event organizers when searching
+      ...(params.forSearch ? {
+        totalCount: getAllUsersQuery.data?.count || 0,
+        isLoading: getAllUsersQuery.isLoading,
+        error: getAllUsersQuery.error,
+      } : {})
+    }),
   };
 };
 

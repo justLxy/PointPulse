@@ -296,31 +296,11 @@ const EmptyState = styled.div`
   font-size: ${theme.typography.fontSize.md};
 `;
 
-const PromotionCard = styled.div`
-  background-color: ${theme.colors.background.paper};
-  border-radius: ${theme.radius.lg};
-  overflow: hidden;
-  margin-bottom: ${theme.spacing.md};
-  box-shadow: ${theme.shadows.sm};
-  border: 1px solid ${theme.colors.border.light};
-  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-  height: 200px;
-  display: flex;
-  flex-direction: column;
-  text-decoration: none;
-  color: inherit;
-  position: relative;
-  
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: ${theme.shadows.md};
-    text-decoration: none;
-    color: inherit;
-    background-color: ${theme.colors.background.hover};
-  }
+const PromotionSection = styled.div`
+  margin-bottom: ${theme.spacing.lg};
 `;
 
-const PromotionHeader = styled.div`
+const PromotionTypeHeader = styled.div`
   background-color: ${({ type }) => 
     type === 'automatic' 
       ? theme.colors.accent.main 
@@ -329,15 +309,37 @@ const PromotionHeader = styled.div`
     type === 'automatic' 
       ? theme.colors.accent.contrastText 
       : 'white'};
-  font-weight: ${({ type }) => 
-    type === 'automatic' 
-      ? theme.typography.fontWeights.medium
-      : theme.typography.fontWeights.semiBold};
+  font-weight: ${theme.typography.fontWeights.semiBold};
   padding: ${theme.spacing.xs} ${theme.spacing.md};
   font-size: ${theme.typography.fontSize.sm};
+  border-radius: ${theme.radius.lg};
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: ${theme.spacing.sm};
+`;
+
+const PromotionCard = styled.div`
+  background-color: ${theme.colors.background.paper};
+  border-radius: ${theme.radius.lg};
+  overflow: hidden;
+  margin-bottom: ${theme.spacing.md};
+  box-shadow: ${theme.shadows.sm};
+  border: 1px solid ${theme.colors.border.light};
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  color: inherit;
+  position: relative;
+  
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: ${theme.shadows.md};
+    text-decoration: none;
+    color: inherit;
+    background-color: ${theme.colors.background.hover};
+  }
 `;
 
 const PromotionContent = styled.div`
@@ -372,7 +374,7 @@ const PromotionContent = styled.div`
 const PromotionDetails = styled.div`
   margin-top: auto;
   padding-top: ${theme.spacing.sm};
-  border-top: 1px dashed ${theme.colors.border.light};
+  border-top: 1px solid ${theme.colors.border.light};
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: ${theme.spacing.xs};
@@ -386,7 +388,8 @@ const PromotionDetail = styled.div`
   color: ${theme.colors.text.secondary};
   
   svg {
-    color: ${theme.colors.primary.main};
+    color: ${({ type }) => 
+      type === "automatic" ? theme.colors.accent.main : theme.colors.primary.main};
     font-size: 16px;
     flex-shrink: 0;
   }
@@ -704,7 +707,7 @@ const Dashboard = () => {
   const { activeRole } = useAuth();
   const { profile, isLoading: isProfileLoading } = useUserProfile();
   const { transactions, isLoading: isTransactionsLoading } = useUserTransactions({ limit: 3 });
-  const { promotions, isLoading: isPromotionsLoading } = usePromotions({ started: true, ended: false, limit: 3 });
+  const { promotions, isLoading: isPromotionsLoading } = usePromotions({ started: true, ended: false, limit: 4 });
   const { events, isLoading: isEventsLoading } = useEvents({ started: false, ended: false, limit: 4 });
   const [isRedeemModalOpen, setIsRedeemModalOpen] = useState(false);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
@@ -1055,49 +1058,64 @@ const Dashboard = () => {
           </SectionTitle>
           
           {promotions && promotions.length > 0 ? (
-            promotions.map((promotion) => (
-              <PromotionCard key={promotion.id} as={Link} to={`/promotions/${promotion.id}`}>
-                <PromotionHeader type={promotion.type}>
-                  {promotion.type === 'automatic' ? 'Automatic' : 'One-time'}
-                  <FaChevronRight size={12} />
-                </PromotionHeader>
-                <PromotionContent>
-                  <h3>{promotion.name}</h3>
-                  <p>{promotion.description || 'Earn points with this special promotion!'}</p>
-                  
-                  <PromotionDetails>
-                    {/* 只显示最关键的促销信息，限制数量 */}
-                    {promotion.points && !promotion.pointRule && (
-                      <PromotionDetail>
-                        <FaCoins />
-                        <span>Points: <strong>{promotion.points}</strong></span>
-                      </PromotionDetail>
-                    )}
+            <>
+              {/* Group promotions by type */}
+              {['automatic', 'one-time'].map(type => {
+                const typePromotions = promotions.filter(p => 
+                  p.type === type
+                );
+                
+                if (typePromotions.length === 0) return null;
+                
+                return (
+                  <PromotionSection key={type}>
+                    <PromotionTypeHeader type={type}>
+                      {type === 'automatic' ? 'Automatic' : 'One-time'}
+                      <FaChevronRight size={12} />
+                    </PromotionTypeHeader>
                     
-                    {promotion.rate && !promotion.multiplier && (
-                      <PromotionDetail>
-                        <FaPercentage />
-                        <span>Rate: <strong>{promotion.rate}x</strong></span>
-                      </PromotionDetail>
-                    )}
-                    
-                    {promotion.minSpending && !promotion.minimumPurchase && (
-                      <PromotionDetail>
-                        <FaTags />
-                        <span>Min: <strong>${parseFloat(promotion.minSpending).toFixed(2)}</strong></span>
-                      </PromotionDetail>
-                    )}
-                    
-                    {promotion.startDate && (
-                      <PromotionDetail>
-                        <FaCalendarDay />
-                        <span>Start: <strong>{formatDisplayDate(promotion.startDate)}</strong></span>
-                      </PromotionDetail>
-                    )}
-                  </PromotionDetails>
-                </PromotionContent>
-              </PromotionCard>
-            ))
+                    {typePromotions.map(promotion => (
+                      <PromotionCard key={promotion.id}>
+                        <PromotionContent>
+                          <h3>{promotion.name}</h3>
+                          <p>{promotion.description || 'Earn points with this special promotion!'}</p>
+                          
+                          <PromotionDetails>
+                            {promotion.points && !promotion.pointRule && (
+                              <PromotionDetail type={promotion.type}>
+                                <FaCoins />
+                                <span>Points: <strong>{promotion.points}</strong></span>
+                              </PromotionDetail>
+                            )}
+                            
+                            {promotion.rate && !promotion.multiplier && (
+                              <PromotionDetail type={promotion.type}>
+                                <FaPercentage />
+                                <span>Rate: <strong>{promotion.rate}x</strong></span>
+                              </PromotionDetail>
+                            )}
+                            
+                            {promotion.minSpending && !promotion.minimumPurchase && (
+                              <PromotionDetail type={promotion.type}>
+                                <FaTags />
+                                <span>Min: <strong>${parseFloat(promotion.minSpending).toFixed(2)}</strong></span>
+                              </PromotionDetail>
+                            )}
+                            
+                            {promotion.startDate && (
+                              <PromotionDetail type={promotion.type}>
+                                <FaCalendarDay />
+                                <span>Start: <strong>{formatDisplayDate(promotion.startDate)}</strong></span>
+                              </PromotionDetail>
+                            )}
+                          </PromotionDetails>
+                        </PromotionContent>
+                      </PromotionCard>
+                    ))}
+                  </PromotionSection>
+                );
+              })}
+            </>
           ) : (
             <Card>
               <Card.Body>

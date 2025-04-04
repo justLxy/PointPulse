@@ -6,7 +6,10 @@ import { useAuth } from '../../contexts/AuthContext';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
 import theme from '../../styles/theme';
-import { FaUser, FaLock, FaArrowLeft, FaCheck } from 'react-icons/fa';
+import { FaUser, FaLock, FaArrowLeft, FaCheck, FaKey, FaExclamationTriangle } from 'react-icons/fa';
+import AnimatedLogo from '../../components/common/AnimatedLogo';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { toast } from 'react-hot-toast';
 
 const fadeIn = keyframes`
   from {
@@ -19,46 +22,81 @@ const fadeIn = keyframes`
   }
 `;
 
+const floatParticle = keyframes`
+  0% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(15px, -15px);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+`;
+
 const Container = styled.div`
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: ${theme.spacing.lg};
-  background-image: linear-gradient(to right, ${theme.colors.primary.light}, ${theme.colors.secondary.light});
+  background: linear-gradient(135deg, #2193b0, #6dd5ed);
+  position: relative;
+  overflow: hidden;
+  
+  &::before, &::after {
+    content: "";
+    position: absolute;
+    width: 80vw;
+    height: 80vw;
+    top: -40vw;
+    left: -20vw;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+    border-radius: 50%;
+    z-index: 0;
+    animation: ${floatParticle} 15s ease-in-out infinite;
+  }
+  
+  &::after {
+    top: auto;
+    bottom: -40vw;
+    left: auto;
+    right: -20vw;
+    width: 70vw;
+    height: 70vw;
+    animation: ${floatParticle} 18s ease-in-out infinite reverse;
+  }
+`;
+
+const Particle = styled.div`
+  position: absolute;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  width: ${props => props.size || '30px'};
+  height: ${props => props.size || '30px'};
+  top: ${props => props.top || '10%'};
+  left: ${props => props.left || '10%'};
+  animation: ${floatParticle} ${props => props.duration || '15s'} ease-in-out infinite ${props => props.delay || '0s'};
+  z-index: 0;
 `;
 
 const Card = styled.div`
   background-color: ${theme.colors.background.paper};
   border-radius: ${theme.radius.lg};
-  box-shadow: ${theme.shadows.xl};
+  box-shadow: ${theme.shadows.xl}, 0 10px 30px rgba(0, 0, 0, 0.1);
   width: 100%;
   max-width: 450px;
   padding: ${theme.spacing.xl};
   animation: ${fadeIn} 0.5s ease-out;
+  position: relative;
+  z-index: 1;
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 `;
 
 const Logo = styled.div`
   text-align: center;
   margin-bottom: ${theme.spacing.xl};
-  
-  img {
-    height: 80px;
-    width: auto;
-  }
-  
-  h1 {
-    margin-top: ${theme.spacing.md};
-    font-size: ${theme.typography.fontSize['2xl']};
-    font-weight: ${theme.typography.fontWeights.bold};
-    color: ${theme.colors.primary.main};
-  }
-  
-  p {
-    color: ${theme.colors.text.secondary};
-    font-size: ${theme.typography.fontSize.sm};
-    margin-top: ${theme.spacing.sm};
-  }
 `;
 
 const Form = styled.form`
@@ -69,17 +107,7 @@ const Form = styled.form`
 
 const InputGroup = styled.div`
   position: relative;
-  
-  svg {
-    position: absolute;
-    left: 12px;
-    top: 12px;
-    color: ${theme.colors.text.secondary};
-  }
-  
-  input {
-    padding-left: 40px;
-  }
+  width: 100%;
 `;
 
 const BackToLogin = styled(Link)`
@@ -104,6 +132,13 @@ const ErrorMessage = styled.div`
   margin-bottom: ${theme.spacing.md};
   font-size: ${theme.typography.fontSize.sm};
   border-left: 4px solid ${theme.colors.error.main};
+  display: flex;
+  align-items: center;
+  
+  svg {
+    margin-right: ${theme.spacing.sm};
+    min-width: 16px;
+  }
 `;
 
 const SuccessMessage = styled.div`
@@ -140,24 +175,58 @@ const PasswordRules = styled.ul`
   }
 `;
 
-const PasswordResetConfirmation = () => {
+// 添加自定义输入框样式，确保图标显示正确
+const StyledInput = styled(Input)`
+  .input-icon-wrapper {
+    color: ${theme.colors.text.secondary};
+    
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
+`;
+
+const Title = styled.h1`
+  font-size: ${theme.typography.fontSize.xl};
+  font-weight: ${theme.typography.fontWeights.bold};
+  color: ${theme.colors.text.primary};
+  text-align: center;
+  margin-bottom: ${theme.spacing.xs};
+`;
+
+const Subtitle = styled.p`
+  font-size: ${theme.typography.fontSize.sm};
+  color: ${theme.colors.text.secondary};
+  text-align: center;
+  margin-bottom: ${theme.spacing.lg};
+  line-height: 1.5;
+`;
+
+const AccountActivation = () => {
+  const [resetToken, setResetToken] = useState('');
   const [utorid, setUtorid] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { resetToken } = useParams();
-  const location = useLocation();
   const navigate = useNavigate();
+  const location = useLocation();
   const { resetPassword } = useAuth();
   
   useEffect(() => {
-    // Extract utorid from query params if available
+    // Extract utorid and resetToken from query params if available
     const params = new URLSearchParams(location.search);
     const utoridParam = params.get('utorid');
+    const tokenParam = params.get('token');
+    
     if (utoridParam) {
       setUtorid(utoridParam);
+    }
+    
+    if (tokenParam) {
+      setResetToken(tokenParam);
     }
   }, [location.search]);
   
@@ -180,13 +249,18 @@ const PasswordResetConfirmation = () => {
     e.preventDefault();
     setError('');
     
+    if (!resetToken.trim()) {
+      setError('Please enter your activation token');
+      return;
+    }
+    
     if (!utorid.trim()) {
       setError('Please enter your UTORid');
       return;
     }
     
     if (!password || !confirmPassword) {
-      setError('Please enter and confirm your new password');
+      setError('Please enter and confirm your password');
       return;
     }
     
@@ -205,15 +279,13 @@ const PasswordResetConfirmation = () => {
       const { success, error } = await resetPassword(resetToken, utorid, password);
       
       if (success) {
-        setSuccess(true);
-        setTimeout(() => {
-          navigate('/login');
-        }, 3000);
+        toast.success('Account activated successfully!');
+        navigate('/login');
       } else {
-        setError(error.message || 'Failed to reset password');
+        setError(error.message || 'Failed to activate account');
       }
     } catch (err) {
-      setError('Password reset failed. Please try again.');
+      setError('Account activation failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -221,43 +293,65 @@ const PasswordResetConfirmation = () => {
   
   return (
     <Container>
+      <Particle size="50px" top="20%" left="15%" duration="20s" />
+      <Particle size="80px" top="60%" left="75%" duration="25s" delay="5s" />
+      <Particle size="20px" top="30%" left="80%" duration="15s" delay="2s" />
+      <Particle size="35px" top="70%" left="25%" duration="18s" delay="7s" />
       <Card>
         <Logo>
-          <img src="/logo.png" alt="PointPulse Logo" />
-          <h1>Reset Your Password</h1>
-          <p>Enter your new password below</p>
+          <AnimatedLogo />
         </Logo>
         
-        {error && <ErrorMessage>{error}</ErrorMessage>}
+        <Title>Activate Your Account</Title>
+        <Subtitle>Enter your activation token and set your password</Subtitle>
+        
+        {error && (
+          <ErrorMessage>
+            <FaExclamationTriangle />
+            {error}
+          </ErrorMessage>
+        )}
         {success && (
           <SuccessMessage>
-            <FaCheck /> Password reset successful! Redirecting to login...
+            <FaCheck /> Account activated successfully! Redirecting to login...
           </SuccessMessage>
         )}
         
         <Form onSubmit={handleSubmit}>
           <InputGroup>
-            <FaUser size={16} />
-            <Input
+            <StyledInput
               type="text"
               placeholder="UTORid"
               value={utorid}
               onChange={(e) => setUtorid(e.target.value)}
               required
               disabled={success}
+              leftIcon={<FaUser size={16} />}
+            />
+          </InputGroup>
+          
+          <InputGroup>
+            <StyledInput
+              type="text"
+              placeholder="Activation Token"
+              value={resetToken}
+              onChange={(e) => setResetToken(e.target.value)}
+              required
+              disabled={success}
+              leftIcon={<FaKey size={16} />}
             />
           </InputGroup>
           
           <div>
             <InputGroup>
-              <FaLock size={16} />
-              <Input
+              <StyledInput
                 type="password"
-                placeholder="New Password"
+                placeholder="Set Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 disabled={success}
+                leftIcon={<FaLock size={16} />}
               />
             </InputGroup>
             
@@ -271,19 +365,19 @@ const PasswordResetConfirmation = () => {
           </div>
           
           <InputGroup>
-            <FaLock size={16} />
-            <Input
+            <StyledInput
               type="password"
-              placeholder="Confirm New Password"
+              placeholder="Confirm Password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
               disabled={success}
+              leftIcon={<FaLock size={16} />}
             />
           </InputGroup>
           
           <Button type="submit" fullWidth loading={loading} disabled={success}>
-            Reset Password
+            Activate Account
           </Button>
         </Form>
         
@@ -295,4 +389,4 @@ const PasswordResetConfirmation = () => {
   );
 };
 
-export default PasswordResetConfirmation; 
+export default AccountActivation; 

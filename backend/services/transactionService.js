@@ -537,7 +537,7 @@ const processRedemption = async (transactionId, processorId) => {
 /**
  * Create a transfer transaction
  */
-const createTransfer = async (data, senderId, recipientId) => {
+const createTransfer = async (data, senderId, recipientUtorid) => {
     const { type, amount, remark } = data;
 
     if (type !== 'transfer') {
@@ -573,9 +573,9 @@ const createTransfer = async (data, senderId, recipientId) => {
         throw new Error('Insufficient points');
     }
 
-    // Find the recipient
+    // Find the recipient using UTORid
     const recipient = await prisma.user.findUnique({
-        where: { id: parseInt(recipientId) },
+        where: { utorid: recipientUtorid },
         select: {
             id: true,
             utorid: true
@@ -586,6 +586,11 @@ const createTransfer = async (data, senderId, recipientId) => {
         throw new Error('Recipient not found');
     }
     
+    // Check if sender and recipient are the same
+    if (sender.id === recipient.id) {
+      throw new Error('Cannot transfer points to yourself');
+    }
+
     // Begin transaction
     return prisma.$transaction(async (tx) => {
         // Create the sender's transaction (negative amount)
@@ -743,31 +748,49 @@ const getTransactions = async (filters = {}, page = 1, limit = 10) => {
         },
     });
 
-    // Format the transactions for response
-    const results = transactions.map(tx => {
+    // Map transactions to include related user info for transfers
+    const results = await Promise.all(transactions.map(async (transaction) => {
         const formattedTx = {
-            id: tx.id,
-            utorid: tx.user.utorid,
-            amount: tx.amount,
-            type: tx.type,
-            suspicious: tx.suspicious,
-            remark: tx.remark,
-            createdBy: tx.creator.utorid,
-            promotionIds: tx.promotions.map(p => p.promotionId)
+            id: transaction.id,
+            userName: transaction.user.name,
+            userEmail: transaction.user.email,
+            utorid: transaction.user.utorid,
+            type: transaction.type,
+            amount: transaction.amount,
+            suspicious: transaction.suspicious,
+            remark: transaction.remark,
+            createdBy: transaction.creator.utorid,
+            createdAt: transaction.createdAt.toISOString(),
+            promotionIds: transaction.promotions.map(p => p.promotionId)
         };
+        
+        // Fetch related user details for transfers if relatedId exists
+        if ((transaction.type === 'transfer' || transaction.type === 'transfer_in' || transaction.type === 'transfer_out') && transaction.relatedId) {
+            const relatedUser = await prisma.user.findUnique({
+                where: { id: transaction.relatedId },
+                select: { utorid: true, name: true, email: true } 
+            });
+            if (relatedUser) {
+                formattedTx.relatedUser = {
+                    utorid: relatedUser.utorid,
+                    name: relatedUser.name,
+                    email: relatedUser.email
+                };
+            }
+        }
 
         // Add transaction-specific fields
-        if (tx.type === 'purchase') {
-            formattedTx.spent = tx.spent;
-        } else if (tx.type === 'redemption') {
-            formattedTx.redeemed = tx.redeemed;
-            formattedTx.relatedId = tx.relatedId;
-        } else if (tx.type === 'adjustment' || tx.type === 'transfer' || tx.type === 'event') {
-            formattedTx.relatedId = tx.relatedId;
+        if (transaction.type === 'purchase') {
+            formattedTx.spent = transaction.spent;
+        } else if (transaction.type === 'redemption') {
+            formattedTx.redeemed = transaction.redeemed;
+            formattedTx.relatedId = transaction.relatedId;
+        } else if (transaction.type === 'adjustment' || transaction.type === 'event') {
+            formattedTx.relatedId = transaction.relatedId;
         }
 
         return formattedTx;
-    });
+    }));
 
     return { count, results };
 };
@@ -810,6 +833,7 @@ const getTransaction = async (transactionId) => {
         suspicious: transaction.suspicious,
         remark: transaction.remark,
         createdBy: transaction.creator.utorid,
+        createdAt: transaction.createdAt.toISOString(),
         promotionIds: transaction.promotions.map(p => p.promotionId)
     };
 
@@ -943,6 +967,7 @@ const updateTransactionSuspicious = async (transactionId, suspiciousStatus) => {
             suspicious: fullUpdatedTransaction.suspicious,
             remark: fullUpdatedTransaction.remark,
             createdBy: fullUpdatedTransaction.creator.utorid,
+            createdAt: fullUpdatedTransaction.createdAt.toISOString(),
             promotionIds: fullUpdatedTransaction.promotions.map(p => p.promotionId),
             ...(fullUpdatedTransaction.spent && { spent: fullUpdatedTransaction.spent }),
             ...(fullUpdatedTransaction.relatedId && { relatedId: fullUpdatedTransaction.relatedId }),
@@ -1044,7 +1069,7 @@ const getUserTransactions = async (userId, filters = {}, page = 1, limit = 10) =
             remark: tx.remark,
             createdBy: tx.creator.utorid,
             promotionIds: tx.promotions.map(p => p.promotionId),
-            createdAt: tx.createdAt
+            createdAt: tx.createdAt.toISOString()
         };
 
         // Add transaction-specific fields

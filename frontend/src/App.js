@@ -7,18 +7,19 @@ import GlobalStyles from './styles/GlobalStyles';
 import Layout from './components/layout/Layout';
 import theme from './styles/theme';
 import LoadingSpinner from './components/common/LoadingSpinner';
+import { useState, useEffect } from 'react';
 
 // Import authentication pages
 import Login from './pages/auth/Login';
 import PasswordReset from './pages/auth/PasswordReset';
-import PasswordResetConfirmation from './pages/auth/PasswordResetConfirmation';
+import AccountActivation from './pages/auth/AccountActivation';
 
 // Import user pages
-import Profile from './pages/Profile';
+import Profile from './pages/users/Profile';
 import Dashboard from './pages/Dashboard';
-import Users from './pages/Users';
+import Users from './pages/users/Users';
 import CreateUser from './pages/users/CreateUser';
-import UserTransactions from './pages/UserTransactions';
+import UserTransactions from './pages/users/UserTransactions';
 
 // Import transaction pages
 import CreateTransaction from './pages/transactions/CreateTransaction';
@@ -28,18 +29,35 @@ import CreateAdjustment from './pages/transactions/CreateAdjustment';
 
 // Import other pages
 import Promotions from './pages/promotions/Promotions';
-import Events from './pages/Events';
-import EventDetail from './pages/EventDetail';
+import Events from './pages/events/Events';
+import EventDetail from './pages/events/EventDetail';
 
-// Create a query client
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      retry: 1,
+// Create a QueryClientProvider with logout reset capability
+const AppQueryClientProvider = ({ children }) => {
+  const [queryClient] = useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        refetchOnWindowFocus: false,
+        retry: 1,
+      },
     },
-  },
-});
+  }));
+
+  const { isAuthenticated } = useAuth();
+
+  // Reset query cache on logout
+  useEffect(() => {
+    if (!isAuthenticated) {
+      queryClient.clear();
+    }
+  }, [isAuthenticated, queryClient]);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      {children}
+    </QueryClientProvider>
+  );
+};
 
 // Styled components for loading screen
 const LoadingContainer = styled.div`
@@ -78,9 +96,9 @@ const ProtectedRoute = ({ children, allowedRoles = ['regular', 'cashier', 'manag
 
 const App = () => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <Router>
-        <AuthProvider>
+    <Router>
+      <AuthProvider>
+        <AppQueryClientProvider>
           <GlobalStyles />
           <Toaster
             position="top-right"
@@ -99,7 +117,7 @@ const App = () => {
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/password-reset" element={<PasswordReset />} />
-            <Route path="/password-reset/:resetToken" element={<PasswordResetConfirmation />} />
+            <Route path="/account-activation" element={<AccountActivation />} />
             
             {/* Protected Routes */}
             <Route
@@ -226,9 +244,9 @@ const App = () => {
             {/* Catch all - redirect to home */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-        </AuthProvider>
-      </Router>
-    </QueryClientProvider>
+        </AppQueryClientProvider>
+      </AuthProvider>
+    </Router>
   );
 };
 

@@ -57,6 +57,53 @@ const ErrorText = styled.p`
   margin-top: ${theme.spacing.xs};
 `;
 
+const SuccessButtonContainer = styled.div`
+  display: flex;
+  gap: ${theme.spacing.md};
+  
+  @media (max-width: 640px) {
+    flex-direction: column;
+    width: 100%;
+  }
+`;
+
+const ResetTokenContainer = styled(Card)`
+  background: ${theme.colors.background.alt};
+  padding: ${theme.spacing.md};
+  margin-bottom: ${theme.spacing.lg};
+  word-break: break-all;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: ${theme.colors.background.hover};
+  }
+  
+  &:active {
+    transform: scale(0.99);
+  }
+`;
+
+const CopyMessage = styled.div`
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: ${theme.spacing.sm} ${theme.spacing.md};
+  border-radius: ${theme.radius.md};
+  font-weight: ${theme.typography.fontWeights.medium};
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  
+  &.visible {
+    opacity: 1;
+  }
+`;
+
 const CreateUser = () => {
   const [formData, setFormData] = useState({
     utorid: '',
@@ -73,6 +120,7 @@ const CreateUser = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [resetToken, setResetToken] = useState(null);
+  const [copySuccess, setCopySuccess] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   
@@ -153,6 +201,16 @@ const CreateUser = () => {
     }
   };
   
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(resetToken);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy token: ', err);
+    }
+  };
+  
   return (
     <PageContainer>
       <PageTitle>Create New User</PageTitle>
@@ -172,32 +230,34 @@ const CreateUser = () => {
               <p style={{ marginBottom: theme.spacing.md }}>
                 Please provide the user with the following reset token to activate their account:
               </p>
-              <Card style={{ 
-                background: theme.colors.background.alt, 
-                padding: theme.spacing.md,
-                marginBottom: theme.spacing.lg
-              }}>
+              <ResetTokenContainer onClick={copyToClipboard}>
                 <code>{resetToken}</code>
-              </Card>
+                <CopyMessage className={copySuccess ? 'visible' : ''}>
+                  Copied to clipboard!
+                </CopyMessage>
+              </ResetTokenContainer>
               <p style={{ marginBottom: theme.spacing.md }}>
                 The user will need to use this token to activate their account.
+                Click on the token to copy it to clipboard.
               </p>
-              <div style={{ display: 'flex', gap: theme.spacing.md }}>
+              <SuccessButtonContainer>
                 <Button 
                   onClick={() => {
                     setResetToken(null);
                     setFormData({ utorid: '', name: '', email: '' });
                   }}
                   variant="secondary"
+                  fullWidth
                 >
                   Create Another User
                 </Button>
                 <Button 
                   onClick={() => navigate('/')}
+                  fullWidth
                 >
                   Return to Dashboard
                 </Button>
-              </div>
+              </SuccessButtonContainer>
             </div>
           ) : (
             <form onSubmit={handleSubmit}>

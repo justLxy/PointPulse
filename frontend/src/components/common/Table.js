@@ -123,18 +123,32 @@ const Pagination = styled.div`
   align-items: center;
   padding: ${theme.spacing.md};
   border-top: 1px solid ${theme.colors.border.light};
-  background-color: ${theme.colors.background.default};
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: ${theme.spacing.md};
+  }
 `;
 
 const PaginationInfo = styled.div`
-  font-size: ${theme.typography.fontSize.sm};
   color: ${theme.colors.text.secondary};
+  font-size: ${theme.typography.fontSize.sm};
+  
+  @media (max-width: 768px) {
+    text-align: center;
+    width: 100%;
+  }
 `;
 
 const PaginationControls = styled.div`
   display: flex;
-  align-items: center;
-  gap: ${theme.spacing.sm};
+  gap: ${theme.spacing.xs};
+  
+  @media (max-width: 768px) {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
 `;
 
 const PaginationButton = styled.button`
@@ -152,6 +166,7 @@ const PaginationButton = styled.button`
   font-weight: ${({ active }) => (active ? theme.typography.fontWeights.medium : theme.typography.fontWeights.regular)};
   cursor: pointer;
   transition: all 0.2s;
+  white-space: nowrap;
   
   &:hover:not(:disabled) {
     background-color: ${({ active }) => (active ? theme.colors.primary.dark : theme.colors.background.default)};
