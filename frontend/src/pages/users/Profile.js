@@ -15,7 +15,9 @@ import {
   FaLock, 
   FaEdit, 
   FaSave, 
-  FaTimes 
+  FaTimes, 
+  FaEye,
+  FaEyeSlash
 } from 'react-icons/fa';
 import QRCode from '../../components/common/QRCode';
 import { API_URL } from '../../services/api';
@@ -200,6 +202,45 @@ const PasswordForm = styled.form`
   gap: ${theme.spacing.md};
 `;
 
+const PasswordRequirements = styled.ul`
+  padding-left: ${theme.spacing.lg};
+  margin-top: ${theme.spacing.sm};
+  margin-bottom: ${theme.spacing.md};
+  font-size: ${theme.typography.fontSize.xs};
+  color: ${theme.colors.text.secondary};
+  
+  li {
+    margin-bottom: ${theme.spacing.xs};
+  }
+`;
+
+const InputGroup = styled.div`
+  position: relative;
+  width: 100%;
+`;
+
+const PasswordToggle = styled.button`
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%) translateY(5px);
+  height: 24px;
+  width: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: ${theme.colors.text.secondary};
+  z-index: 5;
+  padding: 0;
+  
+  &:hover {
+    color: ${theme.colors.primary.main};
+  }
+`;
+
 const InfoItem = styled.div`
   display: flex;
   align-items: center;
@@ -349,6 +390,38 @@ const Profile = () => {
   const [passwordError, setPasswordError] = useState('');
   const avatarInputRef = useRef(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
+
+  // Live validation states
+  const [validLength, setValidLength] = useState(false);
+  const [hasUpper, setHasUpper] = useState(false);
+  const [hasLower, setHasLower] = useState(false);
+  const [hasNumber, setHasNumber] = useState(false);
+  const [hasSpecial, setHasSpecial] = useState(false);
+
+  const [showPasswords, setShowPasswords] = useState({
+    oldPassword: false,
+    newPassword: false,
+    confirmPassword: false,
+  });
+
+  const validateLive = (pwd) => {
+    setValidLength(pwd.length >= 8 && pwd.length <= 20);
+    setHasUpper(/[A-Z]/.test(pwd));
+    setHasLower(/[a-z]/.test(pwd));
+    setHasNumber(/\d/.test(pwd));
+    setHasSpecial(/[\W_]/.test(pwd));
+  };
+
+  // const togglePasswordVisibility = (field) => {
+  //   setShowPasswords(!field);
+  // };
+
+  const togglePasswordVisibility = (field) => {
+    setShowPasswords((prev) => ({
+      ...prev,
+      [field]: !prev[field],
+    }));
+  };
   
   // Initialize form data when profile is loaded
   if (!isLoading && profile && !formData.name) {
@@ -398,6 +471,10 @@ const Profile = () => {
   const handlePasswordChange = (e) => {
     const { name, value } = e.target;
     setPasswordData({ ...passwordData, [name]: value });
+
+    if (name === 'newPassword') {
+      validateLive(value);
+    }
   };
   
   const handleProfileSubmit = (e) => {
@@ -437,22 +514,47 @@ const Profile = () => {
     setPasswordError('');
     
     const { oldPassword, newPassword, confirmPassword } = passwordData;
-    
-    if (!oldPassword || !newPassword || !confirmPassword) {
-      setPasswordError('All fields are required');
+    let errors = {};
+
+    if (!oldPassword) {
+      errors.oldPassword = 'Current password is required';
+    }
+    if (!newPassword) {
+      errors.newPassword = 'New password is required';
+    }
+    if (!confirmPassword) {
+      errors.confirmPassword = 'Confirm password is required';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setPasswordError(errors);
       return;
     }
     
+    // if (!oldPassword || !newPassword || !confirmPassword) {
+    //   setPasswordError('All fields are required');
+    //   return;
+    // }
+    
+    // if (newPassword !== confirmPassword) {
+    //   setPasswordError('New passwords do not match');
+    //   return;
+    // }
+    
+    // if (!validatePassword(newPassword)) {
+    //   setPasswordError('Password does not meet all requirements');
+    //   return;
+    // }
     if (newPassword !== confirmPassword) {
-      setPasswordError('New passwords do not match');
+      setPasswordError({ newPassword: 'New passwords do not match' });
       return;
     }
-    
+  
     if (!validatePassword(newPassword)) {
-      setPasswordError('Password does not meet all requirements');
+      setPasswordError({ newPassword: 'Password does not meet all requirements' });
       return;
     }
-    
+
     updatePassword({ oldPassword, newPassword });
     
     // Reset form if successful
@@ -461,6 +563,13 @@ const Profile = () => {
       newPassword: '',
       confirmPassword: '',
     });
+
+    // Reset validation states
+    setValidLength(false);
+    setHasUpper(false);
+    setHasLower(false);
+    setHasNumber(false);
+    setHasSpecial(false);
   };
   
   const getInitials = (name) => {
@@ -595,34 +704,81 @@ const Profile = () => {
       </Card.Header>
       <Card.Body style={{ padding: theme.spacing.lg }}>
         <PasswordForm onSubmit={handlePasswordSubmit}>
-          <Input
-            name="oldPassword"
-            label="Current Password"
-            type="password"
-            value={passwordData.oldPassword}
-            onChange={handlePasswordChange}
-            leftIcon={<FaLock size={16} />}
-          />
+
+          <InputGroup>
+            <Input
+              name="oldPassword"
+              label="Current Password"
+              type={showPasswords.oldPassword ? "text" : "password"}
+              value={passwordData.oldPassword}
+              onChange={handlePasswordChange}
+              error={passwordError.oldPassword}  // Pass specific error for the field
+              helperText={passwordError.oldPassword}  
+            />
+            <PasswordToggle
+              type="button"
+              onClick={() => togglePasswordVisibility('oldPassword')}
+              aria-label={showPasswords.oldPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPasswords.oldPassword ? <FaEye size={16}/> : <FaEyeSlash size={16}/>}
+            </PasswordToggle>
+          </InputGroup>
           
-          <Input
-            name="newPassword"
-            label="New Password"
-            type="password"
-            value={passwordData.newPassword}
-            onChange={handlePasswordChange}
-            error={passwordError}
-            helperText="8-20 characters, include uppercase, lowercase, number, and special character"
-            leftIcon={<FaLock size={16} />}
-          />
-          
-          <Input
-            name="confirmPassword"
-            label="Confirm New Password"
-            type="password"
-            value={passwordData.confirmPassword}
-            onChange={handlePasswordChange}
-            leftIcon={<FaLock size={16} />}
-          />
+          <InputGroup>
+            <Input
+              name="newPassword"
+              label="New Password"
+              type={showPasswords.newPassword ? "text" : "password"}
+              value={passwordData.newPassword}
+              onChange={handlePasswordChange}
+              error={passwordError.newPassword}
+              helperText={passwordError.newPassword}
+            />
+            <PasswordToggle
+              type="button"
+              onClick={() => togglePasswordVisibility('newPassword')}
+              aria-label={showPasswords.newPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPasswords.newPassword ? <FaEye size={16}/> : <FaEyeSlash size={16}/>}
+            </PasswordToggle>
+          </InputGroup>
+
+          <PasswordRequirements>
+            <li style={{ color: validLength ? theme.colors.success.main : theme.colors.text.secondary }}>
+              8–20 characters
+            </li>
+            <li style={{ color: hasUpper ? theme.colors.success.main : theme.colors.text.secondary }}>
+              At least one uppercase letter
+            </li>
+            <li style={{ color: hasLower ? theme.colors.success.main : theme.colors.text.secondary }}>
+              At least one lowercase letter
+            </li>
+            <li style={{ color: hasNumber ? theme.colors.success.main : theme.colors.text.secondary }}>
+              At least one number
+            </li>
+            <li style={{ color: hasSpecial ? theme.colors.success.main : theme.colors.text.secondary }}>
+              At least one special character
+            </li>
+          </PasswordRequirements>
+
+          <InputGroup>
+            <Input
+              name="confirmPassword"
+              label="Confirm New Password"
+              type={showPasswords.confirmPassword ? "text" : "password"}
+              value={passwordData.confirmPassword}
+              onChange={handlePasswordChange}
+              error={passwordError.confirmPassword}  // Pass specific error for the field
+              helperText={passwordError.confirmPassword}  // Display the error message
+            />
+            <PasswordToggle
+              type="button"
+              onClick={() => togglePasswordVisibility('confirmPassword')}
+              aria-label={showPasswords.confirmPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPasswords.confirmPassword ? <FaEye size={16}/> : <FaEyeSlash size={16}/>}
+            </PasswordToggle>
+          </InputGroup>
           
           <Button 
             type="submit" 
