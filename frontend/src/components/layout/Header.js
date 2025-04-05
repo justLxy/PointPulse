@@ -50,7 +50,7 @@ const Nav = styled.nav`
   display: flex;
   align-items: center;
   
-  @media (max-width: 1200px) {
+  @media (max-width: 1300px) {
     display: ${({ isOpen }) => (isOpen ? 'flex' : 'none')};
     position: absolute;
     top: 70px;
@@ -88,7 +88,7 @@ const NavLink = styled(Link)`
       background-color: rgba(52, 152, 219, 0.1);
     `}
   
-  @media (max-width: 1200px) {
+  @media (max-width: 1300px) {
     margin: ${theme.spacing.xs} 0;
     padding: ${theme.spacing.md};
     width: 100%;
@@ -104,7 +104,7 @@ const MenuToggle = styled.button`
   font-size: ${theme.typography.fontSize.xl};
   cursor: pointer;
   
-  @media (max-width: 1200px) {
+  @media (max-width: 1300px) {
     display: block;
   }
 `;
@@ -115,7 +115,7 @@ const ProfileSection = styled.div`
   gap: ${theme.spacing.md};
   margin-right: ${theme.spacing.xl};
   
-  @media (max-width: 1200px) {
+  @media (max-width: 1300px) {
     margin-top: 0;
     margin-right: 0;
     margin-bottom: ${theme.spacing.lg};
@@ -195,7 +195,7 @@ const DropdownMenu = styled.div`
     visibility 0.2s ease, 
     transform 0.2s ease;
   
-  @media (max-width: 1200px) {
+  @media (max-width: 1300px) {
     position: absolute;
     top: calc(100% + 10px);
     left: 50%;
