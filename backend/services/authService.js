@@ -5,8 +5,11 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
 const { JWT_SECRET } = require('../utils/jwtConfig');
+const emailService = require('./emailService');
 
 const prisma = new PrismaClient();
+
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
 
 // Rate limiting for password reset
 const resetAttempts = new Map();
@@ -114,6 +117,10 @@ const requestPasswordReset = async (utorid, ipAddress) => {
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
     console.log('Generated new reset token for user ID:', user.id, 'expires at:', expiresAt);
 
+     // Send reset email
+    const reseturl = `${FRONTEND_URL}/password-reset/`;
+    await emailService.sendResetEmail(user.email, reseturl, user.name, resetToken, utorid);
+
     // Save the reset token to the user
     await prisma.user.update({
         where: { id: user.id },
@@ -146,7 +153,7 @@ const resetPassword = async (resetToken, utorid, password) => {
     }
 
     // Check if the token matches the utorid
-    if (user.utorid !== utorid) {
+    if (user.utorid.toLowerCase() !== utorid.toLowerCase()) {
         console.log('Password reset failed: Token does not match UTORid');
         throw new Error('Token does not match utorid');
     }

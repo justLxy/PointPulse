@@ -125,6 +125,17 @@ const InputGroup = styled.div`
   width: 100%;
 `;
 
+const StyledInput = styled(Input)`
+  .input-icon-wrapper {
+    color: ${theme.colors.text.secondary};
+    
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
+`;
+
 const PasswordToggle = styled.button`
   position: absolute;
   right: 12px;
@@ -245,11 +256,11 @@ const PasswordReset = () => {
     validateLive(newPassword);
   };
 
-  const validatePassword = (password) => {
-    // At least 8 characters, with uppercase, lowercase, number, and special char
-    const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,20}$/;
-    return regex.test(password);
-  };
+  // const validatePassword = (password) => {
+  //   // At least 8 characters, with uppercase, lowercase, number, and special char
+  //   const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,20}$/;
+  //   return regex.test(password);
+  // };
   
   const handleRequestReset = async (e) => {
     e.preventDefault();
@@ -268,8 +279,8 @@ const PasswordReset = () => {
       console.log("Password reset requested successfully:", result);
       
       if (result && result.resetToken) {
-        setResetToken(result.resetToken);
-        setSuccess('Reset token generated successfully!');
+        // setResetToken(result.resetToken);
+        setSuccess('Reset token generated successfully! Please check your email.');
         setStep(2);
       } else {
         setError('Something went wrong. Please try again.');
@@ -412,6 +423,17 @@ const PasswordReset = () => {
         ) : (
           <Form onSubmit={handleResetPassword}>
             <InputGroup>
+              <StyledInput
+                type="text"
+                placeholder="Enter Reset Token"
+                value={resetToken}
+                label="Reset Token"
+                onChange={(e) => setResetToken(e.target.value)}
+                required
+                leftIcon={<FaKey size={16} />}
+              />
+            </InputGroup>
+            <InputGroup>
               <Input
                 id="password"
                 name="password"
@@ -442,7 +464,7 @@ const PasswordReset = () => {
                 placeholder="Confirm your new password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                leftIcon={<FaKey />}
+                leftIcon={<FaLock />}
                 required
               />
               <PasswordToggle

@@ -14,7 +14,7 @@ const createUser = async (req, res) => {
         }
 
         const userData = {
-            utorid: req.body.utorid,
+            utorid: req.body.utorid?.toLowerCase(), 
             name: req.body.name,
             email: req.body.email
         };
