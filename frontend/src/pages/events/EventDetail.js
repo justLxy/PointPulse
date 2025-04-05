@@ -879,10 +879,10 @@ const EventDetail = () => {
                 {event.endTime && ` - ${formatTime(event.endTime)}`}
                 
                 <EventBadge>
-                  <FaUsers size={12} /> 
-                  {event.guests && Array.isArray(event.guests) ? event.guests.length : 0} Attendees
-                  {event.capacity ? ` / ${event.capacity}` : ''}
+                   <FaUsers size={12} /> 
+                {`${event.numGuests ?? event.guests?.length ?? 0}/${event.capacity || '∞'} attendees`}
                 </EventBadge>
+
               </>
             )}
           </PageSubtitle>
@@ -981,26 +981,29 @@ const EventDetail = () => {
                 </EventDetailItem>
                 
                 <EventDetailItem>
-                  <FaUsers />
-                  <div>
-                    <strong>Capacity</strong>
+                    <FaUsers />
                     <div>
-                      {event.guests && Array.isArray(event.guests) ? event.guests.length : 0} attendees
-                      {event.capacity ? ` (max: ${event.capacity})` : ' (unlimited)'}
+                      <strong>Capacity</strong>
+                      <div>
+                      {`${event.numGuests ?? event.guests?.length ?? 0}/${event.capacity || '∞'} attendees`}
+
+                      </div>
                     </div>
-                  </div>
-                </EventDetailItem>
-                
-                <EventDetailItem>
-                  <FaCoins />
-                  <div>
-                    <strong>Points</strong>
+                  </EventDetailItem>
+
+                                  {!(activeRole === 'regular' && !isU) && (
+                  <EventDetailItem>
+                    <FaCoins />
                     <div>
-                      {event.pointsAwarded || 0} points awarded 
-                      ({event.pointsRemain ?? event.points ?? 0} remaining)
+                      <strong>Points</strong>
+                      <div>
+                        {event.pointsAwarded || 0} points awarded 
+                        ({event.pointsRemain ?? event.points ?? 0} remaining)
+                      </div>
                     </div>
-                  </div>
-                </EventDetailItem>
+                  </EventDetailItem>
+                )}
+
               </EventMetadata>
             </Card.Body>
           </Card>
@@ -1017,7 +1020,7 @@ const EventDetail = () => {
                 active={activeTab === 'guests'} 
                 onClick={() => setActiveTab('guests')}
               >
-                Guests ({event.guests && Array.isArray(event.guests) ? event.guests.length : 0})
+                Guests ({event.numGuests ?? event.guests?.length ?? 0})
               </TabButton>
               {canEditEvent() && (
                 <TabButton 
@@ -1233,16 +1236,19 @@ const EventDetail = () => {
               <SummaryItem>
                 <strong>Guests:</strong>
                 <span>
-                  {event.guests && Array.isArray(event.guests) ? event.guests.length : 0}
+                {event.numGuests ?? event.guests?.length ?? 0}
                   {event.capacity ? ` / ${event.capacity} capacity` : ' (unlimited)'}
                 </span>
-              </SummaryItem>
+                          </SummaryItem>
+                          {!(activeRole === 'regular' && !isU) && (
               <SummaryItem>
                 <strong>Points:</strong>
                 <span>
                   {event.pointsAwarded || 0} awarded ({event.pointsRemain ?? event.points ?? 0} remaining)
                 </span>
               </SummaryItem>
+            )}
+
             </Card.Body>
           </SummaryCard>
         </div>
