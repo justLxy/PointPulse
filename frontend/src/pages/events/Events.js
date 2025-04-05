@@ -16,7 +16,7 @@ const Events = () => {
     location: '',
     page: 1,
     limit: 9,
-    status: 'upcoming',
+    status: '',
     capacityStatus: 'available',
     showFull: false,
     ...(isManager ? {
