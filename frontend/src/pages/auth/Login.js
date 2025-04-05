@@ -222,7 +222,9 @@ const Login = () => {
     }
     
     try {
-      const { success, error } = await login(utorid, password);
+      // const { success, error } = await login(utorid, password);
+      const { success, error } = await login(utorid.trim().toLowerCase(), password);
+
       
       if (success) {
         navigate(from, { replace: true });

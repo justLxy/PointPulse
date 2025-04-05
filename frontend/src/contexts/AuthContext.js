@@ -251,6 +251,7 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
       await AuthService.resetPassword(resetToken, utorid, password);
+      toast.success('Account activated successfully!');
       return { success: true };
     } catch (error) {
       toast.error(error.message || 'Password reset failed');

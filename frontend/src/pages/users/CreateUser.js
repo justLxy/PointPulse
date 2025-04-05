@@ -182,7 +182,11 @@ const CreateUser = () => {
     setLoading(true);
     
     try {
-      const response = await api.post('/users', formData);
+      // const response = await api.post('/users', formData);
+      const response = await api.post('/users', {
+        ...formData,
+        utorid: formData.utorid.toLowerCase(),
+      });
       
       setResetToken(response.data.resetToken);
       
