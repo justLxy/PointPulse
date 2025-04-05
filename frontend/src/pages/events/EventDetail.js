@@ -1046,7 +1046,7 @@ const EventDetail = () => {
               </Card>
             )}
             
-            {activeTab === 'guests' && !(activeRole === 'regular' && !isU) && (
+            {activeTab === 'guests' && !(activeRole === 'regular' && !isU) && activeRole !== 'cashier' && (
               <Card>
                 <Card.Header>
                   <Card.Title>Guests</Card.Title>
