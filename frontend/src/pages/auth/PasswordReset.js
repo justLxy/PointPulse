@@ -221,7 +221,30 @@ const PasswordReset = () => {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  
+
+  // Track validation states
+  const [validLength, setValidLength] = useState(false);
+  const [hasUpper, setHasUpper] = useState(false);
+  const [hasLower, setHasLower] = useState(false);
+  const [hasNumber, setHasNumber] = useState(false);
+  const [hasSpecial, setHasSpecial] = useState(false);
+
+  // Live password validation
+  const validateLive = (pwd) => {
+    setValidLength(pwd.length >= 8 && pwd.length <= 20);
+    setHasUpper(/[A-Z]/.test(pwd));
+    setHasLower(/[a-z]/.test(pwd));
+    setHasNumber(/\d/.test(pwd));
+    setHasSpecial(/[\W_]/.test(pwd)); // Matches special characters
+  };
+
+  // Handle password change and trigger live validation
+  const handlePasswordChange = (e) => {
+    const newPassword = e.target.value;
+    setPassword(newPassword);
+    validateLive(newPassword);
+  };
+
   const validatePassword = (password) => {
     // At least 8 characters, with uppercase, lowercase, number, and special char
     const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,20}$/;
@@ -273,11 +296,16 @@ const PasswordReset = () => {
       setError('Passwords do not match');
       return;
     }
-    
-    if (!validatePassword(password)) {
-      setError('Password must be 8-20 characters and include uppercase, lowercase, number, and special character');
+
+    if (!validLength || !hasUpper || !hasLower || !hasNumber || !hasSpecial) {
+      setError('Password does not meet the security requirements.');
       return;
     }
+    
+    // if (!validatePassword(password)) {
+    //   setError('Password must be 8-20 characters and include uppercase, lowercase, number, and special character');
+    //   return;
+    // }
     
     setLoading(true);
     
@@ -391,7 +419,8 @@ const PasswordReset = () => {
                 label="New Password"
                 placeholder="Enter your new password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                // onChange={(e) => setPassword(e.target.value)}
+                onChange={handlePasswordChange}
                 leftIcon={<FaLock />}
                 required
               />
@@ -425,12 +454,29 @@ const PasswordReset = () => {
               </PasswordToggle>
             </InputGroup>
             
-            <PasswordRequirements>
+            {/* <PasswordRequirements>
               <li>8-20 characters long</li>
               <li>At least one uppercase letter</li>
               <li>At least one lowercase letter</li>
               <li>At least one number</li>
               <li>At least one special character</li>
+            </PasswordRequirements> */}
+            <PasswordRequirements>
+              <li style={{ color: validLength ? theme.colors.success.main : theme.colors.text.secondary }}>
+                8–20 characters
+              </li>
+              <li style={{ color: hasUpper ? theme.colors.success.main : theme.colors.text.secondary }}>
+                At least one uppercase letter
+              </li>
+              <li style={{ color: hasLower ? theme.colors.success.main : theme.colors.text.secondary }}>
+                At least one lowercase letter
+              </li>
+              <li style={{ color: hasNumber ? theme.colors.success.main : theme.colors.text.secondary }}>
+                At least one number
+              </li>
+              <li style={{ color: hasSpecial ? theme.colors.success.main : theme.colors.text.secondary }}>
+                At least one special character
+              </li>
             </PasswordRequirements>
             
             <Button type="submit" fullWidth>
