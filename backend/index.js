@@ -19,7 +19,7 @@ const port = (() => {
 })();
 
 // Configuration
-const FRONTEND_URL = 'http://localhost:3000'; // This can be changed when deployed
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000"; // This can be changed when deployed
 
 const express = require("express");
 const cors = require("cors");

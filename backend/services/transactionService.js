@@ -660,6 +660,7 @@ const getTransactions = async (filters = {}, page = 1, limit = 10) => {
         promotionId,
         type,
         relatedId,
+        processedBy,
         amount,
         operator
     } = filters;
@@ -701,6 +702,17 @@ const getTransactions = async (filters = {}, page = 1, limit = 10) => {
             where.relatedId = parseInt(relatedId);
         }
     }
+    
+    // Add support for processedBy filter
+    if (processedBy !== undefined) {
+        // If processedBy is null, filter for unprocessed transactions
+        if (processedBy === null) {
+            where.processedBy = null;
+        } else {
+            // If processedBy has a value, look for transactions processed by that user
+            where.processedBy = parseInt(processedBy);
+        }
+    }
 
     if (amount && operator) {
         const amountValue = parseInt(amount);
@@ -732,10 +744,17 @@ const getTransactions = async (filters = {}, page = 1, limit = 10) => {
         include: {
             user: {
                 select: {
-                    utorid: true
+                    utorid: true,
+                    name: true,
+                    email: true
                 }
             },
             creator: {
+                select: {
+                    utorid: true
+                }
+            },
+            processor: {
                 select: {
                     utorid: true
                 }
@@ -761,7 +780,8 @@ const getTransactions = async (filters = {}, page = 1, limit = 10) => {
             remark: transaction.remark,
             createdBy: transaction.creator.utorid,
             createdAt: transaction.createdAt.toISOString(),
-            promotionIds: transaction.promotions.map(p => p.promotionId)
+            promotionIds: transaction.promotions.map(p => p.promotionId),
+            processedBy: transaction.processedBy ? transaction.processor?.utorid : null
         };
         
         // Fetch related user details for transfers if relatedId exists
@@ -812,6 +832,11 @@ const getTransaction = async (transactionId) => {
                     utorid: true
                 }
             },
+            processor: {
+                select: {
+                    utorid: true
+                }
+            },
             promotions: {
                 select: {
                     promotionId: true
@@ -834,7 +859,8 @@ const getTransaction = async (transactionId) => {
         remark: transaction.remark,
         createdBy: transaction.creator.utorid,
         createdAt: transaction.createdAt.toISOString(),
-        promotionIds: transaction.promotions.map(p => p.promotionId)
+        promotionIds: transaction.promotions.map(p => p.promotionId),
+        processedBy: transaction.processedBy ? transaction.processor?.utorid : null
     };
 
     // Add transaction-specific fields

@@ -50,7 +50,7 @@ const Nav = styled.nav`
   display: flex;
   align-items: center;
   
-  @media (max-width: 768px) {
+  @media (max-width: 1200px) {
     display: ${({ isOpen }) => (isOpen ? 'flex' : 'none')};
     position: absolute;
     top: 70px;
@@ -88,7 +88,7 @@ const NavLink = styled(Link)`
       background-color: rgba(52, 152, 219, 0.1);
     `}
   
-  @media (max-width: 768px) {
+  @media (max-width: 1200px) {
     margin: ${theme.spacing.xs} 0;
     padding: ${theme.spacing.md};
     width: 100%;
@@ -104,7 +104,7 @@ const MenuToggle = styled.button`
   font-size: ${theme.typography.fontSize.xl};
   cursor: pointer;
   
-  @media (max-width: 768px) {
+  @media (max-width: 1200px) {
     display: block;
   }
 `;
@@ -115,7 +115,7 @@ const ProfileSection = styled.div`
   gap: ${theme.spacing.md};
   margin-right: ${theme.spacing.xl};
   
-  @media (max-width: 768px) {
+  @media (max-width: 1200px) {
     margin-top: 0;
     margin-right: 0;
     margin-bottom: ${theme.spacing.lg};
@@ -195,7 +195,7 @@ const DropdownMenu = styled.div`
     visibility 0.2s ease, 
     transform 0.2s ease;
   
-  @media (max-width: 768px) {
+  @media (max-width: 1200px) {
     position: absolute;
     top: calc(100% + 10px);
     left: 50%;
@@ -329,7 +329,7 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
-  const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
+  const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 1200);
   
   const profileDropdownRef = useRef(null);
   const roleDropdownRef = useRef(null);
@@ -338,7 +338,7 @@ const Header = () => {
   // Detect mobile view
   useEffect(() => {
     const handleResize = () => {
-      setIsMobileView(window.innerWidth <= 768);
+      setIsMobileView(window.innerWidth <= 1200);
     };
     
     window.addEventListener('resize', handleResize);

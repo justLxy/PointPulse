@@ -272,28 +272,12 @@ const CreateTransaction = () => {
     setSearchLoading(true);
     
     try {
-      // 先通过 utorid 搜索用户列表
-      const usersData = await UserService.getUsers({ name: utorid });
-      
-      if (usersData && usersData.results && usersData.results.length > 0) {
-        // 找到匹配的用户
-        const matchingUser = usersData.results.find(u => u.utorid.toLowerCase() === utorid.toLowerCase());
-        
-        if (matchingUser) {
-          // 获取用户详细信息
-          const userData = await UserService.getUser(matchingUser.id);
-          setUser(userData);
-        } else {
-          setError('User not found. Please check the UTORid and try again.');
-          setUser(null);
-        }
-      } else {
-        setError('User not found. Please check the UTORid and try again.');
-        setUser(null);
-      }
+      // Try to lookup user directly using the cashier-specific endpoint
+      const userData = await UserService.lookupUserByUTORid(utorid);
+      setUser(userData);
     } catch (err) {
       console.error('Search user error:', err);
-      setError('User not found or you do not have permission to view this user');
+      setError(err.message || 'User not found or you do not have permission to view this user');
       setUser(null);
     } finally {
       setSearchLoading(false);

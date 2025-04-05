@@ -6,7 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
 import theme from '../../styles/theme';
-import { FaUser, FaLock, FaArrowLeft, FaCheck, FaKey, FaExclamationTriangle } from 'react-icons/fa';
+import { FaUser, FaLock, FaArrowLeft, FaCheck, FaKey, FaEye, FaEyeSlash, FaExclamationTriangle } from 'react-icons/fa';
 import AnimatedLogo from '../../components/common/AnimatedLogo';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { toast } from 'react-hot-toast';
@@ -110,6 +110,29 @@ const InputGroup = styled.div`
   width: 100%;
 `;
 
+
+const PasswordToggle = styled.button`
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%) translateY(5px);
+  height: 24px;
+  width: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: ${theme.colors.text.secondary};
+  z-index: 5;
+  padding: 0;
+  
+  &:hover {
+    color: ${theme.colors.primary.main};
+  }
+`;
+
 const BackToLogin = styled(Link)`
   display: flex;
   align-items: center;
@@ -175,6 +198,18 @@ const PasswordRules = styled.ul`
   }
 `;
 
+const PasswordRequirements = styled.ul`
+  padding-left: ${theme.spacing.lg};
+  margin-top: ${theme.spacing.sm};
+  margin-bottom: ${theme.spacing.md};
+  font-size: ${theme.typography.fontSize.xs};
+  color: ${theme.colors.text.secondary};
+  
+  li {
+    margin-bottom: ${theme.spacing.xs};
+  }
+`;
+
 // 添加自定义输入框样式，确保图标显示正确
 const StyledInput = styled(Input)`
   .input-icon-wrapper {
@@ -229,21 +264,56 @@ const AccountActivation = () => {
       setResetToken(tokenParam);
     }
   }, [location.search]);
-  
-  const validatePassword = (password) => {
-    // At least 8 characters, max 20
-    if (password.length < 8 || password.length > 20) {
-      return false;
-    }
-    
-    // Check for at least one uppercase, one lowercase, one number, one special character
-    const hasUppercase = /[A-Z]/.test(password);
-    const hasLowercase = /[a-z]/.test(password);
-    const hasNumber = /[0-9]/.test(password);
-    const hasSpecial = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password);
-    
-    return hasUppercase && hasLowercase && hasNumber && hasSpecial;
+
+  // Track validation states
+  const [validLength, setValidLength] = useState(false);
+  const [hasUpper, setHasUpper] = useState(false);
+  const [hasLower, setHasLower] = useState(false);
+  const [hasNumber, setHasNumber] = useState(false);
+  const [hasSpecial, setHasSpecial] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Live password validation
+  const validateLive = (pwd) => {
+    setValidLength(pwd.length >= 8 && pwd.length <= 20);
+    setHasUpper(/[A-Z]/.test(pwd));
+    setHasLower(/[a-z]/.test(pwd));
+    setHasNumber(/\d/.test(pwd));
+    setHasSpecial(/[\W_]/.test(pwd)); // Matches special characters
   };
+
+  // Handle password change and trigger live validation
+  const handlePasswordChange = (e) => {
+    const newPassword = e.target.value;
+    setPassword(newPassword);
+    validateLive(newPassword);
+  };
+  
+  
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+  
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword(!showConfirmPassword);
+  };
+  
+
+  // const validatePassword = (password) => {
+  //   // At least 8 characters, max 20
+  //   if (password.length < 8 || password.length > 20) {
+  //     return false;
+  //   }
+    
+  //   // Check for at least one uppercase, one lowercase, one number, one special character
+  //   const hasUppercase = /[A-Z]/.test(password);
+  //   const hasLowercase = /[a-z]/.test(password);
+  //   const hasNumber = /[0-9]/.test(password);
+  //   const hasSpecial = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password);
+    
+  //   return hasUppercase && hasLowercase && hasNumber && hasSpecial;
+  // };
   
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -269,23 +339,30 @@ const AccountActivation = () => {
       return;
     }
     
-    if (!validatePassword(password)) {
-      setError('Password does not meet all requirements');
-      return;
-    }
+    // if (!validatePassword(password)) {
+    //   setError('Password does not meet all requirements');
+    //   return;
+    // }
     
     try {
       setLoading(true);
-      const { success, error } = await resetPassword(resetToken, utorid, password);
+      await resetPassword(resetToken, utorid, password);
       
-      if (success) {
-        toast.success('Account activated successfully!');
+      // // If we get here, it means the resetPassword was successful
+      // setSuccess(true);
+      // toast.success('Account activated successfully!');
+      
+      // Give user time to see the success message before redirecting
+      setTimeout(() => {
         navigate('/login');
-      } else {
-        setError(error.message || 'Failed to activate account');
-      }
+      }, 2000);
+      
     } catch (err) {
-      setError('Account activation failed. Please try again.');
+      console.error('Reset Password Error:', err); // For debugging
+      setSuccess(false); // Ensure success is false on error
+      setError(err.message || 'Account activation failed. Please try again.');
+      // Use the error message directly from the caught error
+      setError(err.message || 'Account activation failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -323,6 +400,7 @@ const AccountActivation = () => {
               type="text"
               placeholder="UTORid"
               value={utorid}
+              label="UTORid"
               onChange={(e) => setUtorid(e.target.value)}
               required
               disabled={success}
@@ -335,36 +413,37 @@ const AccountActivation = () => {
               type="text"
               placeholder="Activation Token"
               value={resetToken}
+              label="Reset Token"
               onChange={(e) => setResetToken(e.target.value)}
               required
               disabled={success}
               leftIcon={<FaKey size={16} />}
             />
           </InputGroup>
-          
-          <div>
-            <InputGroup>
-              <StyledInput
-                type="password"
-                placeholder="Set Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={success}
-                leftIcon={<FaLock size={16} />}
-              />
-            </InputGroup>
-            
-            <PasswordRules>
-              <li>8-20 characters long</li>
-              <li>At least one uppercase letter</li>
-              <li>At least one lowercase letter</li>
-              <li>At least one number</li>
-              <li>At least one special character</li>
-            </PasswordRules>
-          </div>
-          
+
           <InputGroup>
+              <Input
+                id="password"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                label="New Password"
+                placeholder="Enter your new password"
+                value={password}
+                // onChange={(e) => setPassword(e.target.value)}
+                onChange={handlePasswordChange}
+                leftIcon={<FaLock />}
+                required
+              />
+              <PasswordToggle
+                type="button"
+                onClick={togglePasswordVisibility}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <FaEye size={16}/> : <FaEyeSlash size={16}/>}
+              </PasswordToggle>
+            </InputGroup>
+          
+          {/* <InputGroup>
             <StyledInput
               type="password"
               placeholder="Confirm Password"
@@ -374,7 +453,47 @@ const AccountActivation = () => {
               disabled={success}
               leftIcon={<FaLock size={16} />}
             />
-          </InputGroup>
+            </InputGroup> */}
+
+            <InputGroup>
+              <Input
+                id="confirmPassword"
+                name="confirmPassword"
+                type={showConfirmPassword ? 'text' : 'password'}
+                label="Confirm Password"
+                placeholder="Confirm your new password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                leftIcon={<FaLock />}
+                required
+              />
+              <PasswordToggle
+                type="button"
+                onClick={toggleConfirmPasswordVisibility}
+                aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+              >
+                {showConfirmPassword ? <FaEye size={16}/> : <FaEyeSlash size={16}/>}
+              </PasswordToggle>
+            </InputGroup>
+
+            <PasswordRequirements>
+            <li style={{ color: validLength ? theme.colors.success.main : theme.colors.text.secondary }}>
+              8–20 characters
+            </li>
+            <li style={{ color: hasUpper ? theme.colors.success.main : theme.colors.text.secondary }}>
+              At least one uppercase letter
+            </li>
+            <li style={{ color: hasLower ? theme.colors.success.main : theme.colors.text.secondary }}>
+              At least one lowercase letter
+            </li>
+            <li style={{ color: hasNumber ? theme.colors.success.main : theme.colors.text.secondary }}>
+              At least one number
+            </li>
+            <li style={{ color: hasSpecial ? theme.colors.success.main : theme.colors.text.secondary }}>
+              At least one special character
+            </li>
+          </PasswordRequirements>
+          
           
           <Button type="submit" fullWidth loading={loading} disabled={success}>
             Activate Account
