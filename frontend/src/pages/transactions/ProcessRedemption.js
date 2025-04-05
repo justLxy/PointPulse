@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import styled from '@emotion/styled';
+import { useQuery } from '@tanstack/react-query';
 import { useTransactions } from '../../hooks/useTransactions';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
@@ -252,69 +253,35 @@ const ProcessRedemption = () => {
   const [redemptionId, setRedemptionId] = useState('');
   const [result, setResult] = useState(null);
   const [status, setStatus] = useState('idle'); // 'idle', 'success', 'error', 'found'
-  const [pendingRedemptions, setPendingRedemptions] = useState([]);
-  const [isLoadingPending, setIsLoadingPending] = useState(false);
   const [processingError, setProcessingError] = useState(null); // Separate error state for processing
   const [processingIds, setProcessingIds] = useState([]); // Track which redemptions are being processed
   const [page, setPage] = useState(1); // 当前页码
-  const [limit, setLimit] = useState(10); // 每页显示数量
-  const [totalCount, setTotalCount] = useState(0); // 总记录数
+  const [limit, setLimit] = useState(9); // Change limit from 10 to 9
   
-  const { getTransaction, processRedemption, isProcessing } = useTransactions();
+  const { processRedemption, isProcessing: isMutationLoading } = useTransactions(); // Rename isProcessing from hook to avoid clash
   
-  // 计算总页数
+  // ADD: Use react-query to fetch pending redemptions
+  const queryKey = ['pendingRedemptions', page, limit];
+  const { 
+    data: pendingData, 
+    isLoading: isLoadingPending, // Use isLoading from useQuery
+    error: pendingError // Use error from useQuery
+  } = useQuery({
+    queryKey: queryKey,
+    queryFn: () => TransactionService.getPendingRedemptions({ page, limit }),
+    staleTime: 1 * 60 * 1000, // Data considered fresh for 1 minute
+  });
+
+  // ADD: Derive state from useQuery result
+  const pendingRedemptions = pendingData?.results || [];
+  const totalCount = pendingData?.count || 0;
+  
+  // Calculate total pages based on data from useQuery
   const totalPages = Math.ceil(totalCount / limit);
   
-  // 计算当前显示的记录范围
-  const startIndex = (page - 1) * limit + 1;
+  // Calculate current display range
+  const startIndex = totalCount > 0 ? (page - 1) * limit + 1 : 0;
   const endIndex = Math.min(page * limit, totalCount);
-  
-  // Fetch pending redemptions on load
-  useEffect(() => {
-    fetchPendingRedemptions();
-  }, [page, limit]); // 当页码或每页数量变化时重新获取数据
-  
-  const fetchPendingRedemptions = async () => {
-    // Instead of clearing the list immediately, keep showing existing items while loading
-    setIsLoadingPending(true);
-    
-    try {
-      console.log(`Fetching pending redemptions for page ${page}...`);
-      // Add a random parameter to ensure we get fresh data
-      const response = await TransactionService.getAllTransactions({
-        type: 'redemption',
-        relatedId: null, // Filter for transactions where relatedId is null
-        _cache: Date.now(), // Add cache busting parameter
-        page: page, // 添加页码参数
-        limit: limit // 添加每页数量参数
-      });
-      
-      const results = response.results || [];
-      setTotalCount(response.count || 0); // 设置总记录数
-      console.log(`Fetched ${results.length} pending redemptions out of ${response.count} total`);
-      
-      // Update the redemptions list without a visible flash
-      setPendingRedemptions(results);
-      setIsLoadingPending(false);
-    } catch (error) {
-      console.error('Failed to fetch pending redemptions:', error);
-      setIsLoadingPending(false);
-    }
-  };
-  
-  // 切换到上一页
-  const handlePreviousPage = () => {
-    if (page > 1) {
-      setPage(page - 1);
-    }
-  };
-  
-  // 切换到下一页
-  const handleNextPage = () => {
-    if (page < totalPages) {
-      setPage(page + 1);
-    }
-  };
   
   const handleSearch = async () => {
     if (!redemptionId || isNaN(parseInt(redemptionId))) {
@@ -324,24 +291,12 @@ const ProcessRedemption = () => {
     }
     
     try {
-      const data = await getTransaction(parseInt(redemptionId));
+      // Use the new cashier-specific lookup endpoint
+      const data = await TransactionService.lookupRedemption(parseInt(redemptionId));
       
       if (!data) {
         setStatus('error');
         setResult({ message: 'Redemption not found' });
-        return;
-      }
-      
-      if (data.type !== 'redemption') {
-        setStatus('error');
-        setResult({ message: 'Transaction is not a redemption request' });
-        return;
-      }
-      
-      // Check if the redemption has already been processed (relatedId is not null)
-      if (data.relatedId !== null) { 
-        setStatus('error');
-        setResult({ message: 'Redemption has already been processed' });
         return;
       }
       
@@ -357,81 +312,48 @@ const ProcessRedemption = () => {
   const handleProcessRedemption = async (id = null) => {
     const transactionId = id || parseInt(redemptionId);
     const isProcessingFromList = id !== null;
-    let originalList = [...pendingRedemptions];
-
-    setProcessingError(null); // Clear previous processing errors
     
-    // Add this transaction ID to the processing list
+    setProcessingError(null); 
+    
     if (isProcessingFromList) {
       setProcessingIds(prevIds => [...prevIds, transactionId]);
-      
-      // Immediately remove card from UI - optimistic update
-      console.log(`Processing redemption #${transactionId}. Removing from list.`);
-      console.log(`Before: ${pendingRedemptions.length} items`);
-      
-      // Remove the card from the UI immediately using a separate update function
-      setPendingRedemptions(currentList => {
-        const newList = currentList.filter(r => r.id !== transactionId);
-        console.log(`After: ${newList.length} items`);
-        return newList;
-      });
+      console.log(`Processing redemption #${transactionId} from list.`);
     }
 
     try {
-      const processedData = await processRedemption(transactionId); // Use returned data
+      const processedData = await processRedemption(transactionId); 
+      console.log('Processed data:', processedData); 
 
       if (!isProcessingFromList) {
-        // If processed via search/input field
         setStatus('success');
-        // Use data from the successful API call if available, otherwise keep existing search result
+        let redeemedAmount = 0;
+        if (processedData && processedData.redeemed) {
+          redeemedAmount = processedData.redeemed;
+        } else if (processedData && processedData.amount) {
+          redeemedAmount = Math.abs(processedData.amount);
+        } else if (result && result.amount) {
+          redeemedAmount = Math.abs(result.amount);
+        } else if (result && result.redeemed) {
+          redeemedAmount = result.redeemed;
+        }
         setResult({
-          ...(result && result.id === transactionId ? result : {}), // Keep search result if ID matches
-          ...processedData, // Overwrite with actual processed data
-          processedBy: 'You', // Indicate it was just processed by current user
-          redeemed: Math.abs(processedData.amount), // Make sure redeemed amount is positive
-          id: transactionId // Ensure ID is present
+          ...(result && result.id === transactionId ? result : {}),
+          ...processedData,
+          processedBy: 'You', 
+          redeemed: redeemedAmount, 
+          id: transactionId 
         });
-        setRedemptionId(''); // Clear the input field after success
+        setRedemptionId(''); 
       }
       
-      // Instead of visibly refreshing the list, we'll do a background refresh
-      // to keep other items up to date without disrupting the user experience
-      console.log('Processing successful, updating data in background');
-      
-      // Silently refresh the data in the background without changing UI
-      TransactionService.getAllTransactions({
-        type: 'redemption',
-        relatedId: null,
-        _cache: Date.now()
-      }).then(response => {
-        const currentIds = pendingRedemptions.map(r => r.id);
-        const freshResults = response.results || [];
-        
-        // Only add new items that we don't already have
-        const newItems = freshResults.filter(item => !currentIds.includes(item.id));
-        
-        if (newItems.length > 0) {
-          console.log(`Found ${newItems.length} new redemption requests to add silently`);
-          setPendingRedemptions(prev => [...prev, ...newItems]);
-        }
-      }).catch(err => {
-        console.error('Background refresh error:', err);
-      });
-
     } catch (error) {
       console.error(`Error processing redemption #${transactionId}:`, error);
-      setProcessingError(error.message || 'Failed to process redemption'); // Set specific processing error
-      
-      if (isProcessingFromList) {
-        // Revert the list if the API call failed
-        setPendingRedemptions(originalList);
-      } else {
-        // If processing via search failed, show error in the main result area
+      setProcessingError(error.message || 'Failed to process redemption'); 
+      if (!isProcessingFromList) {
         setStatus('error');
         setResult({ message: error.message || 'Failed to process redemption' });
       }
     } finally {
-      // Remove this transaction ID from the processing list
       if (isProcessingFromList) {
         setProcessingIds(prevIds => prevIds.filter(pid => pid !== transactionId));
       }
@@ -468,7 +390,7 @@ const ProcessRedemption = () => {
           <h2>Redemption Processed Successfully!</h2>
           <p>You have successfully processed redemption #{result.id}.</p>
           <p>
-            <strong>{Math.abs(result.redeemed)} points</strong> have been 
+            <strong>{result.redeemed || (result.amount ? Math.abs(result.amount) : 0)} points</strong> have been 
             redeemed from user <strong>{result.utorid}</strong>.
           </p>
           <Button 
@@ -555,7 +477,7 @@ const ProcessRedemption = () => {
                     </Button>
                     <Button
                       onClick={() => handleProcessRedemption()}
-                      loading={isProcessing}
+                      loading={isMutationLoading}
                     >
                       Process Redemption
                     </Button>
@@ -590,7 +512,7 @@ const ProcessRedemption = () => {
                 <RedemptionCard key={`redemption-${redemption.id}`} isProcessing={processingIds.includes(redemption.id)}>
                   <RedemptionHeader>
                     <h3>Redemption #{redemption.id}</h3>
-                    <RedemptionAmount>-{Math.abs(redemption.amount)} pts</RedemptionAmount>
+                    <RedemptionAmount>-{redemption.redeemed || (redemption.amount ? Math.abs(redemption.amount) : 0)} pts</RedemptionAmount>
                   </RedemptionHeader>
                   
                   <RedemptionInfo>
@@ -637,23 +559,19 @@ const ProcessRedemption = () => {
             </PageInfo>
             
             <Pagination>
-              <Button
-                size="small"
-                variant="outlined"
-                onClick={handlePreviousPage}
+              <Button 
+                size="small" 
+                variant="outlined" 
+                onClick={() => setPage(Math.max(page - 1, 1))}
                 disabled={page === 1}
               >
                 Previous
               </Button>
-              
-              <PageInfo>
-                Page {page} of {totalPages}
-              </PageInfo>
-              
-              <Button
-                size="small"
-                variant="outlined"
-                onClick={handleNextPage}
+              <PageInfo>Page {page} of {totalPages}</PageInfo>
+              <Button 
+                size="small" 
+                variant="outlined" 
+                onClick={() => setPage(Math.min(page + 1, totalPages))}
                 disabled={page === totalPages}
               >
                 Next

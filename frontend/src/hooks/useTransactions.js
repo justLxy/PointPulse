@@ -72,14 +72,22 @@ export const useTransactions = (params = {}) => {
   // Process redemption transaction (cashier+)
   const processRedemptionMutation = useMutation({
     mutationFn: (transactionId) => TransactionService.processRedemption(transactionId),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Redemption processed successfully, API returned:', data);
       toast.success('Redemption processed successfully');
-      queryClient.invalidateQueries({ queryKey: ['allTransactions'] });
-      // Also invalidate userTransactions queries to refresh user dashboard and transactions list
-      queryClient.invalidateQueries({ queryKey: ['userTransactions'] });
-      queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+      
+      // Invalidate queries related to transactions and user profile
+      queryClient.invalidateQueries({ queryKey: ['allTransactions'] }); // For managers
+      queryClient.invalidateQueries({ queryKey: ['userTransactions'] }); // For user's own view
+      queryClient.invalidateQueries({ queryKey: ['userProfile'] }); // To update points balance
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] }); // To update dashboard stats
+      
+      // Invalidate the pending redemptions query to refresh the list
+      // This targets the query key used in ProcessRedemption.js
+      queryClient.invalidateQueries({ queryKey: ['pendingRedemptions'] }); 
     },
     onError: (error) => {
+      console.error('Error processing redemption:', error);
       toast.error(error.message || 'Failed to process redemption');
     },
   });
@@ -87,8 +95,18 @@ export const useTransactions = (params = {}) => {
   // Get transaction by ID without using useQuery
   const getTransaction = async (transactionId) => {
     try {
-      const data = await TransactionService.getTransaction(transactionId);
-      return data;
+      // Try the cashier-specific endpoint first, if that fails, try the manager endpoint
+      try {
+        const data = await TransactionService.lookupRedemption(transactionId);
+        return data;
+      } catch (error) {
+        // If error is not permission-related, try the regular getTransaction
+        if (!error.message.includes('permission')) {
+          throw error;
+        }
+        const data = await TransactionService.getTransaction(transactionId);
+        return data;
+      }
     } catch (error) {
       toast.error(error.message || 'Failed to fetch transaction');
       throw error;

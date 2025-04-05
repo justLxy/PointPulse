@@ -931,14 +931,156 @@ const updatePassword = async (req, res) => {
     }
 };
 
+/**
+ * Lookup a redemption transaction for processing - specifically for cashiers
+ */
+const lookupRedemptionTransaction = async (req, res) => {
+    console.log('\n\n===== LOOKUP REDEMPTION TRANSACTION REQUEST START =====');
+    console.log('Time:', new Date().toISOString());
+    console.log('URL:', req.originalUrl);
+    console.log('Method:', req.method);
+    console.log('Params:', JSON.stringify(req.params, null, 2));
+    console.log('Auth user:', JSON.stringify(req.auth, null, 2));
+    
+    try {
+        // Verify that the requester has at least a cashier role
+        if (!checkRole(req.auth, 'cashier')) {
+            console.log('User is not authorized to lookup redemption transactions');
+            console.log('===== LOOKUP REDEMPTION TRANSACTION REQUEST END (403) =====\n\n');
+            return res.status(403).json({ error: 'Unauthorized to lookup redemption transactions' });
+        }
+
+        const transactionId = parseInt(req.params.transactionId);
+        console.log('Parsed transaction ID:', transactionId);
+
+        if (isNaN(transactionId) || transactionId <= 0) {
+            console.log('Invalid transaction ID');
+            console.log('===== LOOKUP REDEMPTION TRANSACTION REQUEST END (400) =====\n\n');
+            return res.status(400).json({ error: 'Invalid transaction ID' });
+        }
+
+        try {
+            // Verify that it's a redemption transaction
+            const transaction = await prisma.transaction.findUnique({
+                where: { id: transactionId },
+                select: { 
+                    id: true,
+                    type: true,
+                    processedBy: true
+                }
+            });
+
+            if (!transaction) {
+                console.log('Transaction not found');
+                console.log('===== LOOKUP REDEMPTION TRANSACTION REQUEST END (404) =====\n\n');
+                return res.status(404).json({ error: 'Transaction not found' });
+            }
+
+            if (transaction.type !== 'redemption') {
+                console.log('Transaction is not a redemption');
+                console.log('===== LOOKUP REDEMPTION TRANSACTION REQUEST END (400) =====\n\n');
+                return res.status(400).json({ error: 'Transaction is not a redemption' });
+            }
+
+            if (transaction.processedBy !== null) {
+                console.log('Redemption has already been processed');
+                console.log('===== LOOKUP REDEMPTION TRANSACTION REQUEST END (400) =====\n\n');
+                return res.status(400).json({ error: 'Redemption has already been processed' });
+            }
+
+            // Get the full transaction details
+            console.log('Getting transaction details');
+            const transactionDetails = await transactionService.getTransaction(transactionId);
+            
+            console.log('Transaction details retrieved successfully');
+            console.log('===== LOOKUP REDEMPTION TRANSACTION REQUEST END (200) =====\n\n');
+            return res.status(200).json(transactionDetails);
+        } catch (error) {
+            console.log('Error getting transaction details:', error.message);
+            console.log('Error stack:', error.stack);
+            
+            if (error.message === 'Transaction not found') {
+                console.log('===== LOOKUP REDEMPTION TRANSACTION REQUEST END (404) =====\n\n');
+                return res.status(404).json({ error: 'Transaction not found' });
+            }
+            throw error;
+        }
+    } catch (error) {
+        console.error('Error looking up redemption transaction:', error);
+        console.log('Error stack:', error.stack);
+        console.log('===== LOOKUP REDEMPTION TRANSACTION REQUEST END (500) =====\n\n');
+        res.status(500).json({ error: 'Failed to lookup redemption transaction' });
+    }
+};
+
+/**
+ * Get pending redemption transactions - specifically for cashiers
+ */
+const getPendingRedemptions = async (req, res) => {
+    console.log('\n\n===== GET PENDING REDEMPTIONS REQUEST START =====');
+    console.log('Time:', new Date().toISOString());
+    console.log('URL:', req.originalUrl);
+    console.log('Method:', req.method);
+    console.log('Query:', JSON.stringify(req.query, null, 2));
+    console.log('Auth user:', JSON.stringify(req.auth, null, 2));
+    
+    try {
+        // Verify that the requester has at least a cashier role
+        if (!checkRole(req.auth, 'cashier')) {
+            console.log('User is not authorized to get pending redemptions');
+            console.log('===== GET PENDING REDEMPTIONS REQUEST END (403) =====\n\n');
+            return res.status(403).json({ error: 'Unauthorized to view pending redemptions' });
+        }
+
+        const page = req.query.page || 1;
+        const limit = req.query.limit || 10;
+        
+        console.log('Fetching pending redemptions with page:', page, 'limit:', limit);
+        
+        // Create filters for pending redemptions (type = redemption, processedBy = null)
+        const filters = {
+            type: 'redemption',
+            processedBy: null
+        };
+
+        try {
+            console.log('Calling transactionService.getTransactions');
+            const result = await transactionService.getTransactions(
+                filters,
+                page,
+                limit
+            );
+
+            console.log('Pending redemptions retrieved successfully. Count:', result.count);
+            console.log('===== GET PENDING REDEMPTIONS REQUEST END (200) =====\n\n');
+            return res.status(200).json(result);
+        } catch (error) {
+            console.log('Error getting pending redemptions:', error.message);
+            console.log('Error stack:', error.stack);
+            
+            if (error.message.includes('Invalid page') || error.message.includes('Invalid limit')) {
+                console.log('===== GET PENDING REDEMPTIONS REQUEST END (400) =====\n\n');
+                return res.status(400).json({ error: error.message });
+            }
+            throw error;
+        }
+    } catch (error) {
+        console.error('Error getting pending redemptions:', error);
+        console.log('Error stack:', error.stack);
+        console.log('===== GET PENDING REDEMPTIONS REQUEST END (500) =====\n\n');
+        res.status(500).json({ error: 'Failed to retrieve pending redemptions' });
+    }
+};
+
 module.exports = {
     createTransaction,
     getTransactions,
     getTransaction,
     updateTransactionSuspicious,
     processRedemption,
-    createTransfer,
     createUserRedemption,
     getUserTransactions,
-    updatePassword
+    createTransfer,
+    lookupRedemptionTransaction,
+    getPendingRedemptions
 };

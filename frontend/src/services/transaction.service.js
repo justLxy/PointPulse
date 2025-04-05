@@ -245,6 +245,70 @@ const TransactionService = {
       throw new Error('Network error: Could not connect to server');
     }
   },
+  
+  // Lookup a redemption transaction for processing (Cashier+)
+  lookupRedemption: async (transactionId) => {
+    try {
+      const response = await api.get(`/transactions/lookup-redemption/${transactionId}`);
+      return response.data;
+    } catch (error) {
+      if (error.response) {
+        const { status, data } = error.response;
+        
+        if (status === 400) {
+          if (data.error === 'Invalid transaction ID') {
+            throw new Error('Invalid transaction ID');
+          }
+          
+          if (data.error === 'Transaction is not a redemption') {
+            throw new Error('Transaction is not a redemption request');
+          }
+          
+          if (data.error === 'Redemption has already been processed') {
+            throw new Error('This redemption has already been processed');
+          }
+          
+          throw new Error(data.error || 'Invalid redemption lookup request');
+        }
+        
+        if (status === 403) {
+          throw new Error('You do not have permission to lookup redemption transactions');
+        }
+        
+        if (status === 404) {
+          throw new Error('Redemption transaction not found');
+        }
+        
+        throw new Error(data.error || 'Failed to lookup redemption transaction');
+      }
+      
+      throw new Error('Network error: Could not connect to server');
+    }
+  },
+  
+  // Get pending redemption transactions (Cashier+)
+  getPendingRedemptions: async (params = {}) => {
+    try {
+      const response = await api.get('/transactions/pending-redemptions', { params });
+      return response.data;
+    } catch (error) {
+      if (error.response) {
+        const { status, data } = error.response;
+        
+        if (status === 403) {
+          throw new Error('You do not have permission to view pending redemptions');
+        }
+        
+        if (status === 400) {
+          throw new Error(data.error || 'Invalid query parameters');
+        }
+        
+        throw new Error(data.error || 'Failed to fetch pending redemptions');
+      }
+      
+      throw new Error('Network error: Could not connect to server');
+    }
+  },
 };
 
 export default TransactionService; 

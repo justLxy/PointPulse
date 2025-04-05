@@ -18,10 +18,11 @@ export const useUserTransactions = (params = {}) => {
   
   const createRedemptionMutation = useMutation({
     mutationFn: ({ amount, remark }) => UserService.createRedemption(amount, remark),
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast.success('Redemption request created successfully');
       queryClient.invalidateQueries({ queryKey: ['userTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+      queryClient.invalidateQueries({ queryKey: ['pendingRedemptions'] });
     },
     onError: (error) => {
       toast.error(error.message || 'Failed to create redemption request');
