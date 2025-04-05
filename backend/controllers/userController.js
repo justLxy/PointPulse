@@ -494,6 +494,41 @@ const updatePassword = async (req, res) => {
     }
 };
 
+/**
+ * Lookup a user by UTORid - specifically for cashiers to use in transactions
+ */
+const lookupUserByUtorid = async (req, res) => {
+    try {
+        // Verify that the requester has at least a cashier role
+        if (!checkRole(req.auth, 'cashier')) {
+            return res.status(403).json({ error: 'Unauthorized to lookup users' });
+        }
+
+        const { utorid } = req.params;
+        
+        if (!utorid) {
+            return res.status(400).json({ error: 'UTORid is required' });
+        }
+
+        try {
+            // Find the user ID first
+            const userId = await userService.getUserIdByUtorid(utorid);
+            
+            // Get the user using the cashier view function
+            const user = await userService.getUserByCashier(userId);
+            
+            return res.status(200).json(user);
+        } catch (error) {
+            if (error.message === 'User not found') {
+                return res.status(404).json({ error: 'User not found' });
+            }
+            throw error;
+        }
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
 module.exports = {
     createUser,
     getUsers,
@@ -501,5 +536,6 @@ module.exports = {
     updateUser,
     getCurrentUser,
     updateCurrentUser,
-    updatePassword
+    updatePassword,
+    lookupUserByUtorid
 };

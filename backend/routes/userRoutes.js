@@ -37,4 +37,7 @@ router.patch('/:userId', requireRole('manager'), userController.updateUser);
 // Create a transfer transaction between users
 router.post('/:userId/transactions', requireRole('regular'), transactionController.createTransfer);
 
+// Get a specific user by UTORid (cashier+)
+router.get('/lookup/:utorid', requireRole('cashier'), userController.lookupUserByUtorid);
+
 module.exports = router;

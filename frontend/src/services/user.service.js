@@ -433,6 +433,30 @@ const UserService = {
       throw new Error('Network error: Could not connect to server');
     }
   },
+
+  // Lookup a user by UTORid (for cashiers)
+  lookupUserByUTORid: async (utorid) => {
+    try {
+      const response = await api.get(`/users/lookup/${utorid}`);
+      return response.data;
+    } catch (error) {
+      if (error.response) {
+        const { status, data } = error.response;
+        
+        if (status === 404) {
+          throw new Error('User not found. Please check the UTORid and try again.');
+        }
+        
+        if (status === 403) {
+          throw new Error('You do not have permission to lookup users.');
+        }
+        
+        throw new Error(data.error || 'Failed to lookup user');
+      }
+      
+      throw new Error('Network error: Could not connect to server');
+    }
+  },
 };
 
 export default UserService; 
