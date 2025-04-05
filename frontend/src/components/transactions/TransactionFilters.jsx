@@ -61,7 +61,7 @@ const FilterContainer = styled.div`
 
 const FilterGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: ${theme.spacing.md};
   
   @media (max-width: 768px) {
@@ -94,6 +94,12 @@ const EnhancedInput = styled(Input)`
       box-shadow: 0 0 0 2px ${theme.colors.primary.light};
     }
   }
+
+  &.disabled-input {
+    background-color: #f0f0f0;
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
 `;
 
 const EnhancedSelect = styled(Select)`
@@ -116,6 +122,7 @@ const TransactionFilters = ({
   handleFilterChange, 
   isSuperuser,
   isManager,
+  isRelatedIdEditable,
   title = "Transactions"
 }) => {
   return (
@@ -171,7 +178,7 @@ const TransactionFilters = ({
             </EnhancedSelect>
           </FilterGroup>
           
-          {filters.type && (
+          {/* {filters.type && ( */}
             <FilterGroup>
               <FilterLabel>Related ID</FilterLabel>
               <EnhancedInput
@@ -179,9 +186,11 @@ const TransactionFilters = ({
                 value={filters.relatedId || ''}
                 onChange={(e) => handleFilterChange('relatedId', e.target.value)}
                 type="number"
+                disabled={!isRelatedIdEditable}
+                className={!isRelatedIdEditable ? "disabled-input" : ""}
               />
             </FilterGroup>
-          )}
+          {/* )} */}
           
           <FilterGroup>
             <FilterLabel>Promotion</FilterLabel>
