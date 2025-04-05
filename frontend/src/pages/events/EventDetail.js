@@ -470,7 +470,9 @@ const EventDetail = () => {
   const { activeRole } = useAuth();
   
   const isManager = ['manager', 'superuser'].includes(activeRole);
-  
+  const isRegularOrCashier = ['regular', 'cashier'].includes(activeRole);
+ 
+
   // State for tabs
   const [activeTab, setActiveTab] = useState('details');
   
@@ -517,7 +519,8 @@ const EventDetail = () => {
   } = useEvents();
   
   const { data: event, isLoading, error, refetch } = getEvent(eventId);
-  
+  const isU = event?.isOrganizer || false;
+  const canAddGuestByUtorid = isRegularOrCashier && isU;
   // For searching users
   const [userSearchParams, setUserSearchParams] = useState({
     name: '',
@@ -635,8 +638,11 @@ const EventDetail = () => {
   
   // Handle add guest
   const handleAddGuest = () => {
-    if (!selectedUtorid) return;
-    
+    if (!selectedUtorid || selectedUtorid.length !== 8) {
+      toast.error("Please enter a valid 8-character UTORid");
+      return;
+    }
+  
     addGuest(
       { eventId, utorid: selectedUtorid },
       {
@@ -644,11 +650,16 @@ const EventDetail = () => {
           setAddGuestModalOpen(false);
           setSelectedUserId(null);
           setSelectedUtorid(null);
+          setSearchQuery('');
           refetch();
         },
+        onError: (err) => {
+          toast.error(err?.response?.data?.error || "Failed to add guest");
+        }
       }
     );
   };
+  
   
   // Handle remove guest
   const handleRemoveGuest = (userId) => {
@@ -1215,42 +1226,54 @@ const EventDetail = () => {
       >
         <ModalContent>
           <ModalForm>
-            <Input
-              label="Search for a user"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by name or UTORid"
+          {canAddGuestByUtorid ? (
+  <>
+    <Input
+      label="UTORid"
+      value={selectedUtorid || ''}
+      onChange={(e) => setSelectedUtorid(e.target.value.trim())}
+      placeholder="Enter UTORid (8 characters)"
+      required
+    />
+  </>
+) : (
+  <>
+    <Input
+      label="Search for a user"
+      value={searchQuery}
+      onChange={(e) => setSearchQuery(e.target.value)}
+      placeholder="Search by name or UTORid"
+    />
+
+    {users && users.length > 0 ? (
+      <div>
+        <h4>Select a user:</h4>
+        {users.map(user => (
+          <AttendeeRow key={user.id} onClick={() => {
+            setSelectedUserId(user.id);
+            setSelectedUtorid(user.utorid);
+          }}>
+            <AttendeeInfo>
+              <AttendeeName>{user.name}</AttendeeName>
+              <AttendeeSubtext>{user.utorid}</AttendeeSubtext>
+            </AttendeeInfo>
+            <input
+              type="radio"
+              checked={selectedUserId === user.id}
+              onChange={() => {
+                setSelectedUserId(user.id);
+                setSelectedUtorid(user.utorid);
+              }}
             />
-            
-            {users && users.length > 0 ? (
-              <div>
-                <h4>Select a user:</h4>
-                {users.map(user => (
-                  <AttendeeRow 
-                    key={user.id} 
-                    onClick={() => {
-                      setSelectedUserId(user.id);
-                      setSelectedUtorid(user.utorid);
-                    }}
-                  >
-                    <AttendeeInfo>
-                      <AttendeeName>{user.name}</AttendeeName>
-                      <AttendeeSubtext>{user.utorid}</AttendeeSubtext>
-                    </AttendeeInfo>
-                    <input 
-                      type="radio" 
-                      checked={selectedUserId === user.id}
-                      onChange={() => {
-                        setSelectedUserId(user.id);
-                        setSelectedUtorid(user.utorid);
-                      }}
-                    />
-                  </AttendeeRow>
-                ))}
-              </div>
-            ) : searchQuery ? (
-              <EmptyState>No users found</EmptyState>
-            ) : null}
+          </AttendeeRow>
+        ))}
+      </div>
+    ) : searchQuery ? (
+      <EmptyState>No users found</EmptyState>
+    ) : null}
+  </>
+)}
+
           </ModalForm>
           
           <ModalActions>
@@ -1289,42 +1312,59 @@ const EventDetail = () => {
       >
         <ModalContent>
           <ModalForm>
-            <Input
-              label="Search for a user"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by name or UTORid"
+          {canAddGuestByUtorid ? (
+  // 👇 如果是 cashier/regular 且是 organizer，只输入 utorid
+  <>
+    <Input
+      label="Enter UTORid"
+      value={selectedUtorid || ''}
+      onChange={(e) => setSelectedUtorid(e.target.value)}
+      placeholder="e.g. jacksun0"
+      required
+    />
+  </>
+) : (
+  // 👇 如果是 manager/superuser 或非 regular/cashier organizer，显示搜索框和用户列表
+  <>
+    <Input
+      label="Search for a user"
+      value={searchQuery}
+      onChange={(e) => setSearchQuery(e.target.value)}
+      placeholder="Search by name or UTORid"
+    />
+
+    {users && users.length > 0 ? (
+      <div>
+        <h4>Select a user:</h4>
+        {users.map(user => (
+          <AttendeeRow 
+            key={user.id} 
+            onClick={() => {
+              setSelectedUserId(user.id);
+              setSelectedUtorid(user.utorid);
+            }}
+          >
+            <AttendeeInfo>
+              <AttendeeName>{user.name}</AttendeeName>
+              <AttendeeSubtext>{user.utorid}</AttendeeSubtext>
+            </AttendeeInfo>
+            <input 
+              type="radio" 
+              checked={selectedUserId === user.id}
+              onChange={() => {
+                setSelectedUserId(user.id);
+                setSelectedUtorid(user.utorid);
+              }}
             />
-            
-            {users && users.length > 0 ? (
-              <div>
-                <h4>Select a user:</h4>
-                {users.map(user => (
-                  <AttendeeRow 
-                    key={user.id} 
-                    onClick={() => {
-                      setSelectedUserId(user.id);
-                      setSelectedUtorid(user.utorid);
-                    }}
-                  >
-                    <AttendeeInfo>
-                      <AttendeeName>{user.name}</AttendeeName>
-                      <AttendeeSubtext>{user.utorid}</AttendeeSubtext>
-                    </AttendeeInfo>
-                    <input 
-                      type="radio" 
-                      checked={selectedUserId === user.id}
-                      onChange={() => {
-                        setSelectedUserId(user.id);
-                        setSelectedUtorid(user.utorid);
-                      }}
-                    />
-                  </AttendeeRow>
-                ))}
-              </div>
-            ) : searchQuery ? (
-              <EmptyState>No users found</EmptyState>
-            ) : null}
+          </AttendeeRow>
+        ))}
+      </div>
+    ) : searchQuery ? (
+      <EmptyState>No users found</EmptyState>
+    ) : null}
+  </>
+)}
+
           </ModalForm>
           
           <ModalActions>
