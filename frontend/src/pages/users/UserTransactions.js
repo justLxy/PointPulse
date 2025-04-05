@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
+import { useEffect } from 'react';
 import styled from '@emotion/styled';
 import { css } from '@emotion/react';
 import useUserTransactions from '../../hooks/useUserTransactions';
@@ -223,13 +225,40 @@ const EmptyState = styled.div`
 
 const UserTransactions = () => {
   // State for filters and pagination
+  // const [filters, setFilters] = useState({
+  //   type: '',
+  //   amount: '',
+  //   operator: 'gte',
+  //   page: 1,
+  //   limit: 10
+  // });
+
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [filters, setFilters] = useState({
-    type: '',
-    amount: '',
-    operator: 'gte',
+    type: searchParams.get('type') || '',
+    amount: searchParams.get('amount') || '',
+    operator: searchParams.get('operator') || 'gte',
     page: 1,
-    limit: 10
+    limit: 10,
+    promotionId: searchParams.get('promotionId') || '',
+    relatedId: searchParams.get('relatedId') || '',
   });
+
+  useEffect(() => {
+    const newParams = new URLSearchParams();
+  
+    if (filters.type) newParams.set('type', filters.type);
+    if (filters.amount) newParams.set('amount', filters.amount);
+    if (filters.operator) newParams.set('operator', filters.operator);
+    if (filters.promotionId) newParams.set('promotionId', filters.promotionId);
+    if (filters.relatedId) newParams.set('relatedId', filters.relatedId);
+    // newParams.set('page', filters.page);
+    // newParams.set('limit', filters.limit);
+  
+    setSearchParams(newParams);
+  }, [filters, setSearchParams]);
+
   
   // Fetch transactions with the current filters
   const { 
@@ -239,13 +268,27 @@ const UserTransactions = () => {
   } = useUserTransactions(filters);
   
   // Handle filter changes
+  // const handleFilterChange = (key, value) => {
+  //   setFilters(prev => {
+  //     // If changing a filter value, reset to page 1
+  //     const newFilters = key === 'page' ? { ...prev, [key]: value } : { ...prev, [key]: value, page: 1 };
+  //     return newFilters;
+  //   });
+  // };
+
   const handleFilterChange = (key, value) => {
     setFilters(prev => {
-      // If changing a filter value, reset to page 1
-      const newFilters = key === 'page' ? { ...prev, [key]: value } : { ...prev, [key]: value, page: 1 };
+      const newFilters = { ...prev, [key]: value };
+      
+      // Reset to page 1 when changing any filter except page/limit
+      if (key !== 'page' && key !== 'limit') {
+        newFilters.page = 1;
+      }
+      
       return newFilters;
     });
   };
+  const isRelatedIdEditable = filters.type !== '';
   
   // Format date for display
   const formatDate = (dateStr) => {
@@ -336,6 +379,7 @@ const UserTransactions = () => {
       <TransactionFilters
         filters={filters}
         handleFilterChange={handleFilterChange}
+        isRelatedIdEditable={isRelatedIdEditable}
         title="My Transactions"
       />
       

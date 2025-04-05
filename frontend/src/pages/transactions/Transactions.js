@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useEffect } from 'react';
 import { useTransactions } from '../../hooks/useTransactions';
 import { useAuth } from '../../contexts/AuthContext';
 import TransactionFilters from '../../components/transactions/TransactionFilters';
@@ -15,17 +17,32 @@ const Transactions = () => {
   const { activeRole } = useAuth();
   const isSuperuser = activeRole === 'superuser';
   const isManager = activeRole === 'manager' || activeRole === 'superuser';
+
+  const [searchParams, setSearchParams] = useSearchParams();
   
   // State for filters and pagination
+  // const [filters, setFilters] = useState({
+  //   name: '',
+  //   createdBy: '',
+  //   type: '',
+  //   relatedId: '',
+  //   promotionId: '',
+  //   amount: '',
+  //   operator: 'gte',
+  //   suspicious: '',
+  //   page: 1,
+  //   limit: 10,
+  // });
+
   const [filters, setFilters] = useState({
-    name: '',
-    createdBy: '',
-    type: '',
-    relatedId: '',
-    promotionId: '',
-    amount: '',
-    operator: 'gte',
-    suspicious: '',
+    name: searchParams.get('name') || '',
+    createdBy: searchParams.get('createdBy') || '',
+    type: searchParams.get('type') || '',
+    relatedId: searchParams.get('relatedId') || '',
+    promotionId: searchParams.get('promotionId') || '',
+    amount: searchParams.get('amount') || '',
+    operator: searchParams.get('operator') || 'gte',
+    suspicious: searchParams.get('suspicious') || '',
     page: 1,
     limit: 10,
   });
@@ -39,11 +56,18 @@ const Transactions = () => {
   // Handle filter changes
   const handleFilterChange = (key, value) => {
     setFilters(prev => {
-      // If changing a filter value other than page, reset to page 1
-      const newFilters = key === 'page' ? { ...prev, [key]: value } : { ...prev, [key]: value, page: 1 };
+      const newFilters = { ...prev, [key]: value };
+      
+      // Reset to page 1 when changing any filter except page/limit
+      if (key !== 'page' && key !== 'limit') {
+        newFilters.page = 1;
+      }
+      
       return newFilters;
     });
   };
+
+  const isRelatedIdEditable = filters.type !== '';
   
   // Format date for display
   const formatDate = (dateStr) => {
@@ -169,6 +193,19 @@ const Transactions = () => {
       },
     });
   };
+
+  useEffect(() => {
+    const newParams = new URLSearchParams();
+
+    // Add filters to search params if they exist
+    for (const [key, value] of Object.entries(filters)) {
+      if (key !== 'page' && key !== 'limit' && value) {
+        newParams.set(key, value);
+      }
+    }
+
+    setSearchParams(newParams);
+  }, [filters, setSearchParams]);
   
   // Fetch transactions using our hook
   const { 
@@ -194,6 +231,7 @@ const Transactions = () => {
         handleFilterChange={handleFilterChange}
         isSuperuser={isSuperuser}
         isManager={isManager}
+        isRelatedIdEditable={isRelatedIdEditable}
           />
       
       <TransactionList 
