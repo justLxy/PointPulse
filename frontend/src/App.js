@@ -20,6 +20,7 @@ import Dashboard from './pages/Dashboard';
 import Users from './pages/users/Users';
 import CreateUser from './pages/users/CreateUser';
 import UserTransactions from './pages/users/UserTransactions';
+import UserDetail from './pages/users/UserDetail';
 
 // Import transaction pages
 import CreateTransaction from './pages/transactions/CreateTransaction';
@@ -240,7 +241,8 @@ const App = () => {
                 </ProtectedRoute>
               }
             />
-            
+            <Route path="/users/:id" element={<UserDetail />} />
+
             {/* Catch all - redirect to home */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
