@@ -41,7 +41,7 @@ async function seed() {
 
         // Print summary
         console.log('\nDatabase seeding summary:');
-        console.log(`Total users: ${3 + 4 + users.regularUsers.length} (3 superuser, 2 managers, 2 cashiers, ${users.regularUsers.length} regular users)`);
+        console.log(`Total users: ${1 + 3 + users.regularUsers.length} (1 superuser, 2 managers, 2 cashiers, ${users.regularUsers.length} regular users)`);
         console.log(`Total events: ${events.upcomingEvents.length + events.pastEvents.length + events.unpublishedEvents.length} (${events.upcomingEvents.length} upcoming, ${events.pastEvents.length} past, ${events.unpublishedEvents.length} unpublished)`);
         console.log(`Total promotions: ${Object.keys(promotions).length}`);
         console.log(`Total transactions: ${Object.values(transactionCount).reduce((a, b) => a + b, 0)}`);
@@ -84,34 +84,7 @@ async function createUsers() {
             createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000), // 60 days ago
         }
     });
-    const superuser2 = await prisma.user.create({
-        data: {
-            utorid: 'muzizhao',
-            name: 'Muzi Zhao',
-            email: 'muzi.zhao@mail.utoronto.ca',
-            password: hashedPassword,
-            role: 'superuser',
-            points: 5000,
-            verified: true,
-            lastLogin: new Date(),
-            createdAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000), 
-        }
-    });
-    
-    const superuser3 = await prisma.user.create({
-        data: {
-            utorid: 'yuxinlii',
-            name: 'Yuxin Li',
-            email: 'yuxin.li@mail.utoronto.ca',
-            password: hashedPassword,
-            role: 'superuser',
-            points: 5000,
-            verified: true,
-            lastLogin: new Date(),
-            createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), 
-        }
-    });
-    
+
     // Create managers
     const managers = [];
     for (let i = 1; i <= 2; i++) {
@@ -152,29 +125,26 @@ async function createUsers() {
 
     // Create regular users (for a total of 50+ users)
     const regularUsers = [];
+
     for (let i = 1; i <= 45; i++) {
-        const utorid = `r${i.toString().padStart(7, '0')}`; 
-    
         const user = await prisma.user.create({
             data: {
-                utorid, 
+                utorid: `regular${i}`,
                 name: `Regular User ${i}`,
                 email: `regular.user${i}@mail.utoronto.ca`,
                 password: hashedPassword,
                 role: 'regular',
-                points: Math.floor(500 + Math.random() * 5000),
-                verified: i <= 40,
-                lastLogin: i <= 42 ? new Date(Date.now() - i % 10 * 24 * 60 * 60 * 1000) : null,
+                points: Math.floor(500 + Math.random() * 5000), // Random points between 500 and 5500
+                verified: i <= 40, // First 40 users are verified
+                lastLogin: i <= 42 ? new Date(Date.now() - i % 10 * 24 * 60 * 60 * 1000) : null, // Most users have logged in
                 createdAt: new Date(Date.now() - (30 + i % 30) * 24 * 60 * 60 * 1000),
-                birthday: i % 3 === 0 ? `199${i % 10}-0${(i % 12) + 1}-${(i % 28) + 1}` : null,
+                birthday: i % 3 === 0 ? `199${i % 10}-0${(i % 12) + 1}-${(i % 28) + 1}` : null, // Some users have birthdays
             }
         });
-    
         regularUsers.push(user);
     }
-    
 
-    console.log(`Created users: 3 superuser, ${managers.length} managers, ${cashiers.length} cashiers, ${regularUsers.length} regular users`);
+    console.log(`Created users: 1 superuser, ${managers.length} managers, ${cashiers.length} cashiers, ${regularUsers.length} regular users`);
 
     return {
         superuser,
@@ -221,43 +191,6 @@ async function createEvents(users) {
         'Orientation Events',
         'End of Semester Party'
     ];
-    
-
-    // Create 5 ongoing events
-    const ongoingEvents = [];
-    for (let i = 0; i < 5; i++) {
-    const name = `Ongoing ${eventNames[i % eventNames.length]} ${Math.floor(i / eventNames.length) + 1}`;
-
-    const startOffset = -(2 + i); 
-    const endOffset = 2 + i;      
-
-    const ongoingEvent = await prisma.event.create({
-        data: {
-        name,
-        description: `This is an ongoing event happening this week!`,
-        location: eventLocations[i % eventLocations.length],
-        startTime: new Date(now.getTime() + startOffset * 24 * 60 * 60 * 1000),
-        endTime: new Date(now.getTime() + endOffset * 24 * 60 * 60 * 1000),
-        capacity: 100 + i * 10,
-        pointsRemain: 3000 + i * 100,
-        pointsAwarded: 0,
-        published: true,
-        organizers: {
-            connect: [
-            { id: users.managers[i % users.managers.length].id },
-            { id: users.regularUsers[(i + 10) % users.regularUsers.length].id }
-            ]
-        },
-        guests: {
-            connect: users.regularUsers
-            .slice(20 + i, 25 + i)
-            .map(user => ({ id: user.id }))
-        }
-        }
-    });
-
-    ongoingEvents.push(ongoingEvent);
-    }
 
     // Create 20 upcoming events
     const upcomingEvents = [];
