@@ -140,7 +140,7 @@ const resetPassword = async (req, res) => {
         }
 
         // Now check if the token matches the utorid
-        if (user.utorid !== utorid) {
+        if (user.utorid.toLowerCase() !== utorid.toLowerCase()) {
             console.log('Token does not match utorid');
             console.log('===== PASSWORD RESET COMPLETION END (401) =====\n\n');
             return res.status(401).json({ error: 'Token does not match utorid' });

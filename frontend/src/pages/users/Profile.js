@@ -555,7 +555,7 @@ const Profile = () => {
       return;
     }
 
-    updatePassword({ oldPassword, newPassword });
+    const response = updatePassword({ oldPassword, newPassword });
     
     // Reset form if successful
     setPasswordData({
@@ -743,24 +743,6 @@ const Profile = () => {
             </PasswordToggle>
           </InputGroup>
 
-          <PasswordRequirements>
-            <li style={{ color: validLength ? theme.colors.success.main : theme.colors.text.secondary }}>
-              8–20 characters
-            </li>
-            <li style={{ color: hasUpper ? theme.colors.success.main : theme.colors.text.secondary }}>
-              At least one uppercase letter
-            </li>
-            <li style={{ color: hasLower ? theme.colors.success.main : theme.colors.text.secondary }}>
-              At least one lowercase letter
-            </li>
-            <li style={{ color: hasNumber ? theme.colors.success.main : theme.colors.text.secondary }}>
-              At least one number
-            </li>
-            <li style={{ color: hasSpecial ? theme.colors.success.main : theme.colors.text.secondary }}>
-              At least one special character
-            </li>
-          </PasswordRequirements>
-
           <InputGroup>
             <Input
               name="confirmPassword"
@@ -779,6 +761,24 @@ const Profile = () => {
               {showPasswords.confirmPassword ? <FaEye size={16}/> : <FaEyeSlash size={16}/>}
             </PasswordToggle>
           </InputGroup>
+
+          <PasswordRequirements>
+            <li style={{ color: validLength ? theme.colors.success.main : theme.colors.text.secondary }}>
+              8–20 characters
+            </li>
+            <li style={{ color: hasUpper ? theme.colors.success.main : theme.colors.text.secondary }}>
+              At least one uppercase letter
+            </li>
+            <li style={{ color: hasLower ? theme.colors.success.main : theme.colors.text.secondary }}>
+              At least one lowercase letter
+            </li>
+            <li style={{ color: hasNumber ? theme.colors.success.main : theme.colors.text.secondary }}>
+              At least one number
+            </li>
+            <li style={{ color: hasSpecial ? theme.colors.success.main : theme.colors.text.secondary }}>
+              At least one special character
+            </li>
+          </PasswordRequirements>
           
           <Button 
             type="submit" 

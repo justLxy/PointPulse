@@ -4,8 +4,11 @@ const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
 const { validateUTORid, validateEmail, validatePassword } = require('../utils/validators');
+const emailService = require('./emailService');
 
 const prisma = new PrismaClient();
+
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
 
 /**
  * Create a new user
@@ -57,6 +60,10 @@ const createUser = async (userData, creatorId) => {
             verified: false,
         }
     });
+
+     // Send activation email
+    const activationUrl = `${FRONTEND_URL}/account-activation/`;
+    await emailService.sendActivationEmail(user.email, activationUrl, user.name, resetToken, utorid);
 
     return {
         id: user.id,
