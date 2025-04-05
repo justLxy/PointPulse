@@ -981,9 +981,9 @@ const Dashboard = () => {
               <FaQrcode />
               <span>Create Transaction</span>
             </ShortcutCard>
-            <ShortcutCard as="button" onClick={() => setIsTransferModalOpen(true)}>
-              <FaExchangeAlt style={{ color: theme.colors.secondary.main }} />
-              <span>Transfer Points</span>
+            <ShortcutCard to="/events">
+              <FaCalendarAlt />
+              <span>Events</span>
             </ShortcutCard>
           </>
         )}
@@ -1003,9 +1003,9 @@ const Dashboard = () => {
               <FaQrcode />
               <span>Create Transaction</span>
             </ShortcutCard>
-            <ShortcutCard as="button" onClick={() => setIsTransferModalOpen(true)}>
-              <FaExchangeAlt style={{ color: theme.colors.secondary.main }} />
-              <span>Transfer Points</span>
+            <ShortcutCard to="/users">
+              <FaUser />
+              <span>Users</span>
             </ShortcutCard>
           </>
         )}
