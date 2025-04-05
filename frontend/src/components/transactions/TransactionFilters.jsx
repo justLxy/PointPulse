@@ -179,17 +179,18 @@ const TransactionFilters = ({
           </FilterGroup>
           
           {/* {filters.type && ( */}
-            <FilterGroup>
-              <FilterLabel>Related ID</FilterLabel>
-              <EnhancedInput
-                placeholder="Related ID"
-                value={filters.relatedId || ''}
-                onChange={(e) => handleFilterChange('relatedId', e.target.value)}
-                type="number"
-                disabled={!isRelatedIdEditable}
-                className={!isRelatedIdEditable ? "disabled-input" : ""}
-              />
-            </FilterGroup>
+          <FilterGroup>
+            <FilterLabel>Related ID</FilterLabel>
+            <EnhancedInput
+              placeholder="Related ID"
+              value={isRelatedIdEditable ? filters.relatedId : ''}
+              onChange={(e) => handleFilterChange('relatedId', e.target.value)}
+              type="number"
+              disabled={!isRelatedIdEditable}
+              className={!isRelatedIdEditable ? "disabled-input" : ""}
+            />
+          </FilterGroup>
+
           {/* )} */}
           
           <FilterGroup>

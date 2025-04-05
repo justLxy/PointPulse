@@ -27,9 +27,25 @@ const TableRow = styled.div`
     grid-template-columns: 80px 1fr 1fr 120px 120px;
   }
   
+  // @media (max-width: 768px) {
+  //   display: flex;
+  //   flex-direction: column;
+  //   gap: ${theme.spacing.sm};
+  //   padding: ${theme.spacing.md};
+    
+  //   &:not(:last-child) {
+  //     border-bottom: 1px solid ${theme.colors.border.light};
+  //   }
+  // }
+
   @media (max-width: 768px) {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+      "icon header"
+      "details details"
+      "amount amount"
+      "actions actions";
     gap: ${theme.spacing.sm};
     padding: ${theme.spacing.md};
     
@@ -81,24 +97,52 @@ const TransactionIcon = styled.div`
         `;
     }
   }}
+
+  @media (max-width: 768px) {
+    grid-area: icon;
+    align-self: start;
+  }
 `;
 
 const MobileLabel = styled.span`
   display: none;
   font-weight: ${theme.typography.fontWeights.semiBold};
-  margin-right: ${theme.spacing.sm};
-  
+  // margin-right: ${theme.spacing.sm};
+  color: ${theme.colors.text.secondary};
+
   @media (max-width: 768px) {
-    display: inline;
+    display: inline-block;
+    margin-bottom: ${theme.spacing.xs};
+    font-size: ${theme.typography.fontSize.sm};
   }
+  
+  // @media (max-width: 768px) {
+  //   display: inline;
+  // }
 `;
 
 const TransactionInfo = styled.div`
+  // @media (max-width: 768px) {
+  //   display: flex;
+  //   justify-content: space-between;
+  //   width: 100%;
+  //   margin-bottom: ${theme.spacing.sm};
+  // }
+
   @media (max-width: 768px) {
+    grid-area: header;
     display: flex;
-    justify-content: space-between;
-    width: 100%;
-    margin-bottom: ${theme.spacing.sm};
+    flex-direction: column;
+  }
+`;
+
+const TransactionHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  
+  @media (max-width: 768px) {
+    margin-bottom: ${theme.spacing.xs};
   }
 `;
 
@@ -118,25 +162,50 @@ const TransactionUser = styled.div`
   }
 `;
 
+const BadgesContainer = styled.div`
+  display: flex;
+  gap: ${theme.spacing.xs};
+  flex-wrap: wrap;
+`;
+
 const TransactionAmount = styled.div`
   font-weight: ${theme.typography.fontWeights.medium};
   color: ${({ positive }) => positive ? theme.colors.success.main : theme.colors.error.main};
+
+  @media (max-width: 768px) {
+    grid-area: amount;
+    font-size: ${theme.typography.fontSize.lg};
+    padding: ${theme.spacing.xs} 0;
+  }
 `;
 
 const ActionButtons = styled.div`
   display: flex;
   gap: ${theme.spacing.sm};
   
+  // @media (max-width: 768px) {
+  //   flex-wrap: wrap;
+  //   width: 100%;
+  //   justify-content: flex-end;
+  // }
+
   @media (max-width: 768px) {
-    flex-wrap: wrap;
+    grid-area: actions;
     width: 100%;
     justify-content: flex-end;
   }
 `;
 
 const TransactionDetails = styled.div`
+  // @media (max-width: 768px) {
+  //   margin-bottom: ${theme.spacing.sm};
+  // }
+
   @media (max-width: 768px) {
-    margin-bottom: ${theme.spacing.sm};
+    grid-area: details;
+    padding: ${theme.spacing.sm} 0;
+    border-top: 1px dashed ${theme.colors.border.light};
+    border-bottom: 1px dashed ${theme.colors.border.light};
   }
 `;
 
@@ -145,10 +214,15 @@ const InfoLabel = styled.span`
   font-size: ${theme.typography.fontSize.sm};
   margin-right: ${theme.spacing.xs};
   
-  @media (max-width: 768px) {
-    display: block;
-    margin-bottom: ${theme.spacing.xs};
-  }
+  // @media (max-width: 768px) {
+  //   display: block;
+  //   margin-bottom: ${theme.spacing.xs};
+  // }
+`;
+
+const DateTimeInfo = styled.div`
+  font-size: ${theme.typography.fontSize.sm};
+  color: ${theme.colors.text.secondary};
 `;
 
 const TransactionItem = ({ 
@@ -187,11 +261,16 @@ const TransactionItem = ({
       </TransactionIcon>
       
       <TransactionInfo>
+
+        <TransactionHeader>
         <div>
-          <MobileLabel>ID:</MobileLabel>
+          {/* <MobileLabel>ID:</MobileLabel> */}
           <TransactionId>Transaction #{transaction.id}</TransactionId>
           <TransactionType>{formatTransactionType(transaction.type)}</TransactionType>
         </div>
+      </TransactionHeader>
+
+      <BadgesContainer>
         {transaction.suspicious && (
           <Badge color="error" style={{ backgroundColor: '#e74c3c' }}>Suspicious</Badge>
         )}
@@ -204,6 +283,7 @@ const TransactionItem = ({
         {transaction.type === 'redemption' && transaction.status === 'rejected' && (
           <Badge color="error">Rejected</Badge>
         )}
+      </BadgesContainer>  
       </TransactionInfo>
       
       <TransactionDetails>
@@ -213,9 +293,9 @@ const TransactionItem = ({
             {getTransactionDetailsLabel(transaction)}
           </div>
           {transaction.createdAt && (
-            <div style={{ fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary }}>
+            <DateTimeInfo>
               <InfoLabel>Date:</InfoLabel> {formatDate(transaction.createdAt)} at {formatTime(transaction.createdAt)}
-            </div>
+            </DateTimeInfo>
           )}
         </div>
       </TransactionDetails>
