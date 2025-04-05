@@ -712,18 +712,6 @@ const Dashboard = () => {
   const [isRedeemModalOpen, setIsRedeemModalOpen] = useState(false);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   
-  // 计算用户累计赚取的总积分（即使已经使用了一些）
-  const calculateTotalEarnedPoints = (transactions) => {
-    if (!transactions || transactions.length === 0) return null;
-    
-    // 只计算正积分交易（积分获取）
-    const positiveTransactions = transactions.filter(t => t.amount > 0);
-    return positiveTransactions.reduce((total, t) => total + t.amount, 0);
-  };
-  
-  // 当组件加载时计算总获得积分
-  const totalEarnedPoints = calculateTotalEarnedPoints(transactions) || profile?.points;
-  
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -787,10 +775,10 @@ const Dashboard = () => {
     return `${amount > 0 ? '+' : ''}${amount} pts`;
   };
   
-  // 修改等级和进度计算函数，使用累计积分而非当前积分
-  const calculateLevel = (points, totalEarnedPoints) => {
-    // 使用累计积分来确定级别，而不是当前余额
-    const actualPoints = totalEarnedPoints || points; // 如果没有累计积分数据，则使用当前积分
+  // Calculate level and progress based on current points
+  const calculateLevel = (points) => {
+    // 使用当前余额来确定级别
+    const actualPoints = points; // Use current points balance
     
     const levels = [
       { name: "Bronze", min: 0, max: 1000, icon: <FaMedal /> },
@@ -881,7 +869,7 @@ const Dashboard = () => {
         
         {/* 会员等级信息 */}
         {(() => {
-          const levelData = calculateLevel(profile?.points || 0, totalEarnedPoints);
+          const levelData = calculateLevel(profile?.points || 0);
           return (
             <>
               <LevelInfo>
