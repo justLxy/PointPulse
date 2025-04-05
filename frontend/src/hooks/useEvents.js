@@ -33,13 +33,37 @@ export const useEvents = (params = {}) => {
   });
   
   const useGetEvent = (id) => {
+    const { activeRole, user } = useAuth();
+  
+    const isElevated = ['manager', 'superuser'].includes(activeRole);
+  
     return useQuery({
       queryKey: ['event', id],
-      queryFn: () => EventService.getEvent(id),
+      queryFn: async () => {
+        try {
+         
+          const result = await EventService.getEvent(id, {
+            includeAsOrganizer: isElevated, 
+          });
+          return result;
+        } catch (error) {
+         
+          if (
+            error?.response?.status === 403 ||
+            error?.response?.status === 404
+          ) {
+            return await EventService.getEvent(id); 
+          } else {
+            throw error;
+          }
+        }
+      },
       enabled: !!id,
-      staleTime: 5 * 60 * 1000, // 5 minutes
+      staleTime: 5 * 60 * 1000,
     });
   };
+  
+  
   
   // RSVP mutations for all users
   const rsvpToEventMutation = useMutation({
