@@ -172,6 +172,14 @@ const PointsActions = styled.div`
     }
   }
   
+  .transfer-button {
+    background-color: ${theme.colors.secondary.main};
+    color: ${theme.colors.secondary.contrastText};
+    &:hover {
+      background-color: ${theme.colors.secondary.dark};
+    }
+  }
+  
   button {
     padding: ${theme.spacing.xs} ${theme.spacing.sm};
     font-size: ${theme.typography.fontSize.xs};
@@ -922,7 +930,15 @@ const Dashboard = () => {
           <Button className="redeem-button" onClick={() => setIsRedeemModalOpen(true)} size="small">
             <FaGift /> Redeem Points
           </Button>
-          <Button variant="outlined" onClick={() => setIsTransferModalOpen(true)} size="small">
+          <Button 
+            className="transfer-button" 
+            onClick={() => setIsTransferModalOpen(true)} 
+            size="small"
+            style={{
+              backgroundColor: theme.colors.secondary.main,
+              color: theme.colors.secondary.contrastText
+            }}
+          >
             <FaExchangeAlt /> Transfer
           </Button>
         </PointsActions>
@@ -936,7 +952,7 @@ const Dashboard = () => {
               <span>My Transactions</span>
             </ShortcutCard>
             <ShortcutCard as="button" onClick={() => setIsTransferModalOpen(true)}>
-              <FaExchangeAlt />
+              <FaExchangeAlt style={{ color: theme.colors.secondary.main }} />
               <span>Transfer Points</span>
             </ShortcutCard>
             <ShortcutCard to="/promotions">
@@ -966,7 +982,7 @@ const Dashboard = () => {
               <span>Create Transaction</span>
             </ShortcutCard>
             <ShortcutCard as="button" onClick={() => setIsTransferModalOpen(true)}>
-              <FaExchangeAlt />
+              <FaExchangeAlt style={{ color: theme.colors.secondary.main }} />
               <span>Transfer Points</span>
             </ShortcutCard>
           </>
@@ -988,7 +1004,7 @@ const Dashboard = () => {
               <span>Create Transaction</span>
             </ShortcutCard>
             <ShortcutCard as="button" onClick={() => setIsTransferModalOpen(true)}>
-              <FaExchangeAlt />
+              <FaExchangeAlt style={{ color: theme.colors.secondary.main }} />
               <span>Transfer Points</span>
             </ShortcutCard>
           </>
