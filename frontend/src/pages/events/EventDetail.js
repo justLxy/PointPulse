@@ -11,6 +11,9 @@ import Select from '../../components/common/Select';
 import Modal from '../../components/common/Modal';
 import Badge from '../../components/common/Badge';
 import theme from '../../styles/theme';
+import { Tooltip } from 'react-tooltip';
+
+
 import { 
   FaCalendarAlt, 
   FaMapMarkerAlt, 
@@ -60,17 +63,14 @@ const BackLink = styled(Link)`
 const PageTitle = styled.h1`
   font-size: ${theme.typography.fontSize['3xl']};
   font-weight: ${theme.typography.fontWeights.bold};
-  color: ${theme.colors.text.primary};
-  margin-bottom: ${theme.spacing.sm};
-  display: flex;
-  align-items: center;
-  
-  &::after {
-    content: ${props => props.showStatus ? `'${props.statusEmoji}'` : '""'};
-    margin-left: ${theme.spacing.sm};
-    font-size: ${theme.typography.fontSize.xl};
+  margin-bottom: ${theme.spacing.md};
+  word-break: break-word;
+
+  @media (max-width: 480px) {
+    font-size: ${theme.typography.fontSize.xl};  
   }
 `;
+
 
 const PageSubtitle = styled.p`
   color: ${theme.colors.text.secondary};
@@ -99,13 +99,19 @@ const EventBadge = styled.span`
 
 const PageActionsContainer = styled.div`
   display: flex;
-  gap: ${theme.spacing.md};
-  
+  flex-wrap: wrap;
+  gap: ${theme.spacing.sm};
+
   @media (max-width: 768px) {
+    flex-direction: column;
     width: 100%;
-    justify-content: flex-end;
+
+    button {
+      width: 100%; // 每个按钮单独占满整行
+    }
   }
 `;
+
 
 const ContentGrid = styled.div`
   display: grid;
@@ -144,15 +150,20 @@ const EventMetadata = styled.div`
 
 const EventDetailItem = styled.div`
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: ${theme.spacing.md};
-  padding: ${theme.spacing.md};
+  padding: ${theme.spacing.sm};
   background-color: ${theme.colors.background.default};
   border-radius: ${theme.radius.md};
-  
+
   svg {
-    color: ${theme.colors.text.secondary};
-    font-size: 1.2rem;
+    margin-top: 3px;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    align-items: flex-start;
   }
 `;
 
@@ -647,6 +658,7 @@ const EventDetail = () => {
       { eventId, utorid: selectedUtorid },
       {
         onSuccess: () => {
+
           setAddGuestModalOpen(false);
           setSelectedUserId(null);
           setSelectedUtorid(null);
@@ -1053,30 +1065,51 @@ const EventDetail = () => {
                     {event.guests && Array.isArray(event.guests) && event.guests.length > 0 ? (
                       <AudienceSeats>
                         {event.guests.map(guest => {
-                          // 为每个用户生成一个随机颜色，基于用户ID保持一致
                           const colorSeed = guest.id % 5;
                           const colors = ['#e57373', '#64b5f6', '#81c784', '#ffb74d', '#ba68c8'];
                           const randomColor = colors[colorSeed];
-                          
-                          // 获取用户名称的首字母
                           const initials = guest.name ? guest.name.charAt(0).toUpperCase() : '?';
-                          
+
                           return (
                             <AudienceSeat key={guest.id}>
-                              <AvatarContainer>
-                                <Avatar randomColor={randomColor}>
-                                  {guest.avatarUrl ? (
-                                    <img 
-                                      src={guest.avatarUrl} 
-                                      alt={guest.name} 
-                                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                    />
-                                  ) : (
-                                    initials
-                                  )}
-                                </Avatar>
-                              </AvatarContainer>
-                              <AudienceName>{guest.name}</AudienceName>
+                              {/* Avatar + Name clickable with tooltip */}
+                              <div
+                                data-tooltip-id={`guest-tooltip-${guest.id}`}
+                                data-tooltip-content={`${guest.name} (${guest.utorid})`}
+                                style={{ width: '100%' }}
+                              >
+                                    <div
+                                          onClick={() => {
+                                            if (activeRole === 'regular') return;
+                                            navigate(`/users/${guest.id}`);
+                                          }}
+                                          style={{
+                                            cursor: activeRole === 'regular' ? 'not-allowed' : 'pointer',
+                                            textDecoration: 'none',
+                                            color: 'inherit',
+                                            width: '100%',
+                                          }}
+                                        >
+                                          <AvatarContainer>
+                                            <Avatar randomColor={randomColor}>
+                                              {guest.avatarUrl ? (
+                                                <img 
+                                                  src={guest.avatarUrl} 
+                                                  alt={guest.name} 
+                                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                />
+                                              ) : (
+                                                initials
+                                              )}
+                                            </Avatar>
+                                          </AvatarContainer>
+                                          <AudienceName>{guest.name}</AudienceName>
+                                        </div>
+
+                              </div>
+
+                              <Tooltip id={`guest-tooltip-${guest.id}`} place="top" />
+
                               <AudienceRole>
                                 {guest.pointsAwarded ? (
                                   <Badge color="success">{guest.pointsAwarded}pt</Badge>
@@ -1105,6 +1138,8 @@ const EventDetail = () => {
                             </AudienceSeat>
                           );
                         })}
+
+                        {/* Add guest seat */}
                         {canEditEvent() && eventStatus.text === 'Upcoming' && (
                           <AudienceSeat>
                             <EmptyAudienceSeat onClick={() => setAddGuestModalOpen(true)}>
@@ -1132,6 +1167,7 @@ const EventDetail = () => {
                       </EmptyState>
                     )}
                   </AudienceContainer>
+
                 </Card.Body>
               </Card>
             )}
