@@ -341,7 +341,10 @@ const PageWrapper = styled.div`
   box-sizing: border-box;
   
   @media (max-width: 768px) {
-    padding: ${theme.spacing.md} ${theme.spacing.sm};
+    padding-left: 0;
+    padding-right: 0;
+    // padding: ${theme.spacing.md} ${theme.spacing.sm};
+    // padding: ${theme.spacing.sm};
   }
 `;
 
@@ -349,12 +352,16 @@ const StyledCard = styled(Card)`
   width: 100%;
   box-sizing: border-box;
   margin: 0 auto;
-  border-radius: ${theme.radius.lg};
+  border-radius: ${theme.radius.md};
   overflow: hidden;
   
   @media (max-width: 768px) {
-    border-radius: ${theme.radius.md};
-    max-width: calc(100vw - ${theme.spacing.md} * 2);
+    border-radius: ${theme.radius.lg};
+    width: 90%;
+    // max-width: calc(100vw - ${theme.spacing.md} * 2);
+    // width: 100vw;
+    margin-left: auto;
+    margin-right: auto;
   }
 `;
 
@@ -685,7 +692,7 @@ const Profile = () => {
               <FaUser size={16} />
               <InfoLabel>Status:</InfoLabel>
               <InfoValue>
-                {profile?.verified ? 'Verified' : 'Not Verified'}
+                {/* {profile?.verified ? 'Verified' : 'Not Verified'} */}
                 <Badge verified={profile?.verified}>
                   {profile?.verified ? 'Verified' : 'Pending'}
                 </Badge>
