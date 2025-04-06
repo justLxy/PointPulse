@@ -46,15 +46,27 @@ const TableRow = styled.div`
     grid-template-columns: 1fr 1fr 1fr 180px;
   }
   
+  // @media (max-width: 768px) {
+  //   display: flex;
+  //   flex-direction: column;
+  //   gap: ${theme.spacing.sm};
+  //   padding: ${theme.spacing.md};
+    
+  //   &:not(:last-child) {
+  //     border-bottom: 1px solid ${theme.colors.border.light};
+  //   }
+  // }
+
   @media (max-width: 768px) {
     display: flex;
     flex-direction: column;
     gap: ${theme.spacing.sm};
     padding: ${theme.spacing.md};
-    
-    &:not(:last-child) {
-      border-bottom: 1px solid ${theme.colors.border.light};
-    }
+    margin-bottom: ${theme.spacing.md};
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border-radius: ${theme.spacing.xs};
+    border: 1px solid ${theme.colors.border.light};
+    background-color: white;
   }
 `;
 
@@ -62,18 +74,53 @@ const MobileLabel = styled.span`
   display: none;
   font-weight: ${theme.typography.fontWeights.semiBold};
   margin-right: ${theme.spacing.sm};
+  color: ${theme.colors.text.secondary};
+  font-size: ${theme.typography.fontSize.sm};
   
   @media (max-width: 768px) {
     display: inline;
+    min-width: 60px;
   }
 `;
 
-const UserDetails = styled.div`
+const UserHeader = styled.div`
   @media (max-width: 768px) {
     display: flex;
     justify-content: space-between;
     width: 100%;
+    padding-bottom: ${theme.spacing.sm};
     margin-bottom: ${theme.spacing.sm};
+    border-bottom: 1px solid ${theme.colors.border.light};
+  }
+`;
+
+const UserDetails = styled.div`
+  // @media (max-width: 768px) {
+  //   display: flex;
+  //   justify-content: space-between;
+  //   width: 100%;
+  //   margin-bottom: ${theme.spacing.sm};
+  // }
+
+  @media (max-width: 768px) {
+    display: flex;
+    flex-direction: column;
+    gap: ${theme.spacing.xs};
+  }
+`;
+
+const UserMeta = styled.div`
+  @media (max-width: 768px) {
+    display: flex;
+    flex-direction: column;
+    gap: ${theme.spacing.xs};
+  }
+`;
+
+const UserStatusIndicator = styled.div`
+  @media (max-width: 768px) {
+    display: flex;
+    justify-content: flex-end;
   }
 `;
 
@@ -88,7 +135,8 @@ const UserUtorid = styled.div`
 
 const UserEmail = styled.div`
   @media (max-width: 768px) {
-    margin-bottom: ${theme.spacing.sm};
+    // margin-bottom: ${theme.spacing.sm};
+    word-break: break-all;
   }
 `;
 
@@ -97,7 +145,7 @@ const UserRole = styled.div`
   justify-content: center;
   
   @media (max-width: 768px) {
-    margin-bottom: ${theme.spacing.sm};
+    // margin-bottom: ${theme.spacing.sm};
     justify-content: flex-start;
   }
 `;
@@ -106,14 +154,16 @@ const ActionButtons = styled.div`
   display: flex;
   gap: ${theme.spacing.sm};
   
+  // @media (max-width: 768px) {
+  //   flex-wrap: wrap;
+  //   width: 100%;
+  //   justify-content: flex-end;
+  // }
+
   @media (max-width: 768px) {
-    flex-wrap: wrap;
+    grid-area: actions;
     width: 100%;
-    
-    button {
-      flex: 1;
-      min-width: 120px;
-    }
+    justify-content: flex-end;
   }
 `;
 
@@ -130,6 +180,7 @@ const BadgeWrapper = styled.div`
     margin-bottom: ${theme.spacing.sm};
     max-width: 100%;
     align-items: flex-start;
+    justify-content: flex-end;
   }
 `;
 
@@ -143,7 +194,7 @@ const PageControls = styled.div`
   @media (max-width: 768px) {
     flex-direction: column;
     gap: ${theme.spacing.md};
-    align-items: flex-start;
+    // align-items: flex-start;
   }
 `;
 
@@ -172,6 +223,13 @@ const EmptyState = styled.div`
   padding: ${theme.spacing.xl};
   text-align: center;
   color: ${theme.colors.text.secondary};
+`;
+
+const ButtonText = styled.span`
+  @media (max-width: 768px) {
+    display: inline;
+    margin-left: ${theme.spacing.xs};
+  }
 `;
 
 const UserList = ({ 
@@ -212,19 +270,17 @@ const UserList = ({
           {users && users.length > 0 ? (
             users.map((user) => (
               <TableRow key={user.id}>
-                <UserDetails>
-                  <div>
-                    <UserName>
-                      <MobileLabel>Name:</MobileLabel>
-                      {user.name}
-                    </UserName>
-                    <UserUtorid>
-                      <MobileLabel>UTORid:</MobileLabel>
-                      {user.utorid}
-                    </UserUtorid>
-                  </div>
-                </UserDetails>
+                <UserHeader>
+                  <UserDetails>
+                    <UserName>{user.name}</UserName>
+                    <UserUtorid>{user.utorid}</UserUtorid>
+                  </UserDetails>
+                  <UserStatusIndicator>
+                    {renderUserBadges(user)}
+                  </UserStatusIndicator>
+                </UserHeader>
                 
+                <UserMeta>
                 <UserEmail>
                   <MobileLabel>Email:</MobileLabel>
                   {user.email}
@@ -248,11 +304,12 @@ const UserList = ({
                      user.role === 'superuser' ? 'Superuser' : 'Unknown'}
                   </Badge>
                 </UserRole>
+                </UserMeta>
                 
-                <div>
+                {/* <div>
                   <MobileLabel>Status:</MobileLabel>
                   {renderUserBadges(user)}
-                </div>
+                </div> */}
                 
                 <ActionButtons>
                   <Button
@@ -261,6 +318,7 @@ const UserList = ({
                     onClick={() => onViewUser(user)}
                   >
                     <FaEye />
+                    <ButtonText>View</ButtonText>
                   </Button>
                   
                   {canEditUser && (
@@ -270,6 +328,7 @@ const UserList = ({
                       onClick={() => onEditUser(user)}
                     >
                       <FaUserEdit />
+                      <ButtonText>Edit</ButtonText>
                     </Button>
                   )}
                   
