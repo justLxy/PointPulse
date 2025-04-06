@@ -531,6 +531,7 @@ const EventDetail = () => {
   
   const { data: event, isLoading, error, refetch } = getEvent(eventId);
   const isU = event?.isOrganizer || false;
+  const shouldHideGuestLayout = isRegularOrCashier && !isU;
   const canAddGuestByUtorid = isRegularOrCashier && isU;
   // For searching users
   const [userSearchParams, setUserSearchParams] = useState({
@@ -1042,139 +1043,146 @@ const EventDetail = () => {
             )}
             
             {activeTab === 'guests' && (
-              <Card>
-                <Card.Header>
-                  <Card.Title>Guests</Card.Title>
+  <Card>
+    {!shouldHideGuestLayout ? (
+      <>
+        <Card.Header>
+          <Card.Title>Guests</Card.Title>
+          {canEditEvent() && eventStatus.text === 'Upcoming' && (
+            <div style={{ display: 'flex', gap: theme.spacing.sm }}>
+              <Button 
+                size="small" 
+                onClick={() => setAddGuestModalOpen(true)}
+              >
+                <FaUserPlus /> Add Guest
+              </Button>
+              <Button 
+                size="small" 
+                onClick={() => setAwardPointsModalOpen(true)}
+              >
+                <FaTrophy /> Award Points
+              </Button>
+            </div>
+          )}
+        </Card.Header>
+
+          <Card.Body>
+            <AudienceContainer>
+              <AudienceStage>🎬 STAGE 🎬</AudienceStage>
+              {event.guests && Array.isArray(event.guests) && event.guests.length > 0 ? (
+                <AudienceSeats>
+                  {event.guests.map(guest => {
+                    const colorSeed = guest.id % 5;
+                    const colors = ['#e57373', '#64b5f6', '#81c784', '#ffb74d', '#ba68c8'];
+                    const randomColor = colors[colorSeed];
+                    const initials = guest.name ? guest.name.charAt(0).toUpperCase() : '?';
+
+                    return (
+                      <AudienceSeat key={guest.id}>
+                        <div
+                          data-tooltip-id={`guest-tooltip-${guest.id}`}
+                          data-tooltip-content={`${guest.name} (${guest.utorid})`}
+                          style={{ width: '100%' }}
+                        >
+                          <div
+                            onClick={() => {
+                              if (activeRole === 'regular') return;
+                              navigate(`/users/${guest.id}`);
+                            }}
+                            style={{
+                              cursor: activeRole === 'regular' ? 'not-allowed' : 'pointer',
+                              textDecoration: 'none',
+                              color: 'inherit',
+                              width: '100%',
+                            }}
+                          >
+                            <AvatarContainer>
+                              <Avatar randomColor={randomColor}>
+                                {guest.avatarUrl ? (
+                                  <img 
+                                    src={guest.avatarUrl} 
+                                    alt={guest.name} 
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                  />
+                                ) : (
+                                  initials
+                                )}
+                              </Avatar>
+                            </AvatarContainer>
+                            <AudienceName>{guest.name}</AudienceName>
+                          </div>
+                        </div>
+
+                        <Tooltip id={`guest-tooltip-${guest.id}`} place="top" />
+
+                        <AudienceRole>
+                          {guest.pointsAwarded ? (
+                            <Badge color="success">{guest.pointsAwarded}pt</Badge>
+                          ) : canEditEvent() && eventStatus.text === 'Upcoming' ? (
+                            <ActionButton 
+                              size="tiny" 
+                              onClick={() => {
+                                setSelectedUserId(guest.id);
+                                setSelectedUtorid(guest.utorid);
+                                setAwardPointsModalOpen(true);
+                              }}
+                            >
+                              🏆
+                            </ActionButton>
+                          ) : null}
+                          {canEditEvent() && (
+                            <ActionButton 
+                              size="tiny" 
+                              color="error"
+                              onClick={() => handleRemoveGuest(guest.id)}
+                            >
+                              ❌
+                            </ActionButton>
+                          )}
+                        </AudienceRole>
+                      </AudienceSeat>
+                    );
+                  })}
+
                   {canEditEvent() && eventStatus.text === 'Upcoming' && (
-                    <div style={{ display: 'flex', gap: theme.spacing.sm }}>
+                    <AudienceSeat>
+                      <EmptyAudienceSeat onClick={() => setAddGuestModalOpen(true)}>
+                        <FaUserPlus color={theme.colors.text.secondary} />
+                      </EmptyAudienceSeat>
+                      <AudienceName>Add Guest</AudienceName>
+                    </AudienceSeat>
+                  )}
+                </AudienceSeats>
+              ) : (
+                <EmptyState>
+                  {canEditEvent() ? (
+                    <>
+                      <p>No guests registered for this event yet.</p>
                       <Button 
-                        size="small" 
+                        style={{ marginTop: theme.spacing.md }}
                         onClick={() => setAddGuestModalOpen(true)}
                       >
-                        <FaUserPlus /> Add Guest
+                        <FaUserPlus /> Add First Guest
                       </Button>
-                      <Button 
-                        size="small" 
-                        onClick={() => setAwardPointsModalOpen(true)}
-                      >
-                        <FaTrophy /> Award Points
-                      </Button>
-                    </div>
+                    </>
+                  ) : (
+                    "No guests registered for this event yet."
                   )}
-                </Card.Header>
-                <Card.Body>
-                  <AudienceContainer>
-                    <AudienceStage>🎬 STAGE 🎬</AudienceStage>
-                    {event.guests && Array.isArray(event.guests) && event.guests.length > 0 ? (
-                      <AudienceSeats>
-                        {event.guests.map(guest => {
-                          const colorSeed = guest.id % 5;
-                          const colors = ['#e57373', '#64b5f6', '#81c784', '#ffb74d', '#ba68c8'];
-                          const randomColor = colors[colorSeed];
-                          const initials = guest.name ? guest.name.charAt(0).toUpperCase() : '?';
+                </EmptyState>
+              )}
+            </AudienceContainer>
+          </Card.Body>
+        </>
+      ) : (
+        <Card.Body>
+          <EmptyState>
+            🚫 Guests are hidden. You don’t have permission to view this section.
+          </EmptyState>
+        </Card.Body>
+      )}
+    </Card>
+  )}
 
-                          return (
-                            <AudienceSeat key={guest.id}>
-                              {/* Avatar + Name clickable with tooltip */}
-                              <div
-                                data-tooltip-id={`guest-tooltip-${guest.id}`}
-                                data-tooltip-content={`${guest.name} (${guest.utorid})`}
-                                style={{ width: '100%' }}
-                              >
-                                    <div
-                                          onClick={() => {
-                                            if (activeRole === 'regular') return;
-                                            navigate(`/users/${guest.id}`);
-                                          }}
-                                          style={{
-                                            cursor: activeRole === 'regular' ? 'not-allowed' : 'pointer',
-                                            textDecoration: 'none',
-                                            color: 'inherit',
-                                            width: '100%',
-                                          }}
-                                        >
-                                          <AvatarContainer>
-                                            <Avatar randomColor={randomColor}>
-                                              {guest.avatarUrl ? (
-                                                <img 
-                                                  src={guest.avatarUrl} 
-                                                  alt={guest.name} 
-                                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                                />
-                                              ) : (
-                                                initials
-                                              )}
-                                            </Avatar>
-                                          </AvatarContainer>
-                                          <AudienceName>{guest.name}</AudienceName>
-                                        </div>
-
-                              </div>
-
-                              <Tooltip id={`guest-tooltip-${guest.id}`} place="top" />
-
-                              <AudienceRole>
-                                {guest.pointsAwarded ? (
-                                  <Badge color="success">{guest.pointsAwarded}pt</Badge>
-                                ) : canEditEvent() && eventStatus.text === 'Upcoming' ? (
-                                  <ActionButton 
-                                    size="tiny" 
-                                    onClick={() => {
-                                      setSelectedUserId(guest.id);
-                                      setSelectedUtorid(guest.utorid);
-                                      setAwardPointsModalOpen(true);
-                                    }}
-                                  >
-                                    🏆
-                                  </ActionButton>
-                                ) : null}
-                                {canEditEvent() && (
-                                  <ActionButton 
-                                    size="tiny" 
-                                    color="error"
-                                    onClick={() => handleRemoveGuest(guest.id)}
-                                  >
-                                    ❌
-                                  </ActionButton>
-                                )}
-                              </AudienceRole>
-                            </AudienceSeat>
-                          );
-                        })}
-
-                        {/* Add guest seat */}
-                        {canEditEvent() && eventStatus.text === 'Upcoming' && (
-                          <AudienceSeat>
-                            <EmptyAudienceSeat onClick={() => setAddGuestModalOpen(true)}>
-                              <FaUserPlus color={theme.colors.text.secondary} />
-                            </EmptyAudienceSeat>
-                            <AudienceName>Add Guest</AudienceName>
-                          </AudienceSeat>
-                        )}
-                      </AudienceSeats>
-                    ) : (
-                      <EmptyState>
-                        {canEditEvent() ? (
-                          <>
-                            <p>No guests registered for this event yet.</p>
-                            <Button 
-                              style={{ marginTop: theme.spacing.md }}
-                              onClick={() => setAddGuestModalOpen(true)}
-                            >
-                              <FaUserPlus /> Add First Guest
-                            </Button>
-                          </>
-                        ) : (
-                          "No guests registered for this event yet."
-                        )}
-                      </EmptyState>
-                    )}
-                  </AudienceContainer>
-
-                </Card.Body>
-              </Card>
-            )}
-            
             {activeTab === 'organizers' && canEditEvent() && (
               <Card>
                 <Card.Header>

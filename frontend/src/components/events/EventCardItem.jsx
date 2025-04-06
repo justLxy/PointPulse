@@ -122,8 +122,13 @@ const EventCardItem = ({
   isRsvpd, 
   handleEditEvent, 
   handleDeleteEventClick, 
-  handleRsvpClick 
+  handleRsvpClick, 
+  activeRole
+
 }) => {
+  const hidePoints = ['cashier', 'regular'].includes(activeRole) && !event.isOrganizer;
+
+
   if (!event) return null; // Skip null/undefined events
   
   const { month, day } = getEventCardDate(event.startTime);
@@ -195,10 +200,13 @@ const EventCardItem = ({
           </EventDetail>
           
           
-          <EventDetail>
-            <FaCoins />
-            <span>{event.pointsRemain ?? 0} points available</span>
-          </EventDetail>
+          {!hidePoints && (
+  <EventDetail>
+    <FaCoins />
+    <span>{event.pointsRemain ?? 0} points available</span>
+  </EventDetail>
+)}
+
         </EventDetails>
         
         <EventActions>

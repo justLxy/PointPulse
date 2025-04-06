@@ -125,7 +125,8 @@ const EventList = ({
   isRsvpd,
   handleEditEvent,
   handleDeleteEventClick,
-  handleRsvpClick
+  handleRsvpClick,
+  activeRole
 }) => {
   if (isLoading) {
     return <LoadingSpinner text="Loading events..." />;
@@ -166,6 +167,8 @@ const EventList = ({
                 handleEditEvent={handleEditEvent}
                 handleDeleteEventClick={handleDeleteEventClick}
                 handleRsvpClick={handleRsvpClick}
+                activeRole={activeRole}
+
               />
             </motion.div>
           ))}
