@@ -5,6 +5,7 @@ import Card from '../common/Card';
 import Button from '../common/Button';
 import Badge from '../common/Badge';
 import theme from '../../styles/theme';
+import { useAuth } from '../../contexts/AuthContext';
 import { 
   FaEdit, 
   FaTrash, 
@@ -115,6 +116,7 @@ const ColoredBadge = styled(Badge)`
 const EventCardItem = ({ 
   event, 
   isManager, 
+  activeRole,
   formatCompactDate, 
   formatTime, 
   getEventCardDate, 
@@ -122,13 +124,16 @@ const EventCardItem = ({
   isRsvpd, 
   handleEditEvent, 
   handleDeleteEventClick, 
-  handleRsvpClick 
+  handleRsvpClick
 }) => {
   if (!event) return null; // Skip null/undefined events
-  
+  console.log('event.isOrganizer =', event?.isOrganizer);
   const { month, day } = getEventCardDate(event.startTime);
   const eventStatus = getEventStatus(event.startTime, event.endTime);
   const isUserRsvpd = isRsvpd(event);
+  const isRegularAndNotOrganizer = activeRole === 'regular' && !event.isOrganizer;
+
+
   
   return (
     <EventCard>
@@ -195,10 +200,14 @@ const EventCardItem = ({
           </EventDetail>
           
           
-          <EventDetail>
-            <FaCoins />
-            <span>{event.pointsRemain ?? 0} points available</span>
-          </EventDetail>
+          {!isRegularAndNotOrganizer && (
+       <EventDetail>
+        <FaCoins />
+       <span>{event.pointsRemain ?? 0} points available</span>
+      </EventDetail>
+)}
+
+
         </EventDetails>
         
         <EventActions>

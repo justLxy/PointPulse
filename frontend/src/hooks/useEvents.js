@@ -33,13 +33,37 @@ export const useEvents = (params = {}) => {
   });
   
   const useGetEvent = (id) => {
+    const { activeRole, user } = useAuth();
+  
+    const isElevated = ['manager', 'superuser'].includes(activeRole);
+  
     return useQuery({
       queryKey: ['event', id],
-      queryFn: () => EventService.getEvent(id),
+      queryFn: async () => {
+        try {
+         
+          const result = await EventService.getEvent(id, {
+            includeAsOrganizer: isElevated, 
+          });
+          return result;
+        } catch (error) {
+         
+          if (
+            error?.response?.status === 403 ||
+            error?.response?.status === 404
+          ) {
+            return await EventService.getEvent(id); 
+          } else {
+            throw error;
+          }
+        }
+      },
       enabled: !!id,
-      staleTime: 5 * 60 * 1000, // 5 minutes
+      staleTime: 5 * 60 * 1000,
     });
   };
+  
+  
   
   // RSVP mutations for all users
   const rsvpToEventMutation = useMutation({
@@ -159,7 +183,7 @@ export const useEvents = (params = {}) => {
     },
   });
   
-  // 定义基本返回值，所有用户都可使用
+ 
   const baseReturn = {
     events: data?.results || [],
     totalCount: data?.count || 0,
@@ -172,12 +196,12 @@ export const useEvents = (params = {}) => {
     isRsvping: rsvpToEventMutation.isPending,
     cancelRsvp: cancelRsvpMutation.mutate,
     isCancellingRsvp: cancelRsvpMutation.isPending,
-    // 添加updateEvent，所有用户都可以调用
+ 
     updateEvent: updateEventMutation.mutate,
     isUpdating: updateEventMutation.isPending,
   };
   
-  // 仅当用户是管理员时添加管理员特有功能
+ 
   if (isManager) {
     return {
       ...baseReturn,
@@ -198,7 +222,7 @@ export const useEvents = (params = {}) => {
     };
   }
   
-  // 非管理员也需要有添加/移除嘉宾功能（如果是组织者）
+
   return {
     ...baseReturn,
     addGuest: addGuestMutation.mutate,

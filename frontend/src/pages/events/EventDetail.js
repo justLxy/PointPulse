@@ -432,9 +432,14 @@ const AudienceName = styled.div`
 `;
 
 const AudienceRole = styled.div`
-  font-size: ${theme.typography.fontSize.xs};
-  color: ${theme.colors.text.secondary};
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: ${theme.spacing.sm};
+  width: 60px; 
+  margin-top: -4px; 
 `;
+
 
 const EmptyAudienceSeat = styled.div`
   width: 60px;
@@ -1041,7 +1046,7 @@ const EventDetail = () => {
               </Card>
             )}
             
-            {activeTab === 'guests' && (
+            {activeTab === 'guests' && !(activeRole === 'regular' && !isU) && activeRole !== 'cashier' && (
               <Card>
                 <Card.Header>
                   <Card.Title>Guests</Card.Title>
@@ -1112,32 +1117,33 @@ const EventDetail = () => {
                               </div>
 
                               <Tooltip id={`guest-tooltip-${guest.id}`} place="top" />
+                                                                <AudienceRole>
+                                    {guest.pointsAwarded ? (
+                                      <Badge color="success">{guest.pointsAwarded}pt</Badge>
+                                    ) : canEditEvent() && eventStatus.text === 'Upcoming' ? (
+                                      <ActionButton
+                                        size="tiny"
+                                        onClick={() => {
+                                          setSelectedUserId(guest.id);
+                                          setSelectedUtorid(guest.utorid);
+                                          setAwardPointsModalOpen(true);
+                                        }}
+                                      >
+                                        🏆
+                                      </ActionButton>
+                                    ) : <div />}
 
-                              <AudienceRole>
-                                {guest.pointsAwarded ? (
-                                  <Badge color="success">{guest.pointsAwarded}pt</Badge>
-                                ) : canEditEvent() && eventStatus.text === 'Upcoming' ? (
-                                  <ActionButton 
-                                    size="tiny" 
-                                    onClick={() => {
-                                      setSelectedUserId(guest.id);
-                                      setSelectedUtorid(guest.utorid);
-                                      setAwardPointsModalOpen(true);
-                                    }}
-                                  >
-                                    🏆
-                                  </ActionButton>
-                                ) : null}
-                                {canEditEvent() && (
-                                  <ActionButton 
-                                    size="tiny" 
-                                    color="error"
-                                    onClick={() => handleRemoveGuest(guest.id)}
-                                  >
-                                    ❌
-                                  </ActionButton>
-                                )}
-                              </AudienceRole>
+                                    {canEditEvent() ? (
+                                      <ActionButton
+                                        size="tiny"
+                                        color="error"
+                                        onClick={() => handleRemoveGuest(guest.id)}
+                                      >
+                                        ❌
+                                      </ActionButton>
+                                    ) : <div />}
+                                  </AudienceRole>
+
                             </AudienceSeat>
                           );
                         })}
