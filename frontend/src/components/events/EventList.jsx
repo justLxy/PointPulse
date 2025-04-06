@@ -6,10 +6,6 @@ import { FaInfoCircle } from 'react-icons/fa';
 import theme from '../../styles/theme';
 import EventCardItem from './EventCardItem';
 import LoadingSpinner from '../common/LoadingSpinner';
-import { useAuth } from '../../contexts/AuthContext'; 
-
-
-
 
 const EventsContainer = styled.div`
   margin-bottom: ${theme.spacing.xl};
@@ -131,8 +127,6 @@ const EventList = ({
   handleDeleteEventClick,
   handleRsvpClick
 }) => {
-  const { user, activeRole } = useAuth();
-
   if (isLoading) {
     return <LoadingSpinner text="Loading events..." />;
   }
@@ -159,28 +153,22 @@ const EventList = ({
         animate="visible"
       >
         <EventsGrid>
-        {events.map((event) => {
-  const isOrganizer = event.organizers?.some(org => org.id === user.id);
-
-  return (
-    <motion.div key={event.id || 'unknown'} variants={itemVariants}>
-      <EventCardItem
-        event={{ ...event, isOrganizer }} 
-        isManager={isManager}
-        activeRole={activeRole}
-        formatCompactDate={formatCompactDate}
-        formatTime={formatTime}
-        getEventCardDate={getEventCardDate}
-        getEventStatus={getEventStatus}
-        isRsvpd={isRsvpd}
-        handleEditEvent={handleEditEvent}
-        handleDeleteEventClick={handleDeleteEventClick}
-        handleRsvpClick={handleRsvpClick}
-      />
-    </motion.div>
-  );
-})}
-
+          {events.map((event) => (
+            <motion.div key={event.id || 'unknown'} variants={itemVariants}>
+              <EventCardItem
+                event={event}
+                isManager={isManager}
+                formatCompactDate={formatCompactDate}
+                formatTime={formatTime}
+                getEventCardDate={getEventCardDate}
+                getEventStatus={getEventStatus}
+                isRsvpd={isRsvpd}
+                handleEditEvent={handleEditEvent}
+                handleDeleteEventClick={handleDeleteEventClick}
+                handleRsvpClick={handleRsvpClick}
+              />
+            </motion.div>
+          ))}
         </EventsGrid>
       </motion.div>
       
