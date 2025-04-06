@@ -471,6 +471,7 @@ const Events = () => {
         handleEditEvent={handleEditEvent}
         handleDeleteEventClick={handleDeleteEventClick}
         handleRsvpClick={handleRsvpClick}
+        activeRole={activeRole}
       />
       
       {/* Modals */}
