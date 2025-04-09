@@ -4,15 +4,8 @@ import { useSearchParams } from 'react-router-dom';
 import { usePromotions } from '../../hooks/usePromotions';
 import { useAuth } from '../../contexts/AuthContext';
 import PromotionService from '../../services/promotion.service';
-import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
-import Input from '../../components/common/Input';
-import Select from '../../components/common/Select';
-
-import Modal from '../../components/common/Modal';
-import Badge from '../../components/common/Badge';
 import theme from '../../styles/theme';
-import { FaPlus, FaEdit, FaTrash, FaCalendarAlt, FaPercent, FaTags, FaCoins, FaFilter } from 'react-icons/fa';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import PromotionFilters from '../../components/promotions/PromotionFilters';
 import PromotionList from '../../components/promotions/PromotionList';
@@ -126,7 +119,6 @@ const Promotions = () => {
     promotions, 
     totalCount, 
     isLoading, 
-    getPromotion,
     createPromotion, 
     updatePromotion, 
     deletePromotion, 
