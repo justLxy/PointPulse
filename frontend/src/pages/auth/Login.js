@@ -1,15 +1,15 @@
 /**
- * Header Component for the Login Page
+ * Login Page Component
  * 
- * This component represents the header at the top of the login page. 
- * It includes the app's logo, name, and basic navigation links such as:
- * - Home
- * - Profile
- * - Logout
+ * This component handles the user login functionality of the website. It includes:
+ * - A form for entering a UTORid and password
+ * - Functionality to toggle password visibility
+ * - Validation and error handling for login attempts
+ * - Animated background particles and styled UI elements
  * 
- * The component uses `styled-components` for styling, and `react-icons` 
- * for the iconography in the navigation links. It is also designed to be 
- * responsive and remains sticky at the top of the page while scrolling.
+ * References:
+ * - Emotion documentation: https://emotion.sh/docs/introduction
+ * - React Icons documentation: https://react-icons.github.io/react-icons/
  */
 
 import { useState, useEffect } from 'react';
