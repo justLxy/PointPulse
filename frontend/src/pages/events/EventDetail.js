@@ -7,7 +7,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
-import Select from '../../components/common/Select';
 import Modal from '../../components/common/Modal';
 import Badge from '../../components/common/Badge';
 import theme from '../../styles/theme';
@@ -223,16 +222,6 @@ const AttendeeSubtext = styled.div`
   color: ${theme.colors.text.secondary};
 `;
 
-const AttendeeActions = styled.div`
-  display: flex;
-  gap: ${theme.spacing.sm};
-`;
-
-const BadgeContainer = styled.div`
-  display: flex;
-  gap: ${theme.spacing.xs};
-  margin-top: ${theme.spacing.sm};
-`;
 
 const ModalContent = styled.div`
   display: flex;
@@ -301,45 +290,6 @@ const SummaryItem = styled.div`
   }
 `;
 
-// Create a custom Badge component that accepts hex color values
-const ColoredBadge = styled(Badge)`
-  background-color: ${props => props.customColor || theme.colors.primary.main};
-  color: white;
-  font-weight: ${theme.typography.fontWeights.medium};
-  
-  /* Ensure good contrast with text */
-  ${props => props.customColor === '#f4d03f' && `
-    color: #333; /* Darker text for yellow background */
-  `}
-`;
-
-// Add this new styled component for the status indicator
-const StatusIndicator = styled.div`
-  display: inline-flex;
-  align-items: center;
-  padding: ${theme.spacing.xs} ${theme.spacing.sm};
-  border-radius: ${theme.radius.full};
-  background-color: ${props => {
-    switch (props.status) {
-      case 'Upcoming': return '#ffd54f'; // Deeper yellow
-      case 'Ongoing': return '#C8E6C9'; // Light green
-      case 'Past': return '#FFCCBC'; // Light red
-      default: return theme.colors.background.default;
-    }
-  }};
-  
-  span {
-    color: ${props => {
-      switch (props.status) {
-        case 'Upcoming': return '#7e4d0d'; // Dark brown text
-        case 'Ongoing': return '#2E7D32'; // Darker green
-        case 'Past': return '#BF360C'; // Darker red
-        default: return theme.colors.text.primary;
-      }
-    }};
-    font-weight: ${theme.typography.fontWeights.semiBold};
-  }
-`;
 
 // Create simpler style for Upcoming tags
 const UpcomingBadge = styled.span`
@@ -587,13 +537,7 @@ const EventDetail = () => {
     });
   };
   
-  // Check if event is upcoming
-  const isUpcoming = (startTime) => {
-    if (!startTime) return false;
-    const now = new Date();
-    return new Date(startTime) > now;
-  };
-  
+ 
   // Is user attending
   const isUserAttending = () => {
     return event?.isAttending || false;

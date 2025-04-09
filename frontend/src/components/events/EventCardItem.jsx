@@ -13,10 +13,7 @@ import {
   FaMapMarkerAlt, 
   FaClock, 
   FaUsers, 
-  FaCoins,
-  FaArrowRight,
-  FaCheck,
-  FaTimes,
+  FaCoins
 } from 'react-icons/fa';
 
 const EventCard = styled(Card)`
