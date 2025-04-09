@@ -41,7 +41,7 @@ async function seed() {
 
         // Print summary
         console.log('\nDatabase seeding summary:');
-        console.log(`Total users: ${1 + 3 + users.regularUsers.length} (1 superuser, 2 managers, 2 cashiers, ${users.regularUsers.length} regular users)`);
+        console.log(`Total users: ${3 + 2 + users.cashiers.length + users.regularUsers.length} (3 superusers, 2 managers, ${users.cashiers.length} cashiers, ${users.regularUsers.length} regular users)`);
         console.log(`Total events: ${events.upcomingEvents.length + events.pastEvents.length + events.unpublishedEvents.length} (${events.upcomingEvents.length} upcoming, ${events.pastEvents.length} past, ${events.unpublishedEvents.length} unpublished)`);
         console.log(`Total promotions: ${Object.keys(promotions).length}`);
         console.log(`Total transactions: ${Object.values(transactionCount).reduce((a, b) => a + b, 0)}`);
@@ -71,11 +71,41 @@ async function createUsers() {
     const hashedPassword = await bcrypt.hash('Lvxuanyi2003!', 10);
 
     // Create superuser
-    const superuser = await prisma.user.create({
+    const superuser1 = await prisma.user.create({
         data: {
             utorid: 'lyuxuany',
-            name: 'Super User',
-            email: 'super.user@mail.utoronto.ca',
+            name: 'Xuanyi Lyu',
+            email: 'xuanyi.lyu@mail.utoronto.ca',
+            password: hashedPassword,
+            role: 'superuser',
+            points: 5000,
+            verified: true,
+            lastLogin: new Date(),
+            createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000), // 60 days ago
+        }
+    });
+
+    // Create second superuser
+    const superuser2 = await prisma.user.create({
+        data: {
+            utorid: 'liyuxin1',
+            name: 'Yuxin Li',
+            email: 'lyx.li@mail.utoronto.ca',
+            password: hashedPassword,
+            role: 'superuser',
+            points: 5000,
+            verified: true,
+            lastLogin: new Date(),
+            createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000), // 60 days ago
+        }
+    });
+
+    // Create third superuser
+    const superuser3 = await prisma.user.create({
+        data: {
+            utorid: 'zhaokiko',
+            name: 'Kiko Zhao',
+            email: 'kiko.zhao@mail.utoronto.ca',
             password: hashedPassword,
             role: 'superuser',
             points: 5000,
@@ -144,10 +174,10 @@ async function createUsers() {
         regularUsers.push(user);
     }
 
-    console.log(`Created users: 1 superuser, ${managers.length} managers, ${cashiers.length} cashiers, ${regularUsers.length} regular users`);
+    console.log(`Created users: 3 superusers, ${managers.length} managers, ${cashiers.length} cashiers, ${regularUsers.length} regular users`);
 
     return {
-        superuser,
+        superusers: [superuser1, superuser2, superuser3],
         managers,
         cashiers,
         regularUsers
