@@ -3,4 +3,70 @@
 # You should write detailed description on:
 
 # 1. All the packages you need to install
-# 2. How to configure various servers (e.g., Nginx, Apache, etc)
+
+## Backend
+# Navigate to the backend directory:
+cd backend
+
+# Install the required Node.js packages using npm:
+npm install
+
+# The following packages are used in the backend application:
+# Dependencies:
+# - @faker-js/faker: For generating fake data (used in seeding).
+# - @prisma/client: Prisma client for database interactions.
+# - bcrypt: For hashing passwords.
+# - cors: For enabling Cross-Origin Resource Sharing.
+# - express: Web framework for Node.js.
+# - express-jwt: Middleware for validating JSON Web Tokens (JWT).
+# - jsonwebtoken: For creating and verifying JWTs.
+# - multer: Middleware for handling multipart/form-data (file uploads).
+# - nodemailer: For sending emails (though not used for sending actual emails in this project).
+# - sqlite3: SQLite database driver.
+# - uuid: For generating UUIDs.
+# - zod: For schema declaration and validation.
+#
+# DevDependencies:
+# - prisma: Toolkit for database schema management, migrations, and client generation.
+
+# To run the backend development server (listens on port 8000 by default):
+npm start
+
+# To seed the database with initial data:
+npm run seed
+
+# To create an initial superuser (example):
+# npm run createsuperuser <utorid> <email> <password>
+
+## Frontend
+# Navigate to the frontend directory:
+cd frontend
+
+# Install the required Node.js packages using npm:
+npm install
+
+# The following packages are used in the frontend application:
+# - @emotion/react: For styling components with CSS-in-JS.
+# - @emotion/styled: Styled components utility for @emotion/react.
+# - @tanstack/react-query: For data fetching, caching, and state management.
+# - @testing-library/*: Utilities for testing React components.
+# - axios: For making HTTP requests to the backend API.
+# - framer-motion: For animations and transitions.
+# - qrcode.react: To generate QR codes.
+# - react: The core React library.
+# - react-dom: For rendering React components in the DOM.
+# - react-hot-toast: For displaying notifications/toasts.
+# - react-icons: Provides a library of commonly used icons.
+# - react-router-dom: For handling routing within the React application.
+# - react-scripts: Scripts and configurations used by Create React App.
+# - react-tooltip: For creating tooltips.
+# - web-vitals: For measuring web performance metrics.
+
+# To run the frontend development server:
+npm start
+
+# 2. Deployment Configuration (Railway)
+
+This project is intended for deployment on Railway. Railway typically handles server configuration automatically based on the project structure and defined build/start commands. Manual configuration of servers like Nginx or Apache is generally not required.
+
+Refer to the official Railway documentation for more detailed instructions specific to your project setup and chosen services.

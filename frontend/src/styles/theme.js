@@ -1,3 +1,12 @@
+/**
+ * Theme Configuration
+ * Defines colors, spacing, shadows, and typography settings for the application
+ * Structure inspired by:
+ * - Material UI Theme: https://mui.com/material-ui/customization/theming/
+ * - Tailwind CSS: https://tailwindcss.com/docs/theme
+ * - Chakra UI: https://chakra-ui.com/docs/styled-system/theme
+ */
+
 const theme = {
   colors: {
     primary: {

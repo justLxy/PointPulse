@@ -284,7 +284,7 @@ const Promotions = () => {
       endTime: promotionData.endDate ? new Date(promotionData.endDate).toISOString() : null,
     };
     
-    // 移除空的日期字段
+    // Remove empty date fields
     if (!formattedData.startTime) delete formattedData.startTime;
     if (!formattedData.endTime) delete formattedData.endTime;
     
@@ -309,7 +309,7 @@ const Promotions = () => {
       endTime: promotionData.endDate ? new Date(promotionData.endDate).toISOString() : null,
     };
     
-    // 移除空的日期字段
+    // Remove empty date fields
     if (!formattedData.startTime) delete formattedData.startTime;
     if (!formattedData.endTime) delete formattedData.endTime;
     

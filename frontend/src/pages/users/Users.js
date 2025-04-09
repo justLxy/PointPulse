@@ -244,7 +244,7 @@ const Users = () => {
     email: '',
   });
   
-  // 调试响应
+  // Debug response
   React.useEffect(() => {
     console.log(`User filters changed: `, filters);
   }, [filters]);
@@ -268,24 +268,24 @@ const Users = () => {
       limit: filters.limit,
     };
 
-    // 只有当search有内容时才添加
+    // Only add when search has content
     if (filters.search) {
       apiParams.name = filters.search;
     }
 
-    // 只有当选择了具体角色时才添加
+    // Only add when a specific role is selected
     if (filters.role) {
       apiParams.role = filters.role;
     }
 
-    // 转换字符串为布尔值，只有当有明确选择时才添加
+    // Convert string to boolean, only add when there's a clear selection
     if (filters.verified === 'verified') {
       apiParams.verified = true;
     } else if (filters.verified === 'unverified') {
       apiParams.verified = false;
     }
 
-    // 转换字符串为布尔值，只有当有明确选择时才添加
+    // Convert string to boolean, only add when there's a clear selection
     if (filters.active === 'active') {
       apiParams.activated = true;
     } else if (filters.active === 'inactive') {
@@ -309,7 +309,7 @@ const Users = () => {
     isUpdatingUser 
   } = useUsers(getApiParams()); 
   
-  // 打印数据用于调试
+  // Print data for debugging
   React.useEffect(() => {
     console.log('Users data:', { users, totalCount });
   }, [users, totalCount]);
@@ -344,7 +344,7 @@ const Users = () => {
     
     const userData = { ...editData };
     
-    // 如果分配了任何角色且用户未验证，则自动验证用户
+    // If any role is assigned and user is not verified, automatically verify the user
     if (userData.role && !userData.verified) {
       userData.verified = true;
     }
@@ -355,7 +355,7 @@ const Users = () => {
         onSuccess: () => {
           setEditModalOpen(false);
           setSelectedUser(null);
-          // 成功后立即刷新用户列表
+          // Refresh user list immediately after success
           refetch();
         },
       }

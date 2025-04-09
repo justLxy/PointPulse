@@ -107,7 +107,7 @@ const PageActionsContainer = styled.div`
     width: 100%;
 
     button {
-      width: 100%; // 每个按钮单独占满整行
+      width: 100%; // Each button individually takes up the entire row
     }
   }
 `;
@@ -321,7 +321,7 @@ const StatusIndicator = styled.div`
   border-radius: ${theme.radius.full};
   background-color: ${props => {
     switch (props.status) {
-      case 'Upcoming': return '#ffd54f'; // 更深的黄色
+      case 'Upcoming': return '#ffd54f'; // Deeper yellow
       case 'Ongoing': return '#C8E6C9'; // Light green
       case 'Past': return '#FFCCBC'; // Light red
       default: return theme.colors.background.default;
@@ -331,7 +331,7 @@ const StatusIndicator = styled.div`
   span {
     color: ${props => {
       switch (props.status) {
-        case 'Upcoming': return '#7e4d0d'; // 深褐色文字
+        case 'Upcoming': return '#7e4d0d'; // Dark brown text
         case 'Ongoing': return '#2E7D32'; // Darker green
         case 'Past': return '#BF360C'; // Darker red
         default: return theme.colors.text.primary;
@@ -341,7 +341,7 @@ const StatusIndicator = styled.div`
   }
 `;
 
-// 为Upcoming标签创建更简单的样式
+// Create simpler style for Upcoming tags
 const UpcomingBadge = styled.span`
   display: inline-flex;
   align-items: center;
@@ -353,7 +353,7 @@ const UpcomingBadge = styled.span`
   font-weight: ${theme.typography.fontWeights.medium};
 `;
 
-// 新增观众席样式组件
+// New audience seating style component
 const AudienceContainer = styled.div`
   margin-top: ${theme.spacing.lg};
   background-color: ${theme.colors.background.default};
@@ -728,16 +728,16 @@ const EventDetail = () => {
       capacity: eventData.capacity ? parseInt(eventData.capacity) : null,
     };
     
-    // 只有管理员才能更新积分和发布状态
+    // Only admins can update points and published status
     if (isManager) {
       formattedData.points = eventData.points ? parseInt(eventData.points) : 0;
       
-      // 只包含发布状态如果它被改变而且用户是管理员
+      // Only include published status if it was changed and user is admin
       if (eventData.published && !event.published) {
         formattedData.published = true;
       }
     } else {
-      // 确保删除受限字段，防止后端拒绝请求
+      // Make sure to remove restricted fields to prevent backend rejection
       delete formattedData.points;
       delete formattedData.published;
     }
@@ -781,7 +781,7 @@ const EventDetail = () => {
   const handleAwardPoints = () => {
     if (!selectedUserId || !pointsAmount) return;
     
-    // 确保转换为整数
+    // Ensure conversion to integer
     const points = Math.floor(Number(pointsAmount));
     if (isNaN(points) || points <= 0) {
       toast.error("Points must be a positive number");
@@ -803,7 +803,7 @@ const EventDetail = () => {
   
   // Award points to all guests
   const handleAwardPointsToAll = () => {
-    // 确保转换为整数
+    // Ensure conversion to integer
     const points = Math.floor(Number(pointsAmount));
     if (isNaN(points) || points <= 0) {
       toast.error("Points must be a positive number");
@@ -1349,7 +1349,7 @@ const EventDetail = () => {
         <ModalContent>
           <ModalForm>
           {canAddGuestByUtorid ? (
-  // 👇 如果是 cashier/regular 且是 organizer，只输入 utorid
+  // If cashier/regular and is organizer, only enter utorid
   <>
     <Input
       label="Enter UTORid"
@@ -1360,7 +1360,7 @@ const EventDetail = () => {
     />
   </>
 ) : (
-  // 👇 如果是 manager/superuser 或非 regular/cashier organizer，显示搜索框和用户列表
+  // If manager/superuser or non-regular/cashier organizer, show search box and user list
   <>
     <Input
       label="Search for a user"
@@ -1443,7 +1443,7 @@ const EventDetail = () => {
               type="number"
               value={pointsAmount}
               onChange={(e) => {
-                // 确保只能输入正整数
+                // Ensure only positive integers can be entered
                 const value = e.target.value;
                 if (value === '' || /^[1-9]\d*$/.test(value)) {
                   setPointsAmount(value);
@@ -1484,7 +1484,7 @@ const EventDetail = () => {
             </Button>
             <Button
               onClick={() => {
-                // 额外验证积分值
+                // Extra validation for points value
                 const pointsNum = Number(pointsAmount);
                 if (isNaN(pointsNum) || pointsNum <= 0) {
                   toast.error("Points must be a positive number");

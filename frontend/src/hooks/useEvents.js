@@ -159,7 +159,7 @@ export const useEvents = (params = {}) => {
     },
   });
   
-  // 定义基本返回值，所有用户都可使用
+  // Define basic return values that all users can use
   const baseReturn = {
     events: data?.results || [],
     totalCount: data?.count || 0,
@@ -172,12 +172,12 @@ export const useEvents = (params = {}) => {
     isRsvping: rsvpToEventMutation.isPending,
     cancelRsvp: cancelRsvpMutation.mutate,
     isCancellingRsvp: cancelRsvpMutation.isPending,
-    // 添加updateEvent，所有用户都可以调用
+    // Add updateEvent, all users can call it
     updateEvent: updateEventMutation.mutate,
     isUpdating: updateEventMutation.isPending,
   };
   
-  // 仅当用户是管理员时添加管理员特有功能
+  // Only add admin-specific functions when user is admin
   if (isManager) {
     return {
       ...baseReturn,
@@ -198,7 +198,7 @@ export const useEvents = (params = {}) => {
     };
   }
   
-  // 非管理员也需要有添加/移除嘉宾功能（如果是组织者）
+  // Non-admins also need add/remove guest functionality (if they're organizers)
   return {
     ...baseReturn,
     addGuest: addGuestMutation.mutate,

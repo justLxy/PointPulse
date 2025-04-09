@@ -550,7 +550,7 @@ const RedemptionOption = styled.button`
   }
 `;
 
-// 添加新的积分条样式组件
+// Add new points bar style component
 const PointsProgressContainer = styled.div`
   margin-top: ${theme.spacing.sm};
   margin-bottom: ${theme.spacing.sm};
@@ -687,23 +687,23 @@ const formatDisplayDate = (dateString) => {
   if (!dateString) return 'N/A';
   
   try {
-    // 直接处理ISO格式的日期字符串
-    // 对于格式为 "2023-12-15T00:00:00.000Z" 的日期，需要确保使用UTC时区
+    // Directly handle ISO format date strings
+    // For dates in format "2023-12-15T00:00:00.000Z", need to ensure UTC timezone is used
     const date = new Date(dateString);
     
-    // 检查日期是否有效
+    // Check if date is valid
     if (isNaN(date.getTime())) {
       console.error('Invalid date:', dateString);
       return 'Invalid Date';
     }
     
-    // 使用UTC时区确保日期显示正确
-    // 这个方法在不同的浏览器和操作系统中都能正确处理UTC日期
+    // Use UTC timezone to ensure correct date display
+    // This method works correctly with UTC dates across different browsers and operating systems
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
-      timeZone: 'UTC' // 关键是使用UTC时区
+      timeZone: 'UTC' // Key is to use UTC timezone
     });
   } catch (error) {
     console.error('Error formatting date:', error);
@@ -785,7 +785,7 @@ const Dashboard = () => {
   
   // Calculate level and progress based on current points
   const calculateLevel = (points) => {
-    // 使用当前余额来确定级别
+    // Use current balance to determine level
     const actualPoints = points; // Use current points balance
     
     const levels = [
@@ -801,7 +801,7 @@ const Dashboard = () => {
         const current = levels[i];
         const nextLevel = i < levels.length - 1 ? levels[i + 1] : null;
         
-        // 计算在当前等级内的进度百分比
+        // Calculate progress percentage within current level
         const progress = nextLevel 
           ? Math.min(((actualPoints - current.min) / (nextLevel.min - current.min)) * 100, 100)
           : 100;

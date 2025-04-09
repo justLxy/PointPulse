@@ -204,25 +204,25 @@ const RedemptionModal = ({ isOpen, onClose, availablePoints = 0 }) => {
       
       const amount = getRedemptionAmount();
       
-      // 设置加载状态让按钮显示loading
-      // isCreatingRedemption 是由 useUserTransactions 钩子提供的
+      // Set loading state to show loading button
+      // isCreatingRedemption is provided by the useUserTransactions hook
 
-      // 立即关闭弹窗
+      // Close the modal immediately
       handleClose();
       
-      // 在后台创建兑换请求
+      // Create redemption request in the background
       try {
         await createRedemption({
           amount,
           remark,
         });
-        // useUserTransactions钩子内部可能已经显示了成功通知
+        // The useUserTransactions hook may have already shown a success notification
       } catch (apiError) {
-        // 如果API请求失败，显示错误通知
+        // Show error notification if API request fails
         toast.error(apiError.message || 'Failed to process redemption request');
       }
     } catch (err) {
-      // 这个catch捕获的是validateAmount等函数可能抛出的错误
+      // This catch catches errors that might be thrown by validateAmount and other functions
       setError(err.message || 'Failed to validate redemption request');
     }
   };

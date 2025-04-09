@@ -121,7 +121,7 @@ const UserDetail = () => {
 
   const [showContent, setShowContent] = useState(true);
 
-  // 权限控制：只能自己或其他 superuser 查看 superuser
+  // Permission control: Only self or other superuser can view a superuser
   useEffect(() => {
     if (
       user &&
