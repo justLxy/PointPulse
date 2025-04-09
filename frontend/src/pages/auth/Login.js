@@ -1,3 +1,17 @@
+/**
+ * Login Page Component
+ * 
+ * This component handles the user login functionality of the website. It includes:
+ * - A form for entering a UTORid and password
+ * - Functionality to toggle password visibility
+ * - Validation and error handling for login attempts
+ * - Animated background particles and styled UI elements
+ * 
+ * References:
+ * - Emotion documentation: https://emotion.sh/docs/introduction
+ * - React Icons documentation: https://react-icons.github.io/react-icons/
+ */
+
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import styled from '@emotion/styled';
