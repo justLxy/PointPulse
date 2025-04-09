@@ -1,3 +1,8 @@
+/**
+ * QR Code Component
+ * Uses the qrcode.react library: https://github.com/zpao/qrcode.react
+ * This component provides a styled QR code with download functionality
+ */
 import { useRef } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import styled from '@emotion/styled';

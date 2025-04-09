@@ -1,3 +1,8 @@
+/**
+ * LoadingSpinner Component
+ * Animated heartbeat style loading spinner inspired by medical/health monitoring visuals
+ * Animation techniques adapted from: https://animista.net/
+ */
 import React from 'react';
 import styled from '@emotion/styled';
 import { keyframes } from '@emotion/react';

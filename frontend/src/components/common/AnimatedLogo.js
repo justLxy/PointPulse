@@ -1,3 +1,11 @@
+/**
+ * AnimatedLogo Component
+ * Custom animated logo with pulse, wave, and orbit animations
+ * Animation techniques inspired by:
+ * - https://animista.net/
+ * - https://tympanus.net/codrops/2019/01/31/custom-cursor-effects/
+ * - https://codepen.io/designcouch/pen/exkBf
+ */
 import React, { useEffect, useRef } from 'react';
 import styled from '@emotion/styled';
 import { keyframes } from '@emotion/react';

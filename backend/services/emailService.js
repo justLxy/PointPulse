@@ -1,12 +1,21 @@
 const nodemailer = require('nodemailer');
 
-// const transporter = nodemailer.createTransport({
-//   service: 'gmail', // Or your SMTP service
-//   auth: {
-//     user: 'spammail04042025@gmail.com', // Not good practice, just for the sake of the lab
-//     pass: 'Test!234',
-//   },
-// });
+/**
+ * Email Service for PointPulse Account Activation and Password Reset
+ * 
+ * This module contains functions to send activation and password reset emails
+ * for the PointPulse application. It utilizes `nodemailer` to send emails via
+ * Gmail's SMTP service. The module supports two primary email functionalities:
+ * 
+ * **Important Notes**:
+ * - Hardcoding sensitive information (e.g., Gmail credentials) is not recommended for production. 
+ *   It’s better to use environment variables for storing credentials securely.
+ * - The email account being used here is a demo account. 
+ * 
+ * Dependencies:
+ * - nodemailer: https://www.npmjs.com/package/nodemailer
+ * - reference: https://mailtrap.io/blog/nodemailer-gmail/
+ */
 
 // Create a transporter object
 const transporter = nodemailer.createTransport({

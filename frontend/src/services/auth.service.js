@@ -24,12 +24,12 @@ const AuthService = {
     } catch (error) {
       console.error('Login API error:', error);
       
-      // 提供更具体的错误信息
+      // Provide more specific error messages
       if (error.response) {
         const status = error.response.status;
         const data = error.response.data;
         
-        // 根据状态码给出更具体的错误信息
+        // Provide more specific error messages based on status code
         if (status === 401) {
           throw new Error('Invalid username or password. Please try again.');
         } else if (status === 403) {
@@ -49,7 +49,7 @@ const AuthService = {
         throw new Error(error.message);
       }
       
-      // 默认错误信息
+      // Default error message
       throw new Error('Login failed. Please try again later.');
     }
   },

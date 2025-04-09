@@ -1,3 +1,17 @@
+/**
+ * Account Activation Page
+ * This component handles the account activation process for users. 
+ * It allows users to enter their UTORid, activation token, and set a new password.
+ * Password validation is performed live, ensuring the password meets the required strength criteria (length, uppercase, lowercase, number, and special character).
+ * After successful activation, the user is redirected to the login page.
+ * 
+ * Dependencies:
+ * - React: For component structure and state management
+ * - React Router: For navigation and URL parameter parsing
+ * - Emotion: For CSS-in-JS styling
+ * - React Hot Toast: For success/error toast notifications
+ */
+
 import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate, useLocation } from 'react-router-dom';
 import styled from '@emotion/styled';
@@ -210,7 +224,7 @@ const PasswordRequirements = styled.ul`
   }
 `;
 
-// 添加自定义输入框样式，确保图标显示正确
+// Add custom input styles to ensure icons display correctly
 const StyledInput = styled(Input)`
   .input-icon-wrapper {
     color: ${theme.colors.text.secondary};

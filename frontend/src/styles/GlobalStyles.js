@@ -1,3 +1,11 @@
+/**
+ * Global Styles
+ * Defines reset and base styles for the entire application
+ * Reset styles adapted from:
+ * - Modern Normalize: https://github.com/sindresorhus/modern-normalize
+ * - Josh Comeau's CSS Reset: https://www.joshwcomeau.com/css/custom-css-reset/
+ */
+
 import { css, Global } from '@emotion/react';
 
 const globalStyles = css`

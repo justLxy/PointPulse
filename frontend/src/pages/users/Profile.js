@@ -450,21 +450,21 @@ const Profile = () => {
     if (file) {
       console.log('Avatar file selected:', file.name, file.type, file.size);
       
-      // 显示本地预览
+      // Show local preview
       const reader = new FileReader();
       reader.onload = () => {
         setAvatarPreview(reader.result);
       };
       reader.readAsDataURL(file);
       
-      // 直接上传头像文件，不需要等待用户点击保存按钮
+      // Directly upload avatar file, no need to wait for user to click save button
       updateAvatar(file, {
         onSuccess: () => {
           console.log('Avatar updated successfully');
-          setAvatarPreview(null); // 清除预览，使用服务器返回的URL
+          setAvatarPreview(null); // Clear preview, use server-returned URL
         },
         onError: () => {
-          setAvatarPreview(null); // 出错时也清除预览
+          setAvatarPreview(null); // Also clear preview on error
         }
       });
     }
@@ -489,9 +489,9 @@ const Profile = () => {
     
     const updateData = { ...formData };
     
-    // 因为现在头像是单独上传的，所以在提交表单时不再包含头像文件
-    // 只有在编辑模式下用户手动选择了头像但尚未上传时才包含头像
-    // 通常这种情况不会发生，因为选择头像后会立即上传
+    // Since avatar is now uploaded separately, don't include avatar file when submitting the form
+    // Only include avatar when in edit mode and user has manually selected an avatar but hasn't uploaded it yet
+    // This situation usually won't happen because avatar is uploaded immediately after selection
     
     updateProfile(updateData, {
       onSuccess: () => {
@@ -638,7 +638,7 @@ const Profile = () => {
               <Button 
                 variant="outlined" 
                 onClick={() => {
-                  // 取消编辑，重置表单数据
+                  // Cancel editing, reset form data
                   setFormData({
                     name: profile?.name || '',
                     email: profile?.email || '',

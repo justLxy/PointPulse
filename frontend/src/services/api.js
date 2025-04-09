@@ -1,7 +1,15 @@
+/**
+ * API Service
+ * Sets up Axios instance with interceptors for authentication and error handling
+ * Interceptor pattern adapted from Axios documentation:
+ * https://axios-http.com/docs/interceptors
+ */
 import axios from 'axios';
 
 // API URL configuration - can be changed when deploying
-export const API_URL = 'http://localhost:8000';
+// export const API_URL = 'http://localhost:8000';
+// export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+export const API_URL = process.env.BACKEND_URL || "http://localhost:8000";
 
 // Create an axios instance with a base URL
 const api = axios.create({

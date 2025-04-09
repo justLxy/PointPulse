@@ -62,6 +62,7 @@ const TransactionIcon = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
+  margin: 0 auto;
   
   ${({ type }) => {
     switch (type) {
@@ -101,6 +102,7 @@ const TransactionIcon = styled.div`
   @media (max-width: 768px) {
     grid-area: icon;
     align-self: start;
+    margin: 0;
   }
 `;
 
@@ -171,17 +173,20 @@ const BadgesContainer = styled.div`
 const TransactionAmount = styled.div`
   font-weight: ${theme.typography.fontWeights.medium};
   color: ${({ positive }) => positive ? theme.colors.success.main : theme.colors.error.main};
+  text-align: center;
 
   @media (max-width: 768px) {
     grid-area: amount;
     font-size: ${theme.typography.fontSize.lg};
     padding: ${theme.spacing.xs} 0;
+    text-align: left;
   }
 `;
 
 const ActionButtons = styled.div`
   display: flex;
   gap: ${theme.spacing.sm};
+  justify-content: center;
   
   // @media (max-width: 768px) {
   //   flex-wrap: wrap;

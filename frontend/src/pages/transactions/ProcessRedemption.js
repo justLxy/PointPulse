@@ -229,7 +229,7 @@ const NoRedemptions = styled.div`
   color: ${theme.colors.text.secondary};
 `;
 
-// 分页相关样式
+// Pagination related styles
 const PageControls = styled.div`
   display: flex;
   justify-content: space-between;
@@ -255,7 +255,7 @@ const ProcessRedemption = () => {
   const [status, setStatus] = useState('idle'); // 'idle', 'success', 'error', 'found'
   const [processingError, setProcessingError] = useState(null); // Separate error state for processing
   const [processingIds, setProcessingIds] = useState([]); // Track which redemptions are being processed
-  const [page, setPage] = useState(1); // 当前页码
+  const [page, setPage] = useState(1); // Current page number
   const [limit, setLimit] = useState(9); // Change limit from 10 to 9
   
   const { processRedemption, isProcessing: isMutationLoading } = useTransactions(); // Rename isProcessing from hook to avoid clash
@@ -551,7 +551,7 @@ const ProcessRedemption = () => {
           </NoRedemptions>
         )}
         
-        {/* 添加分页控制 */}
+        {/* Add pagination control */}
         {totalCount > 0 && (
           <PageControls>
             <PageInfo>

@@ -1,3 +1,11 @@
+/**
+ * SuccessPage Component
+ * A reusable animated success page with customizable elements
+ * UI design inspired by:
+ * - https://dribbble.com/shots/6822545-Payment-Success
+ * - https://codepen.io/ainalem/pen/GRqjvMy
+ * - Animation techniques from https://animate.style/
+ */
 import React from 'react';
 import styled from '@emotion/styled';
 import { FaCheckCircle } from 'react-icons/fa';

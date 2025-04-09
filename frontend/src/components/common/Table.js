@@ -1,3 +1,10 @@
+/**
+ * Table Component
+ * A reusable, responsive table with pagination, sorting, and filtering
+ * Design inspired by:
+ * - Material UI Tables: https://mui.com/material-ui/react-table/
+ * - Tailwind UI: https://tailwindui.com/components/application-ui/lists/tables
+ */
 import styled from '@emotion/styled';
 import { css } from '@emotion/react';
 import theme from '../../styles/theme';

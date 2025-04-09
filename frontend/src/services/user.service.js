@@ -153,16 +153,16 @@ const UserService = {
     try {
       console.log('Fetching users with params:', params);
       
-      // 确保params中的布尔值被正确传递
+      // Ensure boolean values in params are correctly passed
       const response = await api.get('/users', { 
         params,
         paramsSerializer: {
           serialize: (params) => {
-            // 手动序列化参数
+            // Manually serialize parameters
             const result = new URLSearchParams();
             
             Object.entries(params).forEach(([key, value]) => {
-              // 确保布尔值正确转换为字符串
+              // Ensure boolean values are correctly converted to strings
               if (value === true) {
                 result.append(key, 'true');
               } else if (value === false) {
@@ -409,7 +409,7 @@ const UserService = {
         }
       });
       
-      // 从返回的结果中找到完全匹配 UTORid 的用户
+      // Find the user that exactly matches the UTORid from the returned results
       const exactMatch = response.data.results.find(
         user => user.utorid.toLowerCase() === utorid.toLowerCase()
       );
