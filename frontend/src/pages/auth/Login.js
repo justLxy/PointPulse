@@ -1,3 +1,17 @@
+/**
+ * Header Component for the Login Page
+ * 
+ * This component represents the header at the top of the login page. 
+ * It includes the app's logo, name, and basic navigation links such as:
+ * - Home
+ * - Profile
+ * - Logout
+ * 
+ * The component uses `styled-components` for styling, and `react-icons` 
+ * for the iconography in the navigation links. It is also designed to be 
+ * responsive and remains sticky at the top of the page while scrolling.
+ */
+
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import styled from '@emotion/styled';
