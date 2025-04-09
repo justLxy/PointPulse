@@ -530,8 +530,15 @@ const EventDetail = () => {
   } = useEvents();
   
   const { data: event, isLoading, error, refetch } = getEvent(eventId);
-  const isU = event?.isOrganizer || false;
-  const canAddGuestByUtorid = isRegularOrCashier && isU;
+  
+  // --- Define Permission Flags --- 
+  const isCurrentUserOrganizerForEvent = event?.isOrganizer || false; // Is the current user an organizer for THIS event?
+  const canManageGuests = isManager || isCurrentUserOrganizerForEvent; // Can the user see/manage the guest list?
+  const canEditEventDetails = isManager || isCurrentUserOrganizerForEvent; // Can the user edit general event details (name, desc, etc.)?
+  // Note: isManager remains the flag for manager-only actions (delete, publish, manage organizers, see points summary)
+  
+  const canAddGuestByUtorid = isRegularOrCashier && isCurrentUserOrganizerForEvent;
+  
   // For searching users
   const [userSearchParams, setUserSearchParams] = useState({
     name: '',
@@ -592,11 +599,6 @@ const EventDetail = () => {
     return event?.isAttending || false;
   };
   
-  // Is user an organizer
-  const isUserOrganizer = () => {
-    return event?.isOrganizer || false;
-  };
-  
   // Calculate event status
   const getEventStatus = (startTime, endTime) => {
     const now = new Date();
@@ -611,11 +613,6 @@ const EventDetail = () => {
     }
     // If start is in the past and end is in the future (or null), it's ongoing
     return { text: 'Ongoing', color: '#2ecc71' }; // Green
-  };
-  
-  // Can edit event
-  const canEditEvent = () => {
-    return isManager || isUserOrganizer();
   };
   
   // Handle add organizer
@@ -850,7 +847,6 @@ const EventDetail = () => {
   
   const eventStatus = getEventStatus(event.startTime, event.endTime);
   const attending = isUserAttending();
-  const isOrganizer = isUserOrganizer();
   
   return (
     <div>
@@ -889,7 +885,7 @@ const EventDetail = () => {
         </div>
         
         <PageActionsContainer>
-          {eventStatus.text === 'Upcoming' && !isOrganizer && (
+          {eventStatus.text === 'Upcoming' && !isCurrentUserOrganizerForEvent && (
             attending ? (
               <Button 
                 variant="outlined" 
@@ -909,7 +905,7 @@ const EventDetail = () => {
             )
           )}
           
-          {canEditEvent() && (
+          {canEditEventDetails && (
             <div style={{ display: 'flex', gap: theme.spacing.sm }}>
               <Button 
                 variant="outlined"
@@ -980,18 +976,19 @@ const EventDetail = () => {
                   </div>
                 </EventDetailItem>
                 
+                {/* Always show Capacity/Attendees */} 
                 <EventDetailItem>
-                    <FaUsers />
+                  <FaUsers />
+                  <div>
+                    <strong>Capacity</strong>
                     <div>
-                      <strong>Capacity</strong>
-                      <div>
-                      {`${event.numGuests ?? event.guests?.length ?? 0}/${event.capacity || '∞'} attendees`}
-
-                      </div>
+                    {`${event.numGuests ?? event.guests?.length ?? 0}/${event.capacity || '∞'} attendees`}
                     </div>
-                  </EventDetailItem>
+                  </div>
+                </EventDetailItem>
 
-                                  {!(activeRole === 'regular' && !isU) && (
+                {/* Conditionally render Points detail */} 
+                {isManager && ( 
                   <EventDetailItem>
                     <FaCoins />
                     <div>
@@ -1016,13 +1013,17 @@ const EventDetail = () => {
               >
                 Details
               </TabButton>
-              <TabButton 
-                active={activeTab === 'guests'} 
-                onClick={() => setActiveTab('guests')}
-              >
-                Guests ({event.numGuests ?? event.guests?.length ?? 0})
-              </TabButton>
-              {canEditEvent() && (
+              {/* Conditionally render Guests tab */} 
+              {canManageGuests && ( 
+                <TabButton 
+                  active={activeTab === 'guests'} 
+                  onClick={() => setActiveTab('guests')}
+                >
+                  Guests ({event.numGuests ?? event.guests?.length ?? 0})
+                </TabButton>
+              )}
+              {/* Conditionally render Organizers tab */} 
+              {isManager && ( 
                 <TabButton 
                   active={activeTab === 'organizers'} 
                   onClick={() => setActiveTab('organizers')}
@@ -1041,11 +1042,13 @@ const EventDetail = () => {
               </Card>
             )}
             
-            {activeTab === 'guests' && (
+            {/* Conditionally render Guests tab content */} 
+            {(activeTab === 'guests' && canManageGuests) && ( 
               <Card>
                 <Card.Header>
                   <Card.Title>Guests</Card.Title>
-                  {canEditEvent() && eventStatus.text === 'Upcoming' && (
+                  {/* Keep internal button logic based on canEditEventDetails */} 
+                  {canEditEventDetails && eventStatus.text === 'Upcoming' && ( 
                     <div style={{ display: 'flex', gap: theme.spacing.sm }}>
                       <Button 
                         size="small" 
@@ -1067,56 +1070,43 @@ const EventDetail = () => {
                     <AudienceStage>🎬 STAGE 🎬</AudienceStage>
                     {event.guests && Array.isArray(event.guests) && event.guests.length > 0 ? (
                       <AudienceSeats>
-                        {event.guests.map(guest => {
-                          const colorSeed = guest.id % 5;
-                          const colors = ['#e57373', '#64b5f6', '#81c784', '#ffb74d', '#ba68c8'];
-                          const randomColor = colors[colorSeed];
-                          const initials = guest.name ? guest.name.charAt(0).toUpperCase() : '?';
-
+                        {/* ... guest mapping logic ... */}
+                         {event.guests.map(guest => {
+                          const colorSeed = guest.id % 5; // Example seed for color
+                          const randomColor = [
+                            theme.colors.primary.light,
+                            theme.colors.secondary.light,
+                            theme.colors.accent.light,
+                            theme.colors.success.light,
+                            theme.colors.info.light
+                          ][colorSeed];
+                          
+                          const pointsAwarded = event.pointsAwardedToGuests?.find(p => p.userId === guest.id)?.points || 0;
+                          
                           return (
                             <AudienceSeat key={guest.id}>
-                              {/* Avatar + Name clickable with tooltip */}
-                              <div
+                              <AvatarContainer>
+                                <Avatar randomColor={randomColor}>
+                                  {guest.avatarUrl ? (
+                                    <img src={guest.avatarUrl} alt={guest.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                  ) : (
+                                    guest.name?.charAt(0).toUpperCase() || 'U'
+                                  )}
+                                </Avatar>
+                              </AvatarContainer>
+                              <AudienceName 
                                 data-tooltip-id={`guest-tooltip-${guest.id}`}
                                 data-tooltip-content={`${guest.name} (${guest.utorid})`}
-                                style={{ width: '100%' }}
                               >
-                                    <div
-                                          onClick={() => {
-                                            if (activeRole === 'regular') return;
-                                            navigate(`/users/${guest.id}`);
-                                          }}
-                                          style={{
-                                            cursor: activeRole === 'regular' ? 'not-allowed' : 'pointer',
-                                            textDecoration: 'none',
-                                            color: 'inherit',
-                                            width: '100%',
-                                          }}
-                                        >
-                                          <AvatarContainer>
-                                            <Avatar randomColor={randomColor}>
-                                              {guest.avatarUrl ? (
-                                                <img 
-                                                  src={guest.avatarUrl} 
-                                                  alt={guest.name} 
-                                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                                />
-                                              ) : (
-                                                initials
-                                              )}
-                                            </Avatar>
-                                          </AvatarContainer>
-                                          <AudienceName>{guest.name}</AudienceName>
-                                        </div>
-
-                              </div>
+                                {guest.name}
+                              </AudienceName>
 
                               <Tooltip id={`guest-tooltip-${guest.id}`} place="top" />
 
                               <AudienceRole>
-                                {guest.pointsAwarded ? (
-                                  <Badge color="success">{guest.pointsAwarded}pt</Badge>
-                                ) : canEditEvent() && eventStatus.text === 'Upcoming' ? (
+                                {pointsAwarded > 0 ? (
+                                  <Badge color="success">{pointsAwarded}pt</Badge>
+                                ) : canEditEventDetails && eventStatus.text === 'Upcoming' ? (
                                   <ActionButton 
                                     size="tiny" 
                                     onClick={() => {
@@ -1128,7 +1118,7 @@ const EventDetail = () => {
                                     🏆
                                   </ActionButton>
                                 ) : null}
-                                {canEditEvent() && (
+                                {isManager && (
                                   <ActionButton 
                                     size="tiny" 
                                     color="error"
@@ -1142,8 +1132,8 @@ const EventDetail = () => {
                           );
                         })}
 
-                        {/* Add guest seat */}
-                        {canEditEvent() && eventStatus.text === 'Upcoming' && (
+                        {/* Add guest seat - keep internal logic based on canEditEventDetails */}
+                        {canEditEventDetails && eventStatus.text === 'Upcoming' && ( 
                           <AudienceSeat>
                             <EmptyAudienceSeat onClick={() => setAddGuestModalOpen(true)}>
                               <FaUserPlus color={theme.colors.text.secondary} />
@@ -1154,7 +1144,8 @@ const EventDetail = () => {
                       </AudienceSeats>
                     ) : (
                       <EmptyState>
-                        {canEditEvent() ? (
+                        {/* Keep internal button logic based on canEditEventDetails */} 
+                        {canEditEventDetails ? ( 
                           <>
                             <p>No guests registered for this event yet.</p>
                             <Button 
@@ -1175,11 +1166,13 @@ const EventDetail = () => {
               </Card>
             )}
             
-            {activeTab === 'organizers' && canEditEvent() && (
+            {/* Conditionally render Organizers tab content */} 
+            {(activeTab === 'organizers' && isManager) && ( 
               <Card>
                 <Card.Header>
                   <Card.Title>Organizers</Card.Title>
-                  {isManager && (
+                  {/* Keep internal button logic based on isManager */}
+                  {isManager && ( 
                     <Button 
                       size="small" 
                       onClick={() => setAddOrganizerModalOpen(true)}
@@ -1197,7 +1190,8 @@ const EventDetail = () => {
                             <AttendeeName>{organizer.name}</AttendeeName>
                             <AttendeeSubtext>{organizer.utorid}</AttendeeSubtext>
                           </AttendeeInfo>
-                          {isManager && (
+                          {/* Keep internal button logic based on isManager */} 
+                          {isManager && ( 
                             <Button 
                               size="small" 
                               variant="outlined" 
@@ -1239,16 +1233,16 @@ const EventDetail = () => {
                 {event.numGuests ?? event.guests?.length ?? 0}
                   {event.capacity ? ` / ${event.capacity} capacity` : ' (unlimited)'}
                 </span>
-                          </SummaryItem>
-                          {!(activeRole === 'regular' && !isU) && (
-              <SummaryItem>
-                <strong>Points:</strong>
-                <span>
-                  {event.pointsAwarded || 0} awarded ({event.pointsRemain ?? event.points ?? 0} remaining)
-                </span>
-              </SummaryItem>
-            )}
-
+               </SummaryItem>
+               {/* Conditionally render Points summary */} 
+               {isManager && ( 
+                  <SummaryItem>
+                    <strong>Points:</strong>
+                    <span>
+                      {event.pointsAwarded || 0} awarded ({event.pointsRemain ?? event.points ?? 0} remaining)
+                    </span>
+                  </SummaryItem>
+                )}
             </Card.Body>
           </SummaryCard>
         </div>

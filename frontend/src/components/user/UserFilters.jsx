@@ -35,30 +35,20 @@ const PageTitle = styled.h1`
 `;
 
 const FilterSection = styled.div`
-  // display: flex;
-  // flex-wrap: wrap;
-  // gap: ${theme.spacing.md};
-  
-  // @media (max-width: 768px) {
-  //   flex-direction: column;
-  // }
-
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: ${theme.spacing.md};
   
   @media (max-width: 768px) {
-    flex-direction: column;
+    grid-template-columns: 1fr;
   }
 `;
 
 const FilterInput = styled.div`
-  // flex: 1;
   min-width: 200px;
   
   @media (max-width: 768px) {
     width: 100%;
-    // max-width: 200px;
   }
 `;
 

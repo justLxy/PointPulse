@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styled from '@emotion/styled';
+import { useSearchParams } from 'react-router-dom';
 import { useUsers } from '../../hooks/useUsers';
 import Badge from '../../components/common/Badge';
 import { useAuth } from '../../contexts/AuthContext';
@@ -212,16 +213,17 @@ const Users = () => {
   const { currentUser } = useAuth();
   const isSuperuser = currentUser?.role === 'superuser';
   const isManager = currentUser?.role === 'manager' || currentUser?.role === 'superuser';
+  const [searchParams, setSearchParams] = useSearchParams();
   
-  // State for filters and modals
-  const [filters, setFilters] = useState({
-    search: '',
-    role: '',
-    verified: '',
-    active: '',
-    page: 1,
+  // Initialize filters from search params or defaults
+  const [filters, setFilters] = useState(() => ({
+    search: searchParams.get('search') || '',
+    role: searchParams.get('role') || '',
+    verified: searchParams.get('verified') || '',
+    active: searchParams.get('active') || '',
+    page: parseInt(searchParams.get('page') || '1', 10),
     limit: 10,
-  });
+  }));
   
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -246,6 +248,18 @@ const Users = () => {
   React.useEffect(() => {
     console.log(`User filters changed: `, filters);
   }, [filters]);
+  
+  // Effect to update URL when filters change
+  useEffect(() => {
+    const newParams = new URLSearchParams();
+    if (filters.search) newParams.set('search', filters.search);
+    if (filters.role) newParams.set('role', filters.role);
+    if (filters.verified) newParams.set('verified', filters.verified);
+    if (filters.active) newParams.set('active', filters.active);
+    if (filters.page > 1) newParams.set('page', filters.page.toString());
+    
+    setSearchParams(newParams, { replace: true });
+  }, [filters, setSearchParams]);
   
   // Get users with current filters
   const getApiParams = () => {

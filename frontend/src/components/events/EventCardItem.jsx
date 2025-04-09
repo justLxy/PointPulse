@@ -5,6 +5,7 @@ import Card from '../common/Card';
 import Button from '../common/Button';
 import Badge from '../common/Badge';
 import theme from '../../styles/theme';
+import { useAuth } from '../../contexts/AuthContext';
 import { 
   FaEdit, 
   FaTrash, 
@@ -12,7 +13,10 @@ import {
   FaMapMarkerAlt, 
   FaClock, 
   FaUsers, 
-  FaCoins
+  FaCoins,
+  FaArrowRight,
+  FaCheck,
+  FaTimes,
 } from 'react-icons/fa';
 
 const EventCard = styled(Card)`
@@ -122,8 +126,16 @@ const EventCardItem = ({
   isRsvpd, 
   handleEditEvent, 
   handleDeleteEventClick, 
-  handleRsvpClick 
+  handleRsvpClick,
+  handleCancelRsvpClick,
+  handleViewDetails,
+  isCreatingRsvp,
+  isCancelingRsvp,
+  selectedEventIdForRsvp,
 }) => {
+  const { activeRole } = useAuth();
+  const isManagerOrHigher = ['manager', 'superuser'].includes(activeRole);
+
   if (!event) return null; // Skip null/undefined events
   
   const { month, day } = getEventCardDate(event.startTime);
@@ -194,11 +206,12 @@ const EventCardItem = ({
             </span>
           </EventDetail>
           
-          
-          <EventDetail>
-            <FaCoins />
-            <span>{event.pointsRemain ?? 0} points available</span>
-          </EventDetail>
+          {isManagerOrHigher && (
+            <EventDetail>
+              <FaCoins />
+              <span>{event.pointsRemain ?? 0} points available</span>
+            </EventDetail>
+          )}
         </EventDetails>
         
         <EventActions>

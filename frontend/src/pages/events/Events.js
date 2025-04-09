@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useEvents } from '../../hooks/useEvents';
 import { useAuth } from '../../contexts/AuthContext';
 import EventFilters from '../../components/events/EventFilters';
@@ -9,22 +10,21 @@ import EventService from '../../services/event.service';
 const Events = () => {
   const { activeRole } = useAuth();
   const isManager = ['manager', 'superuser'].includes(activeRole);
+  const [searchParams, setSearchParams] = useSearchParams();
   
-  // State for filters and pagination
-  const [filters, setFilters] = useState({
-    name: '',
-    location: '',
-    page: 1,
-    limit: 9,
-    status: '',
-    capacityStatus: 'available',
-    showFull: false,
-    ...(isManager ? {
-      started: null,
-      ended: null,
-      published: null,
-      publishedStatus: '',
-    } : {})
+  // Initialize filters from search params or defaults
+  const [filters, setFilters] = useState(() => {
+    const initialFilters = {
+      name: searchParams.get('name') || '',
+      location: searchParams.get('location') || '',
+      page: parseInt(searchParams.get('page') || '1', 10),
+      limit: 9,
+      status: searchParams.get('status') || '',
+      capacityStatus: searchParams.get('capacityStatus') || 'available',
+      publishedStatus: searchParams.get('publishedStatus') || '',
+    };
+    // Derive boolean started/ended from status for getApiParams if needed, but keep status string in state
+    return initialFilters;
   });
   
   // Handle filter changes
@@ -54,6 +54,19 @@ const Events = () => {
     endTime: '',
     published: false,
   });
+  
+  // Effect to update URL when filters change
+  useEffect(() => {
+    const newParams = new URLSearchParams();
+    if (filters.name) newParams.set('name', filters.name);
+    if (filters.location) newParams.set('location', filters.location);
+    if (filters.page > 1) newParams.set('page', filters.page.toString());
+    if (filters.status) newParams.set('status', filters.status);
+    if (filters.capacityStatus && filters.capacityStatus !== 'available') newParams.set('capacityStatus', filters.capacityStatus);
+    if (isManager && filters.publishedStatus) newParams.set('publishedStatus', filters.publishedStatus);
+    
+    setSearchParams(newParams, { replace: true });
+  }, [filters, setSearchParams, isManager]);
   
   // Prepare API params from filters
   const getApiParams = () => {
