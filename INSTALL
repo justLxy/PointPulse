@@ -21,7 +21,7 @@ npm install
 # - express-jwt: Middleware for validating JSON Web Tokens (JWT).
 # - jsonwebtoken: For creating and verifying JWTs.
 # - multer: Middleware for handling multipart/form-data (file uploads).
-# - nodemailer: For sending emails (though not used for sending actual emails in this project).
+# - nodemailer: For sending emails.
 # - sqlite3: SQLite database driver.
 # - uuid: For generating UUIDs.
 # - zod: For schema declaration and validation.
