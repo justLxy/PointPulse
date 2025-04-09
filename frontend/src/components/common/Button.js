@@ -1,3 +1,10 @@
+/**
+ * Button Component
+ * A customizable button with various styles, sizes, and states
+ * Design inspired by:
+ * - Material UI Button: https://mui.com/material-ui/react-button/
+ * - Chakra UI Button: https://chakra-ui.com/docs/components/button
+ */
 import { css } from '@emotion/react';
 import styled from '@emotion/styled';
 import theme from '../../styles/theme';

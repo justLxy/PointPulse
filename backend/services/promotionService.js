@@ -165,7 +165,7 @@ const getPromotions = async (filters = {}, userId = null, isManager = false, pag
     const now = new Date();
     console.log('Current time:', now);
 
-    // 检查数据库中的所有促销活动，用于调试
+    // Check all promotions in database for debugging
     console.log('Checking all promotions in database for debugging:');
     const allPromotions = await prisma.promotion.findMany();
     console.log('Total promotions in database:', allPromotions.length);
@@ -185,7 +185,7 @@ const getPromotions = async (filters = {}, userId = null, isManager = false, pag
     if (!isManager) {
         console.log('Applying filters for regular user');
         
-        // 检查用户是否为收银员
+        // Check if user is a cashier
         const user = await prisma.user.findUnique({
             where: { id: userId },
             select: { role: true }
@@ -194,7 +194,7 @@ const getPromotions = async (filters = {}, userId = null, isManager = false, pag
         const isCashier = user && user.role === 'cashier';
         console.log('User is cashier:', isCashier);
         
-        // 所有非管理员用户（包括收银员）只能看到已开始但未结束的活动
+        // All non-manager users (including cashiers) can only see promotions that have started but not ended yet
         // Only show active promotions for all non-manager users
         where.startTime = {
             lte: now
@@ -441,7 +441,7 @@ const updatePromotion = async (promotionId, updateData) => {
     const updateObj = {};
 
     if (name !== undefined) {
-        // 如果name是null，跳过更新
+        // If name is null, skip updating
         if (name === null) {
             console.log('Skipping name update as it is null');
         } else if (!name || name.trim() === '') {
@@ -455,7 +455,7 @@ const updatePromotion = async (promotionId, updateData) => {
     }
 
     if (description !== undefined) {
-        // 如果description是null，跳过更新
+        // If description is null, skip updating
         if (description === null) {
             console.log('Skipping description update as it is null');
         } else if (!description || description.trim() === '') {
@@ -469,7 +469,7 @@ const updatePromotion = async (promotionId, updateData) => {
     }
 
     if (type !== undefined) {
-        // 如果type是null，跳过更新
+        // If type is null, skip updating
         if (type === null) {
             console.log('Skipping type update as it is null');
         } else if (!['automatic', 'one-time'].includes(type)) {
@@ -483,7 +483,7 @@ const updatePromotion = async (promotionId, updateData) => {
     }
 
     if (startTime !== undefined) {
-        // 如果startTime是null，跳过更新
+        // If startTime is null, skip updating
         if (startTime === null) {
             console.log('Skipping startTime update as it is null');
         } else {
@@ -501,7 +501,7 @@ const updatePromotion = async (promotionId, updateData) => {
     }
 
     if (endTime !== undefined) {
-        // 如果endTime是null，跳过更新
+        // If endTime is null, skip updating
         if (endTime === null) {
             console.log('Skipping endTime update as it is null');
         } else {
@@ -559,12 +559,12 @@ const updatePromotion = async (promotionId, updateData) => {
         console.log('Adding points to update object:', updateObj.points);
     }
 
-    // 检查是否有字段需要更新
+    // Check if there are any fields to update
     if (Object.keys(updateObj).length === 0) {
         console.log('No valid fields to update');
         console.log('===== PROMOTION SERVICE: UPDATE PROMOTION SKIPPED =====\n');
         
-        // 返回当前促销信息
+        // Return current promotion information
         return {
             id: promotion.id,
             name: promotion.name,
@@ -619,7 +619,7 @@ const deletePromotion = async (promotionId) => {
         throw new Error('Invalid promotion ID');
     }
     
-    // 查找促销
+    // Find the promotion
     console.log('Fetching promotion data');
     const promotion = await prisma.promotion.findUnique({
         where: { id: parsedId }

@@ -4,6 +4,15 @@ import AuthService from '../services/auth.service';
 import { toast } from 'react-hot-toast';
 import theme from '../styles/theme';
 
+/**
+ * AuthContext
+ * Provides authentication state and methods throughout the application
+ * Context pattern inspired by:
+ * - React documentation: https://react.dev/learn/passing-data-deeply-with-context
+ * - Kent C. Dodds' useAuth pattern: https://kentcdodds.com/blog/authentication-in-react-applications
+ */
+
+
 const AuthContext = createContext();
 
 export const useAuth = () => useContext(AuthContext);
@@ -167,12 +176,12 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Login failed:', error);
       
-      // 提供更具体的错误信息
+      // Provide more specific error messages
       let errorMessage = 'Unable to sign in. Please try again.';
       
-      // 处理不同类型的错误
+      // Handle different types of errors
       if (error.response) {
-        // 服务器返回了错误状态码
+        // Server returned an error status code
         const status = error.response.status;
         
         if (status === 401) {
@@ -187,14 +196,14 @@ export const AuthProvider = ({ children }) => {
           errorMessage = 'Server error. Our team has been notified and is working on it.';
         }
       } else if (error.request) {
-        // 请求发出但没有收到响应
+        // Request was sent but no response received
         errorMessage = 'Network error. Please check your internet connection and try again.';
       }
       
-      // 显示错误提示
+      // Show error notification
       toast.error(errorMessage);
       
-      // 返回详细错误信息
+      // Return detailed error information
       return { 
         success: false, 
         error: { 

@@ -285,16 +285,21 @@ const CreateTransaction = () => {
   };
   
   const handlePromotionToggle = (promotion) => {
-    // 如果促销活动有最低消费要求，并且当前金额低于该要求，则不允许选择
+    // If a promotion has a minimum spending requirement and the current amount is below that requirement, don't allow it to be selected
     if (promotion.minSpending && parseFloat(amount || 0) < promotion.minSpending) {
       toast.error(`This promotion requires a minimum spending of $${promotion.minSpending.toFixed(2)}.`);
       return;
     }
     
     setSelectedPromotions((prevSelected) => {
-      // If already selected, remove it
-      if (prevSelected.some(p => p.id === promotion.id)) {
-        return prevSelected.filter(p => p.id !== promotion.id);
+      // If there are already selected promotions, check if they still meet the criteria
+      const validPromotions = prevSelected.filter(p => 
+        !p.minSpending || parseFloat(amount || 0) >= p.minSpending
+      );
+      
+      // Automatically cancel promotions that don't meet the criteria
+      if (validPromotions.length !== prevSelected.length) {
+        return validPromotions;
       }
       // Otherwise add it
       return [...prevSelected, promotion];
@@ -457,26 +462,26 @@ const CreateTransaction = () => {
                 const newAmount = e.target.value;
                 setAmount(newAmount);
                 
-                // 如果有已选的促销活动，检查它们是否仍然符合条件
+                // If there are already selected promotions, check if they still meet the criteria
                 if (selectedPromotions.length > 0) {
                   const validPromotions = selectedPromotions.filter(
                     promo => !promo.minSpending || parseFloat(newAmount || 0) >= promo.minSpending
                   );
                   
-                  // 自动取消不符合条件的促销活动
+                  // Automatically cancel promotions that don't meet the criteria
                   if (validPromotions.length !== selectedPromotions.length) {
                     setSelectedPromotions(validPromotions);
                   }
                 }
               }}
               onBlur={() => {
-                // 检查已选促销活动是否满足最低消费要求
+                // Check if selected promotions meet minimum spending requirements
                 if (amount && selectedPromotions.length > 0) {
                   const validPromotions = selectedPromotions.filter(
                     promo => !promo.minSpending || parseFloat(amount) >= promo.minSpending
                   );
                   
-                  // 如果有不符合条件的促销活动，取消选择它们并显示提示
+                  // If there are promotions that don't meet the criteria, deselect them and show a notification
                   if (validPromotions.length !== selectedPromotions.length) {
                     setSelectedPromotions(validPromotions);
                     toast.error('Some promotions were deselected because they require higher spending.');
@@ -504,7 +509,7 @@ const CreateTransaction = () => {
               
               {user && user.promotions && user.promotions.length > 0 ? (
                 user.promotions.map((promotion) => {
-                  // 判断促销活动是否满足最低消费要求
+                  // Determine if a promotion meets the minimum spending requirement
                   const isEligible = !promotion.minSpending || parseFloat(amount || 0) >= promotion.minSpending;
                   
                   return (

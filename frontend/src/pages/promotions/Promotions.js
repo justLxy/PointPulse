@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import styled from '@emotion/styled';
+import { useSearchParams } from 'react-router-dom';
 import { usePromotions } from '../../hooks/usePromotions';
 import { useAuth } from '../../contexts/AuthContext';
 import PromotionService from '../../services/promotion.service';
@@ -77,22 +78,28 @@ const EmptyState = styled.div`
 const Promotions = () => {
   const { activeRole } = useAuth();
   const isManager = ['manager', 'superuser'].includes(activeRole);
+  const [searchParams, setSearchParams] = useSearchParams();
   
-  // State for filters and pagination
-  const [filters, setFilters] = useState({
-    name: '',
-    type: '',
-    page: 1,
-    limit: 9,
-    // For regular users, we want to show only active promotions they haven't used
-    // Active means started=true and ended=false
-    ...(!isManager ? {
-      started: true,
-      ended: false
-    } : {
-      started: null,
-      ended: null
-    })
+  // Initialize filters from search params or defaults
+  const [filters, setFilters] = useState(() => {
+    const initialFilters = {
+      name: searchParams.get('name') || '',
+      type: searchParams.get('type') || '',
+      page: parseInt(searchParams.get('page') || '1', 10),
+      limit: 9,
+      started: searchParams.get('started') !== null ? searchParams.get('started') === 'true' : null,
+      ended: searchParams.get('ended') !== null ? searchParams.get('ended') === 'true' : null,
+    };
+    // Apply default active/ended filter logic based on role if not in URL
+    if (!isManager) {
+      if (initialFilters.started === null) initialFilters.started = true;
+      if (initialFilters.ended === null) initialFilters.ended = false;
+    } else {
+      // Ensure manager defaults are null if not specified
+      if (searchParams.get('started') === null) initialFilters.started = null;
+      if (searchParams.get('ended') === null) initialFilters.ended = null;
+    }
+    return initialFilters;
   });
   
   // Modals state
@@ -277,7 +284,7 @@ const Promotions = () => {
       endTime: promotionData.endDate ? new Date(promotionData.endDate).toISOString() : null,
     };
     
-    // 移除空的日期字段
+    // Remove empty date fields
     if (!formattedData.startTime) delete formattedData.startTime;
     if (!formattedData.endTime) delete formattedData.endTime;
     
@@ -302,7 +309,7 @@ const Promotions = () => {
       endTime: promotionData.endDate ? new Date(promotionData.endDate).toISOString() : null,
     };
     
-    // 移除空的日期字段
+    // Remove empty date fields
     if (!formattedData.startTime) delete formattedData.startTime;
     if (!formattedData.endTime) delete formattedData.endTime;
     
@@ -328,6 +335,20 @@ const Promotions = () => {
       },
     });
   };
+
+  // Effect to update URL when filters change
+  useEffect(() => {
+    const newParams = new URLSearchParams();
+    if (filters.name) newParams.set('name', filters.name);
+    if (filters.type) newParams.set('type', filters.type);
+    if (filters.page > 1) newParams.set('page', filters.page.toString()); // Only set if not default page 1
+    // Handle boolean filters - only add if not null
+    if (filters.started !== null) newParams.set('started', filters.started.toString());
+    if (filters.ended !== null) newParams.set('ended', filters.ended.toString());
+    
+    // Use replace: true to avoid polluting browser history
+    setSearchParams(newParams, { replace: true }); 
+  }, [filters, setSearchParams]);
 
   return (
     <div>

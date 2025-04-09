@@ -11,13 +11,13 @@ const PromotionService = {
         const { status, data } = error.response;
         
         if (status === 400) {
-          // 检查缺少必填字段的错误
+          // Check for missing required field errors
           if (data.error && data.error.includes('required')) {
             const field = data.error.split(' is required')[0];
             throw new Error(`${field} is required`);
           }
           
-          // 检查特定字段的错误
+          // Check for specific field errors
           if (data.error && data.error.includes('Type must be')) {
             throw new Error('Type must be either "automatic" or "one-time"');
           }
@@ -26,7 +26,7 @@ const PromotionService = {
             throw new Error('Either rate or points must be specified');
           }
           
-          // 检查数据验证错误
+          // Check for data validation errors
           if (data.error && data.error.includes('must be')) {
             throw new Error(data.error);
           }
@@ -135,7 +135,7 @@ const PromotionService = {
             throw new Error('Cannot update a promotion that has already started');
           }
           
-          // 检查数据验证错误
+          // Check for data validation errors
           if (data.error && data.error.includes('must be')) {
             throw new Error(data.error);
           }

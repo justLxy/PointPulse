@@ -107,7 +107,7 @@ const PageActionsContainer = styled.div`
     width: 100%;
 
     button {
-      width: 100%; // 每个按钮单独占满整行
+      width: 100%; // Each button individually takes up the entire row
     }
   }
 `;
@@ -321,7 +321,7 @@ const StatusIndicator = styled.div`
   border-radius: ${theme.radius.full};
   background-color: ${props => {
     switch (props.status) {
-      case 'Upcoming': return '#ffd54f'; // 更深的黄色
+      case 'Upcoming': return '#ffd54f'; // Deeper yellow
       case 'Ongoing': return '#C8E6C9'; // Light green
       case 'Past': return '#FFCCBC'; // Light red
       default: return theme.colors.background.default;
@@ -331,7 +331,7 @@ const StatusIndicator = styled.div`
   span {
     color: ${props => {
       switch (props.status) {
-        case 'Upcoming': return '#7e4d0d'; // 深褐色文字
+        case 'Upcoming': return '#7e4d0d'; // Dark brown text
         case 'Ongoing': return '#2E7D32'; // Darker green
         case 'Past': return '#BF360C'; // Darker red
         default: return theme.colors.text.primary;
@@ -341,7 +341,7 @@ const StatusIndicator = styled.div`
   }
 `;
 
-// 为Upcoming标签创建更简单的样式
+// Create simpler style for Upcoming tags
 const UpcomingBadge = styled.span`
   display: inline-flex;
   align-items: center;
@@ -353,7 +353,7 @@ const UpcomingBadge = styled.span`
   font-weight: ${theme.typography.fontWeights.medium};
 `;
 
-// 新增观众席样式组件
+// New audience seating style component
 const AudienceContainer = styled.div`
   margin-top: ${theme.spacing.lg};
   background-color: ${theme.colors.background.default};
@@ -530,9 +530,15 @@ const EventDetail = () => {
   } = useEvents();
   
   const { data: event, isLoading, error, refetch } = getEvent(eventId);
-  const isU = event?.isOrganizer || false;
-  const shouldHideGuestLayout = isRegularOrCashier && !isU;
-  const canAddGuestByUtorid = isRegularOrCashier && isU;
+  
+  // --- Define Permission Flags --- 
+  const isCurrentUserOrganizerForEvent = event?.isOrganizer || false; // Is the current user an organizer for THIS event?
+  const canManageGuests = isManager || isCurrentUserOrganizerForEvent; // Can the user see/manage the guest list?
+  const canEditEventDetails = isManager || isCurrentUserOrganizerForEvent; // Can the user edit general event details (name, desc, etc.)?
+  // Note: isManager remains the flag for manager-only actions (delete, publish, manage organizers, see points summary)
+  
+  const canAddGuestByUtorid = isRegularOrCashier && isCurrentUserOrganizerForEvent;
+  
   // For searching users
   const [userSearchParams, setUserSearchParams] = useState({
     name: '',
@@ -593,11 +599,6 @@ const EventDetail = () => {
     return event?.isAttending || false;
   };
   
-  // Is user an organizer
-  const isUserOrganizer = () => {
-    return event?.isOrganizer || false;
-  };
-  
   // Calculate event status
   const getEventStatus = (startTime, endTime) => {
     const now = new Date();
@@ -612,11 +613,6 @@ const EventDetail = () => {
     }
     // If start is in the past and end is in the future (or null), it's ongoing
     return { text: 'Ongoing', color: '#2ecc71' }; // Green
-  };
-  
-  // Can edit event
-  const canEditEvent = () => {
-    return isManager || isUserOrganizer();
   };
   
   // Handle add organizer
@@ -732,16 +728,16 @@ const EventDetail = () => {
       capacity: eventData.capacity ? parseInt(eventData.capacity) : null,
     };
     
-    // 只有管理员才能更新积分和发布状态
+    // Only admins can update points and published status
     if (isManager) {
       formattedData.points = eventData.points ? parseInt(eventData.points) : 0;
       
-      // 只包含发布状态如果它被改变而且用户是管理员
+      // Only include published status if it was changed and user is admin
       if (eventData.published && !event.published) {
         formattedData.published = true;
       }
     } else {
-      // 确保删除受限字段，防止后端拒绝请求
+      // Make sure to remove restricted fields to prevent backend rejection
       delete formattedData.points;
       delete formattedData.published;
     }
@@ -785,7 +781,7 @@ const EventDetail = () => {
   const handleAwardPoints = () => {
     if (!selectedUserId || !pointsAmount) return;
     
-    // 确保转换为整数
+    // Ensure conversion to integer
     const points = Math.floor(Number(pointsAmount));
     if (isNaN(points) || points <= 0) {
       toast.error("Points must be a positive number");
@@ -807,7 +803,7 @@ const EventDetail = () => {
   
   // Award points to all guests
   const handleAwardPointsToAll = () => {
-    // 确保转换为整数
+    // Ensure conversion to integer
     const points = Math.floor(Number(pointsAmount));
     if (isNaN(points) || points <= 0) {
       toast.error("Points must be a positive number");
@@ -851,7 +847,6 @@ const EventDetail = () => {
   
   const eventStatus = getEventStatus(event.startTime, event.endTime);
   const attending = isUserAttending();
-  const isOrganizer = isUserOrganizer();
   
   return (
     <div>
@@ -890,7 +885,7 @@ const EventDetail = () => {
         </div>
         
         <PageActionsContainer>
-          {eventStatus.text === 'Upcoming' && !isOrganizer && (
+          {eventStatus.text === 'Upcoming' && !isCurrentUserOrganizerForEvent && (
             attending ? (
               <Button 
                 variant="outlined" 
@@ -910,7 +905,7 @@ const EventDetail = () => {
             )
           )}
           
-          {canEditEvent() && (
+          {canEditEventDetails && (
             <div style={{ display: 'flex', gap: theme.spacing.sm }}>
               <Button 
                 variant="outlined"
@@ -981,18 +976,19 @@ const EventDetail = () => {
                   </div>
                 </EventDetailItem>
                 
+                {/* Always show Capacity/Attendees */} 
                 <EventDetailItem>
-                    <FaUsers />
+                  <FaUsers />
+                  <div>
+                    <strong>Capacity</strong>
                     <div>
-                      <strong>Capacity</strong>
-                      <div>
-                      {`${event.numGuests ?? event.guests?.length ?? 0}/${event.capacity || '∞'} attendees`}
-
-                      </div>
+                    {`${event.numGuests ?? event.guests?.length ?? 0}/${event.capacity || '∞'} attendees`}
                     </div>
-                  </EventDetailItem>
+                  </div>
+                </EventDetailItem>
 
-                                  {!(activeRole === 'regular' && !isU) && (
+                {/* Conditionally render Points detail */} 
+                {isManager && ( 
                   <EventDetailItem>
                     <FaCoins />
                     <div>
@@ -1017,13 +1013,17 @@ const EventDetail = () => {
               >
                 Details
               </TabButton>
-              <TabButton 
-                active={activeTab === 'guests'} 
-                onClick={() => setActiveTab('guests')}
-              >
-                Guests ({event.numGuests ?? event.guests?.length ?? 0})
-              </TabButton>
-              {canEditEvent() && (
+              {/* Conditionally render Guests tab */} 
+              {canManageGuests && ( 
+                <TabButton 
+                  active={activeTab === 'guests'} 
+                  onClick={() => setActiveTab('guests')}
+                >
+                  Guests ({event.numGuests ?? event.guests?.length ?? 0})
+                </TabButton>
+              )}
+              {/* Conditionally render Organizers tab */} 
+              {isManager && ( 
                 <TabButton 
                   active={activeTab === 'organizers'} 
                   onClick={() => setActiveTab('organizers')}
@@ -1042,152 +1042,137 @@ const EventDetail = () => {
               </Card>
             )}
             
-            {activeTab === 'guests' && (
-  <Card>
-    {!shouldHideGuestLayout ? (
-      <>
-        <Card.Header>
-          <Card.Title>Guests</Card.Title>
-          {canEditEvent() && eventStatus.text === 'Upcoming' && (
-            <div style={{ display: 'flex', gap: theme.spacing.sm }}>
-              <Button 
-                size="small" 
-                onClick={() => setAddGuestModalOpen(true)}
-              >
-                <FaUserPlus /> Add Guest
-              </Button>
-              <Button 
-                size="small" 
-                onClick={() => setAwardPointsModalOpen(true)}
-              >
-                <FaTrophy /> Award Points
-              </Button>
-            </div>
-          )}
-        </Card.Header>
-
-          <Card.Body>
-            <AudienceContainer>
-              <AudienceStage>🎬 STAGE 🎬</AudienceStage>
-              {event.guests && Array.isArray(event.guests) && event.guests.length > 0 ? (
-                <AudienceSeats>
-                  {event.guests.map(guest => {
-                    const colorSeed = guest.id % 5;
-                    const colors = ['#e57373', '#64b5f6', '#81c784', '#ffb74d', '#ba68c8'];
-                    const randomColor = colors[colorSeed];
-                    const initials = guest.name ? guest.name.charAt(0).toUpperCase() : '?';
-
-                    return (
-                      <AudienceSeat key={guest.id}>
-                        <div
-                          data-tooltip-id={`guest-tooltip-${guest.id}`}
-                          data-tooltip-content={`${guest.name} (${guest.utorid})`}
-                          style={{ width: '100%' }}
-                        >
-                          <div
-                            onClick={() => {
-                              if (activeRole === 'regular') return;
-                              navigate(`/users/${guest.id}`);
-                            }}
-                            style={{
-                              cursor: activeRole === 'regular' ? 'not-allowed' : 'pointer',
-                              textDecoration: 'none',
-                              color: 'inherit',
-                              width: '100%',
-                            }}
-                          >
-                            <AvatarContainer>
-                              <Avatar randomColor={randomColor}>
-                                {guest.avatarUrl ? (
-                                  <img 
-                                    src={guest.avatarUrl} 
-                                    alt={guest.name} 
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                  />
-                                ) : (
-                                  initials
-                                )}
-                              </Avatar>
-                            </AvatarContainer>
-                            <AudienceName>{guest.name}</AudienceName>
-                          </div>
-                        </div>
-
-                        <Tooltip id={`guest-tooltip-${guest.id}`} place="top" />
-
-                        <AudienceRole>
-                          {guest.pointsAwarded ? (
-                            <Badge color="success">{guest.pointsAwarded}pt</Badge>
-                          ) : canEditEvent() && eventStatus.text === 'Upcoming' ? (
-                            <ActionButton 
-                              size="tiny" 
-                              onClick={() => {
-                                setSelectedUserId(guest.id);
-                                setSelectedUtorid(guest.utorid);
-                                setAwardPointsModalOpen(true);
-                              }}
-                            >
-                              🏆
-                            </ActionButton>
-                          ) : null}
-                          {canEditEvent() && (
-                            <ActionButton 
-                              size="tiny" 
-                              color="error"
-                              onClick={() => handleRemoveGuest(guest.id)}
-                            >
-                              ❌
-                            </ActionButton>
-                          )}
-                        </AudienceRole>
-                      </AudienceSeat>
-                    );
-                  })}
-
-                  {canEditEvent() && eventStatus.text === 'Upcoming' && (
-                    <AudienceSeat>
-                      <EmptyAudienceSeat onClick={() => setAddGuestModalOpen(true)}>
-                        <FaUserPlus color={theme.colors.text.secondary} />
-                      </EmptyAudienceSeat>
-                      <AudienceName>Add Guest</AudienceName>
-                    </AudienceSeat>
-                  )}
-                </AudienceSeats>
-              ) : (
-                <EmptyState>
-                  {canEditEvent() ? (
-                    <>
-                      <p>No guests registered for this event yet.</p>
+            {/* Conditionally render Guests tab content */} 
+            {(activeTab === 'guests' && canManageGuests) && ( 
+              <Card>
+                <Card.Header>
+                  <Card.Title>Guests</Card.Title>
+                  {/* Keep internal button logic based on canEditEventDetails */} 
+                  {canEditEventDetails && eventStatus.text === 'Upcoming' && ( 
+                    <div style={{ display: 'flex', gap: theme.spacing.sm }}>
                       <Button 
-                        style={{ marginTop: theme.spacing.md }}
+                        size="small" 
                         onClick={() => setAddGuestModalOpen(true)}
                       >
-                        <FaUserPlus /> Add First Guest
+                        <FaUserPlus /> Add Guest
                       </Button>
-                    </>
-                  ) : (
-                    "No guests registered for this event yet."
+                      <Button 
+                        size="small" 
+                        onClick={() => setAwardPointsModalOpen(true)}
+                      >
+                        <FaTrophy /> Award Points
+                      </Button>
+                    </div>
                   )}
-                </EmptyState>
-              )}
-            </AudienceContainer>
-          </Card.Body>
-        </>
-      ) : (
-        <Card.Body>
-          <EmptyState>
-            🚫 Guests are hidden. You don’t have permission to view this section.
-          </EmptyState>
-        </Card.Body>
-      )}
-    </Card>
-  )}
+                </Card.Header>
+                <Card.Body>
+                  <AudienceContainer>
+                    <AudienceStage>🎬 STAGE 🎬</AudienceStage>
+                    {event.guests && Array.isArray(event.guests) && event.guests.length > 0 ? (
+                      <AudienceSeats>
+                        {/* ... guest mapping logic ... */}
+                         {event.guests.map(guest => {
+                          const colorSeed = guest.id % 5; // Example seed for color
+                          const randomColor = [
+                            theme.colors.primary.light,
+                            theme.colors.secondary.light,
+                            theme.colors.accent.light,
+                            theme.colors.success.light,
+                            theme.colors.info.light
+                          ][colorSeed];
+                          
+                          const pointsAwarded = event.pointsAwardedToGuests?.find(p => p.userId === guest.id)?.points || 0;
+                          
+                          return (
+                            <AudienceSeat key={guest.id}>
+                              <AvatarContainer>
+                                <Avatar randomColor={randomColor}>
+                                  {guest.avatarUrl ? (
+                                    <img src={guest.avatarUrl} alt={guest.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                  ) : (
+                                    guest.name?.charAt(0).toUpperCase() || 'U'
+                                  )}
+                                </Avatar>
+                              </AvatarContainer>
+                              <AudienceName 
+                                data-tooltip-id={`guest-tooltip-${guest.id}`}
+                                data-tooltip-content={`${guest.name} (${guest.utorid})`}
+                              >
+                                {guest.name}
+                              </AudienceName>
 
-            {activeTab === 'organizers' && canEditEvent() && (
+                              <Tooltip id={`guest-tooltip-${guest.id}`} place="top" />
+
+                              <AudienceRole>
+                                {pointsAwarded > 0 ? (
+                                  <Badge color="success">{pointsAwarded}pt</Badge>
+                                ) : canEditEventDetails && eventStatus.text === 'Upcoming' ? (
+                                  <ActionButton 
+                                    size="tiny" 
+                                    onClick={() => {
+                                      setSelectedUserId(guest.id);
+                                      setSelectedUtorid(guest.utorid);
+                                      setAwardPointsModalOpen(true);
+                                    }}
+                                  >
+                                    🏆
+                                  </ActionButton>
+                                ) : null}
+                                {isManager && (
+                                  <ActionButton 
+                                    size="tiny" 
+                                    color="error"
+                                    onClick={() => handleRemoveGuest(guest.id)}
+                                  >
+                                    ❌
+                                  </ActionButton>
+                                )}
+                              </AudienceRole>
+                            </AudienceSeat>
+                          );
+                        })}
+
+                        {/* Add guest seat - keep internal logic based on canEditEventDetails */}
+                        {canEditEventDetails && eventStatus.text === 'Upcoming' && ( 
+                          <AudienceSeat>
+                            <EmptyAudienceSeat onClick={() => setAddGuestModalOpen(true)}>
+                              <FaUserPlus color={theme.colors.text.secondary} />
+                            </EmptyAudienceSeat>
+                            <AudienceName>Add Guest</AudienceName>
+                          </AudienceSeat>
+                        )}
+                      </AudienceSeats>
+                    ) : (
+                      <EmptyState>
+                        {/* Keep internal button logic based on canEditEventDetails */} 
+                        {canEditEventDetails ? ( 
+                          <>
+                            <p>No guests registered for this event yet.</p>
+                            <Button 
+                              style={{ marginTop: theme.spacing.md }}
+                              onClick={() => setAddGuestModalOpen(true)}
+                            >
+                              <FaUserPlus /> Add First Guest
+                            </Button>
+                          </>
+                        ) : (
+                          "No guests registered for this event yet."
+                        )}
+                      </EmptyState>
+                    )}
+                  </AudienceContainer>
+
+                </Card.Body>
+              </Card>
+            )}
+            
+            {/* Conditionally render Organizers tab content */} 
+            {(activeTab === 'organizers' && isManager) && ( 
               <Card>
                 <Card.Header>
                   <Card.Title>Organizers</Card.Title>
-                  {isManager && (
+                  {/* Keep internal button logic based on isManager */}
+                  {isManager && ( 
                     <Button 
                       size="small" 
                       onClick={() => setAddOrganizerModalOpen(true)}
@@ -1205,7 +1190,8 @@ const EventDetail = () => {
                             <AttendeeName>{organizer.name}</AttendeeName>
                             <AttendeeSubtext>{organizer.utorid}</AttendeeSubtext>
                           </AttendeeInfo>
-                          {isManager && (
+                          {/* Keep internal button logic based on isManager */} 
+                          {isManager && ( 
                             <Button 
                               size="small" 
                               variant="outlined" 
@@ -1247,16 +1233,16 @@ const EventDetail = () => {
                 {event.numGuests ?? event.guests?.length ?? 0}
                   {event.capacity ? ` / ${event.capacity} capacity` : ' (unlimited)'}
                 </span>
-                          </SummaryItem>
-                          {!(activeRole === 'regular' && !isU) && (
-              <SummaryItem>
-                <strong>Points:</strong>
-                <span>
-                  {event.pointsAwarded || 0} awarded ({event.pointsRemain ?? event.points ?? 0} remaining)
-                </span>
-              </SummaryItem>
-            )}
-
+               </SummaryItem>
+               {/* Conditionally render Points summary */} 
+               {isManager && ( 
+                  <SummaryItem>
+                    <strong>Points:</strong>
+                    <span>
+                      {event.pointsAwarded || 0} awarded ({event.pointsRemain ?? event.points ?? 0} remaining)
+                    </span>
+                  </SummaryItem>
+                )}
             </Card.Body>
           </SummaryCard>
         </div>
@@ -1363,7 +1349,7 @@ const EventDetail = () => {
         <ModalContent>
           <ModalForm>
           {canAddGuestByUtorid ? (
-  // 👇 如果是 cashier/regular 且是 organizer，只输入 utorid
+  // If cashier/regular and is organizer, only enter utorid
   <>
     <Input
       label="Enter UTORid"
@@ -1374,7 +1360,7 @@ const EventDetail = () => {
     />
   </>
 ) : (
-  // 👇 如果是 manager/superuser 或非 regular/cashier organizer，显示搜索框和用户列表
+  // If manager/superuser or non-regular/cashier organizer, show search box and user list
   <>
     <Input
       label="Search for a user"
@@ -1457,7 +1443,7 @@ const EventDetail = () => {
               type="number"
               value={pointsAmount}
               onChange={(e) => {
-                // 确保只能输入正整数
+                // Ensure only positive integers can be entered
                 const value = e.target.value;
                 if (value === '' || /^[1-9]\d*$/.test(value)) {
                   setPointsAmount(value);
@@ -1498,7 +1484,7 @@ const EventDetail = () => {
             </Button>
             <Button
               onClick={() => {
-                // 额外验证积分值
+                // Extra validation for points value
                 const pointsNum = Number(pointsAmount);
                 if (isNaN(pointsNum) || pointsNum <= 0) {
                   toast.error("Points must be a positive number");

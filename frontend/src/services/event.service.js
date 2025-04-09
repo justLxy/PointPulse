@@ -15,7 +15,7 @@ const EventService = {
             throw new Error('No event data provided');
           }
           
-          // 检查缺少必填字段的错误
+          // Check for missing required field errors
           if (data.error && data.error.includes('required')) {
             throw new Error(data.error);
           }
@@ -37,14 +37,14 @@ const EventService = {
   // Get all events (Regular+)
   getEvents: async (params = {}) => {
     try {
-      // 创建新的参数对象，默认包含用户组织的活动
+      // Create new params object, by default include events the user is organizing
       const apiParams = { ...params };
       
-      // 如果 organizing 参数为 true，则明确请求只返回用户组织的活动
+      // If organizing parameter is true, explicitly request to only return events the user is organizing
       if (apiParams.organizing) {
         apiParams.organizing = true;
       } else {
-        // 如果不是专门过滤组织的活动，但仍然希望包含组织的活动在结果中
+        // If not specifically filtering for organized events, but still want to include organized events in the results
         apiParams.includeMyOrganizedEvents = true;
       }
       
@@ -80,7 +80,7 @@ const EventService = {
   // Get a specific event (Regular+)
   getEvent: async (eventId) => {
     try {
-      // 默认告知后端我们想看到自己组织的活动，即使未发布
+      // By default tell the backend we want to see our organized events, even if unpublished
       const response = await api.get(`/events/${eventId}`, {
         params: { includeAsOrganizer: true }
       });
@@ -186,7 +186,7 @@ const EventService = {
   // Add an organizer to an event (Manager+)
   addOrganizer: async (eventId, utorid) => {
     try {
-      // 后端期望接收 utorid 字符串
+      // Backend expects to receive utorid string
       const response = await api.post(`/events/${eventId}/organizers`, { utorid });
       return response.data;
     } catch (error) {
@@ -275,7 +275,7 @@ const EventService = {
   // Add a guest to an event (Manager+ or Organizer)
   addGuest: async (eventId, utorid) => {
     try {
-      // 后端期望接收 utorid 字符串
+      // Backend expects to receive utorid string
       const response = await api.post(`/events/${eventId}/guests`, { utorid });
       return response.data;
     } catch (error) {
@@ -444,15 +444,15 @@ const EventService = {
   // Award points to attendees (Manager+ or Organizer)
   awardPoints: async (eventId, userId = null, points) => {
     try {
-      // 确保points是整数
+      // Ensure points is an integer
       const pointsValue = Math.floor(Number(points));
       
-      // 验证积分值
+      // Validate points value
       if (isNaN(pointsValue) || pointsValue <= 0) {
         throw new Error('Points amount must be a positive number');
       }
       
-      // 明确使用整数类型
+      // Explicitly use integer type
       const data = userId ? 
         { type: 'event', userId, amount: pointsValue } : 
         { type: 'event', amount: pointsValue };

@@ -129,11 +129,11 @@ const TransactionList = ({
       <TableContainer>
         <Card.Body>
           <TableHeader>
-            <div>Type</div>
+            <div style={{ textAlign: 'center' }}>Type</div>
             <div>Transaction</div>
             <div>Details</div>
-            <div>Amount</div>
-            <div>Actions</div>
+            <div style={{ textAlign: 'center' }}>Amount</div>
+            <div style={{ textAlign: 'center' }}>Actions</div>
           </TableHeader>
           
           {transactions.map(transaction => (

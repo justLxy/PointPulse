@@ -20,7 +20,7 @@ import Dashboard from './pages/Dashboard';
 import Users from './pages/users/Users';
 import CreateUser from './pages/users/CreateUser';
 import UserTransactions from './pages/users/UserTransactions';
-import UserDetail from './pages/users/UserDetail';
+import UserDetail from './pages/users/UserDetail.jsx';
 
 // Import transaction pages
 import CreateTransaction from './pages/transactions/CreateTransaction';

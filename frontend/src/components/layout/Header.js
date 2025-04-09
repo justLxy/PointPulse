@@ -14,6 +14,7 @@ import {
   FaExchangeAlt,
 } from 'react-icons/fa';
 
+
 const HeaderContainer = styled.header`
   background-color: ${theme.colors.background.paper};
   box-shadow: ${theme.shadows.md};
@@ -479,11 +480,11 @@ const Header = () => {
   
   const handleProfileMenuItemClick = () => {
     setIsProfileDropdownOpen(false);
-    setIsMenuOpen(false); // 在移动设备上也关闭主菜单
+    setIsMenuOpen(false); // Also close main menu on mobile devices
   };
   
   const handleNavLinkClick = () => {
-    // 关闭所有打开的菜单和下拉列表
+    // Close all open menus and dropdowns
     setIsMenuOpen(false);
     setIsProfileDropdownOpen(false);
     setIsRoleDropdownOpen(false);

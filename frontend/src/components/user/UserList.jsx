@@ -45,16 +45,17 @@ const TableRow = styled.div`
   @media (max-width: 1024px) {
     grid-template-columns: 1fr 1fr 1fr 180px;
   }
-  
+
   @media (max-width: 768px) {
     display: flex;
     flex-direction: column;
     gap: ${theme.spacing.sm};
     padding: ${theme.spacing.md};
-    
-    &:not(:last-child) {
-      border-bottom: 1px solid ${theme.colors.border.light};
-    }
+    margin-bottom: ${theme.spacing.md};
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border-radius: ${theme.spacing.xs};
+    border: 1px solid ${theme.colors.border.light};
+    background-color: white;
   }
 `;
 
@@ -62,18 +63,48 @@ const MobileLabel = styled.span`
   display: none;
   font-weight: ${theme.typography.fontWeights.semiBold};
   margin-right: ${theme.spacing.sm};
+  color: ${theme.colors.text.secondary};
+  font-size: ${theme.typography.fontSize.sm};
   
   @media (max-width: 768px) {
-    display: inline;
+    display: inline-block;
+    min-width: 60px;
+    text-align: left;
+    margin-right: ${theme.spacing.md};
+  }
+`;
+
+const UserHeader = styled.div`
+  @media (max-width: 768px) {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    padding-bottom: ${theme.spacing.sm};
+    margin-bottom: ${theme.spacing.sm};
+    border-bottom: 1px solid ${theme.colors.border.light};
   }
 `;
 
 const UserDetails = styled.div`
   @media (max-width: 768px) {
     display: flex;
-    justify-content: space-between;
-    width: 100%;
-    margin-bottom: ${theme.spacing.sm};
+    flex-direction: column;
+    gap: ${theme.spacing.xs};
+  }
+`;
+
+const UserMeta = styled.div`
+  @media (max-width: 768px) {
+    display: flex;
+    flex-direction: column;
+    gap: ${theme.spacing.xs};
+  }
+`;
+
+const UserStatusIndicator = styled.div`
+  @media (max-width: 768px) {
+    display: flex;
+    justify-content: flex-end;
   }
 `;
 
@@ -88,7 +119,10 @@ const UserUtorid = styled.div`
 
 const UserEmail = styled.div`
   @media (max-width: 768px) {
-    margin-bottom: ${theme.spacing.sm};
+    word-break: break-all;
+    display: flex;
+    align-items: flex-start;
+    width: 100%;
   }
 `;
 
@@ -97,39 +131,36 @@ const UserRole = styled.div`
   justify-content: center;
   
   @media (max-width: 768px) {
-    margin-bottom: ${theme.spacing.sm};
     justify-content: flex-start;
+    width: 100%;
+    align-items: flex-start;
   }
 `;
 
 const ActionButtons = styled.div`
   display: flex;
   gap: ${theme.spacing.sm};
+  justify-content: center;
   
   @media (max-width: 768px) {
-    flex-wrap: wrap;
     width: 100%;
-    
-    button {
-      flex: 1;
-      min-width: 120px;
-    }
+    justify-content: flex-end;
   }
 `;
 
 const BadgeWrapper = styled.div`
   display: flex;
-  flex-direction: column;
   flex-wrap: wrap;
   gap: ${theme.spacing.xs};
-  align-items: center;
-  min-height: 26px;
-  max-width: 150px;
+  justify-content: center;
   
   @media (max-width: 768px) {
     margin-bottom: ${theme.spacing.sm};
     max-width: 100%;
-    align-items: flex-start;
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    margin-left: ${theme.spacing.sm};
   }
 `;
 
@@ -143,7 +174,6 @@ const PageControls = styled.div`
   @media (max-width: 768px) {
     flex-direction: column;
     gap: ${theme.spacing.md};
-    align-items: flex-start;
   }
 `;
 
@@ -172,6 +202,26 @@ const EmptyState = styled.div`
   padding: ${theme.spacing.xl};
   text-align: center;
   color: ${theme.colors.text.secondary};
+`;
+
+const ButtonText = styled.span`
+  @media (max-width: 768px) {
+    display: inline;
+    margin-left: ${theme.spacing.xs};
+  }
+`;
+
+const StatusColumn = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  
+  @media (max-width: 768px) {
+    justify-content: flex-start;
+    margin-bottom: ${theme.spacing.sm};
+    width: 100%;
+    align-items: flex-start;
+  }
 `;
 
 const UserList = ({ 
@@ -212,18 +262,15 @@ const UserList = ({
           {users && users.length > 0 ? (
             users.map((user) => (
               <TableRow key={user.id}>
-                <UserDetails>
-                  <div>
-                    <UserName>
-                      <MobileLabel>Name:</MobileLabel>
-                      {user.name}
-                    </UserName>
-                    <UserUtorid>
-                      <MobileLabel>UTORid:</MobileLabel>
-                      {user.utorid}
-                    </UserUtorid>
-                  </div>
-                </UserDetails>
+                <UserHeader>
+                  <UserDetails>
+                    <UserName>{user.name}</UserName>
+                    <UserUtorid>{user.utorid}</UserUtorid>
+                  </UserDetails>
+                  <UserStatusIndicator>
+                    {/* Remove renderUserBadges here - we'll use it in the StatusColumn */}
+                  </UserStatusIndicator>
+                </UserHeader>
                 
                 <UserEmail>
                   <MobileLabel>Email:</MobileLabel>
@@ -249,35 +296,26 @@ const UserList = ({
                   </Badge>
                 </UserRole>
                 
-                <div>
+                <StatusColumn>
                   <MobileLabel>Status:</MobileLabel>
                   {renderUserBadges(user)}
-                </div>
+                </StatusColumn>
                 
                 <ActionButtons>
                   <Button
+                    size="small" 
                     variant="outlined"
-                    size="small"
                     onClick={() => onViewUser(user)}
+                    title="View User"
                   >
                     <FaEye />
                   </Button>
                   
-                  {canEditUser && (
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      onClick={() => onEditUser(user)}
-                    >
-                      <FaUserEdit />
-                    </Button>
-                  )}
-                  
                   {/* Add suspicious toggle button for cashiers (Manager and above can use this) */}
                   {canEditUser && user.role === 'cashier' && (
                     <Button
+                      size="small" 
                       variant="outlined"
-                      size="small"
                       onClick={() => onToggleSuspicious(user)}
                       style={{
                         borderColor: user.suspicious ? '#27ae60' : '#e74c3c',

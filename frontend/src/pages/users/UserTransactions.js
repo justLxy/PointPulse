@@ -56,7 +56,7 @@ const PageControls = styled.div`
   @media (max-width: 768px) {
     flex-direction: column;
     gap: ${theme.spacing.md};
-    align-items: flex-start;
+    align-items: center;
   }
 `;
 
@@ -67,7 +67,7 @@ const Pagination = styled.div`
   
   @media (max-width: 768px) {
     width: 100%;
-    justify-content: center;
+    justify-content: space-between;
   }
 `;
 
@@ -78,6 +78,7 @@ const PageInfo = styled.div`
   @media (max-width: 768px) {
     text-align: center;
     width: 100%;
+    margin-bottom: ${theme.spacing.sm};
   }
 `;
 
@@ -105,9 +106,24 @@ const TableRow = styled.div`
     background-color: ${theme.colors.background.default};
   }
   
+  // @media (max-width: 768px) {
+  //   display: flex;
+  //   flex-direction: column;
+  //   gap: ${theme.spacing.sm};
+  //   padding: ${theme.spacing.md};
+    
+  //   &:not(:last-child) {
+  //     border-bottom: 1px solid ${theme.colors.border.light};
+  //   }
+
   @media (max-width: 768px) {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+      "icon header"
+      "details details"
+      "amount amount"
+      "actions actions";
     gap: ${theme.spacing.sm};
     padding: ${theme.spacing.md};
     
@@ -159,24 +175,53 @@ const TransactionIcon = styled.div`
         `;
     }
   }}
+
+  @media (max-width: 768px) {
+    grid-area: icon;
+    align-self: start;
+  }
 `;
 
 const MobileLabel = styled.span`
   display: none;
   font-weight: ${theme.typography.fontWeights.semiBold};
-  margin-right: ${theme.spacing.sm};
+  color: ${theme.colors.text.secondary};
   
   @media (max-width: 768px) {
-    display: inline;
+    display: inline-block;
+    margin-bottom: ${theme.spacing.xs};
+    font-size: ${theme.typography.fontSize.sm};
   }
+    
+  // margin-right: ${theme.spacing.sm};
+  
+  // @media (max-width: 768px) {
+  //   display: inline;
+  // }
 `;
 
 const TransactionInfo = styled.div`
+  // @media (max-width: 768px) {
+  //   display: flex;
+  //   justify-content: space-between;
+  //   width: 100%;
+  //   margin-bottom: ${theme.spacing.sm};
+  // }
+
   @media (max-width: 768px) {
+    grid-area: header;
     display: flex;
-    justify-content: space-between;
-    width: 100%;
-    margin-bottom: ${theme.spacing.sm};
+    flex-direction: column;
+  }
+`;
+
+const TransactionHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  
+  @media (max-width: 768px) {
+    margin-bottom: ${theme.spacing.xs};
   }
 `;
 
@@ -190,9 +235,21 @@ const TransactionType = styled.div`
   text-transform: capitalize;
 `;
 
+const BadgesContainer = styled.div`
+  display: flex;
+  gap: ${theme.spacing.xs};
+  flex-wrap: wrap;
+`;
+
 const TransactionDetails = styled.div`
+  // @media (max-width: 768px) {
+  //   margin-bottom: ${theme.spacing.sm};
+  // }
   @media (max-width: 768px) {
-    margin-bottom: ${theme.spacing.sm};
+    grid-area: details;
+    padding: ${theme.spacing.sm} 0;
+    border-top: 1px dashed ${theme.colors.border.light};
+    border-bottom: 1px dashed ${theme.colors.border.light};
   }
 `;
 
@@ -201,15 +258,21 @@ const InfoLabel = styled.span`
   font-size: ${theme.typography.fontSize.sm};
   margin-right: ${theme.spacing.xs};
   
-  @media (max-width: 768px) {
-    display: block;
-    margin-bottom: ${theme.spacing.xs};
-  }
+  // @media (max-width: 768px) {
+  //   display: block;
+  //   margin-bottom: ${theme.spacing.xs};
+  // }
 `;
 
 const TransactionAmount = styled.div`
   font-weight: ${theme.typography.fontWeights.medium};
   color: ${({ positive }) => positive ? theme.colors.success.main : theme.colors.error.main};
+
+  @media (max-width: 768px) {
+    grid-area: amount;
+    font-size: ${theme.typography.fontSize.lg};
+    padding: ${theme.spacing.xs} 0;
+  }
 `;
 
 const EmptyState = styled.div`
@@ -221,6 +284,12 @@ const EmptyState = styled.div`
   p {
     margin-top: ${theme.spacing.md};
   }
+`;
+
+const RemarkInfo = styled.div`
+  font-size: ${theme.typography.fontSize.sm};
+  color: ${theme.colors.text.primary};
+  margin-top: ${theme.spacing.xs};
 `;
 
 const UserTransactions = () => {
@@ -401,12 +470,17 @@ const UserTransactions = () => {
                   {getTransactionIcon(transaction.type)}
                 </TransactionIcon>
                 
-                <TransactionInfo>
+                {/* <TransactionInfo>
                   <MobileLabel>Transaction:</MobileLabel>
                   <div>
                     <TransactionId>Transaction #{transaction.id}</TransactionId>
                     <TransactionType>{transaction.type}</TransactionType>
                   </div>
+                </TransactionInfo> */}
+
+                <TransactionInfo>
+                  <TransactionId>Transaction #{transaction.id}</TransactionId>
+                  <TransactionType>{transaction.type}</TransactionType>
                 </TransactionInfo>
                 
                 <TransactionDetails>
@@ -416,9 +490,9 @@ const UserTransactions = () => {
                       <TransactionType>{getTransactionLabel(transaction)}</TransactionType>
                     </div>
                     {transaction.remark && (
-                      <div>
+                      <RemarkInfo>
                         <InfoLabel>Remark:</InfoLabel> {transaction.remark}
-                      </div>
+                      </RemarkInfo>
                     )}
                     {transaction.createdAt && (
                       <div>

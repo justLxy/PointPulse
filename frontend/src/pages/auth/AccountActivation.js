@@ -210,7 +210,7 @@ const PasswordRequirements = styled.ul`
   }
 `;
 
-// 添加自定义输入框样式，确保图标显示正确
+// Add custom input styles to ensure icons display correctly
 const StyledInput = styled(Input)`
   .input-icon-wrapper {
     color: ${theme.colors.text.secondary};
