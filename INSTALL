@@ -65,8 +65,26 @@ npm install
 # To run the frontend development server:
 npm start
 
-# 2. Deployment Configuration (Railway)
+# 2. Deployment Configuration
 
-This project is intended for deployment on Railway. Railway typically handles server configuration automatically based on the project structure and defined build/start commands. Manual configuration of servers like Nginx or Apache is generally not required.
+## Backend (Railway)
 
-Refer to the official Railway documentation for more detailed instructions specific to your project setup and chosen services.
+The backend is deployed on [Railway](https://railway.app/). Railway automatically detects the backend's project structure.
+You can define environment variables in the Railway dashboard to configure secrets.
+
+To deploy:
+1. Push your backend code to a GitHub repository.
+2. Connect the repository to a Railway project.
+3. Railway will build and deploy the backend automatically on each push to the main branch.
+
+Refer to the official Railway documentation for additional setup steps, like setting environment variables or adding a custom domain.
+
+## Frontend (Cloudflare Pages)
+
+The frontend is deployed using [Cloudflare Pages](https://pages.cloudflare.com/). It builds and hosts the static React application directly from your GitHub repository.
+
+To deploy:
+1. Push your frontend code to a GitHub repository.
+2. Connect the repository to a new Cloudflare Pages project.
+3. Set the build command to `npm run build` and the output directory to `build/`.
+
