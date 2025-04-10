@@ -200,26 +200,26 @@ async function createEvents(users) {
     ];
     
     const eventNames = [
-        'Annual CS Hackathon',
-        'CS Career Fair',
-        'End of Year Celebration',
-        'Research Symposium',
-        'Alumni Networking Event',
-        'Tech Talk Series',
-        'Game Development Workshop',
-        'Data Science Competition',
+        'CS Hackathon',
+        'Career Fair',
+        'Year End Party',
+        'Research Day',
+        'Alumni Mixer',
+        'Tech Talks',
+        'Game Dev Workshop',
+        'Data Sci Comp',
         'AI Ethics Panel',
-        'Startup Pitch Night',
-        'Programming Contest',
-        'Web Development Bootcamp',
-        'Blockchain Conference',
-        'Open Source Contributor Day',
-        'Women in Tech Meetup',
-        'Mobile App Challenge',
-        'Cybersecurity Workshop',
+        'Startup Pitch',
+        'Prog Contest',
+        'Web Dev Camp',
+        'Blockchain Conf',
+        'OSS Contrib Day',
+        'WiT Meetup',
+        'App Challenge',
+        'Cyber Workshop',
         'UofT Tech Expo',
-        'Orientation Events',
-        'End of Semester Party'
+        'Orientation',
+        'Semester Party'
     ];
 
     // Create 20 upcoming events
