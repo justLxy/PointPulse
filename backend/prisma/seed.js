@@ -159,7 +159,7 @@ async function createUsers() {
     for (let i = 1; i <= 45; i++) {
         const user = await prisma.user.create({
             data: {
-                utorid: `regular${i}`,
+                utorid: `user${String(i).padStart(4, '0')}`, // Ensure 8-character utorid
                 name: `Regular User ${i}`,
                 email: `regular.user${i}@mail.utoronto.ca`,
                 password: hashedPassword,
