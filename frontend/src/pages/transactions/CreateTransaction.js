@@ -240,6 +240,7 @@ const CreateTransaction = () => {
   const [remark, setRemark] = useState('');
   const [promotions, setPromotions] = useState([]);
   const [selectedPromotions, setSelectedPromotions] = useState([]);
+  const [automaticPromotions, setAutomaticPromotions] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [transaction, setTransaction] = useState(null);
@@ -252,7 +253,17 @@ const CreateTransaction = () => {
       try {
         const response = await PromotionService.getPromotions();
         if (response && response.results) {
-          setPromotions(response.results);
+          const now = new Date();
+          const activePromotions = response.results.filter(promo => {
+            const startTime = new Date(promo.startTime);
+            const endTime = promo.endTime ? new Date(promo.endTime) : null;
+            return startTime <= now && (!endTime || endTime >= now);
+          });
+
+          // Separate automatic promotions from one-time promotions among active ones
+          const automatic = activePromotions.filter(promo => promo.type === 'automatic');
+          setAutomaticPromotions(automatic);
+          setPromotions(activePromotions); // Store only active promotions
         }
       } catch (err) {
         console.error('Failed to fetch promotions:', err);
@@ -261,6 +272,22 @@ const CreateTransaction = () => {
     
     fetchPromotions();
   }, []);
+  
+  // Apply automatic promotions when amount changes and we have a user
+  useEffect(() => {
+    if (user && amount && parseFloat(amount) > 0) {
+      // Filter automatic promotions that meet the minimum spending requirement
+      const eligibleAutomaticPromotions = automaticPromotions.filter(
+        promo => !promo.minSpending || parseFloat(amount) >= promo.minSpending
+      );
+
+      // Keep only one-time promotions from the current selection
+      const oneTimePromotions = selectedPromotions.filter(promo => promo.type !== 'automatic');
+      
+      // Update selected promotions with eligible automatic promotions and existing one-time promotions
+      setSelectedPromotions([...oneTimePromotions, ...eligibleAutomaticPromotions]);
+    }
+  }, [amount, user, automaticPromotions]);
   
   const handleUserSearch = async () => {
     if (!utorid.trim()) {
@@ -291,6 +318,12 @@ const CreateTransaction = () => {
       return;
     }
 
+    // Don't allow toggling of automatic promotions - they're automatically applied
+    if (promotion.type === 'automatic') {
+      toast('Automatic promotions are applied automatically when eligible.');
+      return;
+    }
+
     setSelectedPromotions((prevSelected) => {
       const isSelected = prevSelected.some(p => p.id === promotion.id);
 
@@ -300,6 +333,7 @@ const CreateTransaction = () => {
       } else {
         // If not selected, add it (keep existing checks for minimum spending)
         const validPromotions = prevSelected.filter(p =>
+          p.type === 'automatic' || // Keep automatic promotions
           !p.minSpending || parseFloat(amount || 0) >= p.minSpending
         );
 
@@ -329,17 +363,19 @@ const CreateTransaction = () => {
     const ratePromotions = selectedPromotions.filter(p => p.rate);
     
     if (ratePromotions.length > 0) {
-      // Use the highest rate promotion
-      const highestRate = Math.max(...ratePromotions.map(p => p.rate));
-      
-      // Apply minimum spending requirement if applicable
+      // Filter applicable rate promotions based on minimum spending
       const applicableRatePromos = ratePromotions.filter(p => 
         !p.minSpending || baseAmount >= p.minSpending
       );
       
       if (applicableRatePromos.length > 0) {
+        // Use the highest rate promotion
         const highestApplicableRate = Math.max(...applicableRatePromos.map(p => p.rate));
-        points = Math.round(points * highestApplicableRate);
+        
+        // Calculate additional points from rate (not multiply)
+        // For example: if rate is 0.01, add 1 extra point per dollar spent
+        const rateAdditionalPoints = Math.round(baseAmount * highestApplicableRate * 100);
+        points += rateAdditionalPoints;
       }
     }
     
@@ -471,23 +507,28 @@ const CreateTransaction = () => {
                 const newAmount = e.target.value;
                 setAmount(newAmount);
                 
-                // If there are already selected promotions, check if they still meet the criteria
-                if (selectedPromotions.length > 0) {
-                  const validPromotions = selectedPromotions.filter(
-                    promo => !promo.minSpending || parseFloat(newAmount || 0) >= promo.minSpending
+                if (user && newAmount) {
+                  // The automatic promotions will be applied via the useEffect
+                  
+                  // For one-time promotions, filter out those that don't meet the criteria
+                  const validOneTimePromotions = selectedPromotions.filter(
+                    promo => promo.type === 'automatic' || 
+                           (!promo.minSpending || parseFloat(newAmount || 0) >= promo.minSpending)
                   );
                   
-                  // Automatically cancel promotions that don't meet the criteria
-                  if (validPromotions.length !== selectedPromotions.length) {
-                    setSelectedPromotions(validPromotions);
+                  // Automatically cancel one-time promotions that don't meet the criteria
+                  if (validOneTimePromotions.length !== selectedPromotions.length) {
+                    setSelectedPromotions(validOneTimePromotions);
+                    toast.error('Some promotions were deselected because they no longer meet the spending requirement.');
                   }
                 }
               }}
               onBlur={() => {
-                // Check if selected promotions meet minimum spending requirements
+                // Check if selected one-time promotions meet minimum spending requirements
                 if (amount && selectedPromotions.length > 0) {
                   const validPromotions = selectedPromotions.filter(
-                    promo => !promo.minSpending || parseFloat(amount) >= promo.minSpending
+                    promo => promo.type === 'automatic' || 
+                           (!promo.minSpending || parseFloat(amount) >= promo.minSpending)
                   );
                   
                   // If there are promotions that don't meet the criteria, deselect them and show a notification
@@ -516,43 +557,58 @@ const CreateTransaction = () => {
                 Available Promotions
               </PromotionsTitle>
               
-              {user && user.promotions && user.promotions.length > 0 ? (
-                user.promotions.map((promotion) => {
-                  // Determine if a promotion meets the minimum spending requirement
-                  const isEligible = !promotion.minSpending || parseFloat(amount || 0) >= promotion.minSpending;
-                  
-                  return (
-                    <PromotionItem 
-                      key={promotion.id} 
-                      isSelected={selectedPromotions.some(p => p.id === promotion.id)}
-                      onClick={() => handlePromotionToggle(promotion)}
-                      style={{
-                        opacity: isEligible ? 1 : 0.6,
-                        cursor: isEligible ? 'pointer' : 'not-allowed'
-                      }}
-                    >
-                      <PromotionIcon>
-                        <FaTag />
-                      </PromotionIcon>
-                      <PromotionInfo>
-                        <h4>{promotion.name}</h4>
-                        {promotion.minSpending && (
-                          <p style={{ 
-                            color: isEligible ? theme.colors.text.secondary : theme.colors.error.main 
+              {promotions.length > 0 ? (
+                promotions
+                  .filter(promotion => promotion.type === 'one-time' || promotion.type === 'automatic')
+                  .map((promotion) => {
+                    // Determine if a promotion meets the minimum spending requirement
+                    const isEligible = !promotion.minSpending || parseFloat(amount || 0) >= promotion.minSpending;
+                    const isAutomatic = promotion.type === 'automatic';
+                    const isSelected = selectedPromotions.some(p => p.id === promotion.id);
+                    
+                    return (
+                      <PromotionItem 
+                        key={promotion.id} 
+                        isSelected={isSelected}
+                        onClick={() => handlePromotionToggle(promotion)}
+                        style={{
+                          opacity: isEligible ? 1 : 0.6,
+                          cursor: isEligible && !isAutomatic ? 'pointer' : 'not-allowed',
+                          backgroundColor: isAutomatic && isEligible ? 'rgba(46, 204, 113, 0.1)' : isSelected ? 'rgba(52, 152, 219, 0.1)' : 'transparent',
+                        }}
+                      >
+                        <PromotionIcon>
+                          <FaTag />
+                        </PromotionIcon>
+                        <PromotionInfo>
+                          <h4>{promotion.name} {isAutomatic && '(Automatic)'}</h4>
+                          {promotion.minSpending && (
+                            <p style={{ 
+                              color: isEligible ? theme.colors.text.secondary : theme.colors.error.main 
+                            }}>
+                              Min. Spend: ${promotion.minSpending.toFixed(2)}
+                              {!isEligible && ' (not eligible)'}
+                            </p>
+                          )}
+                        </PromotionInfo>
+                        <PromotionValue>
+                          {promotion.rate ? `${promotion.rate}×` : `+${promotion.points}`}
+                        </PromotionValue>
+                        {isAutomatic && isEligible && (
+                          <div style={{ 
+                            fontSize: '0.75rem', 
+                            fontWeight: 'bold', 
+                            color: theme.colors.success.main,
+                            marginLeft: theme.spacing.md 
                           }}>
-                            Min. Spend: ${promotion.minSpending.toFixed(2)}
-                            {!isEligible && ' (not eligible)'}
-                          </p>
+                            Applied
+                          </div>
                         )}
-                      </PromotionInfo>
-                      <PromotionValue>
-                        {promotion.rate ? `${promotion.rate}×` : `+${promotion.points}`}
-                      </PromotionValue>
-                    </PromotionItem>
-                  );
-                })
+                      </PromotionItem>
+                    );
+                  })
               ) : (
-                <p>No promotions available for this user</p>
+                <p>No promotions available</p>
               )}
             </PromotionsContainer>
           </Card.Body>

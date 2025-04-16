@@ -95,6 +95,46 @@ const Promotions = () => {
     return initialFilters;
   });
   
+  // Listen for role changes and update filters accordingly
+  useEffect(() => {
+    // When role changes, adjust the filters based on new role
+    if (isManager) {
+      // For manager+, reset to show all promotions if current filter is set for regular users
+      if (filters.started === true && filters.ended === false) {
+        setFilters(prev => ({
+          ...prev,
+          started: null,
+          ended: null,
+        }));
+      }
+    } else {
+      // For regular users, always show only active promotions
+      if (filters.started !== true || filters.ended !== false) {
+        setFilters(prev => ({
+          ...prev,
+          started: true,
+          ended: false,
+        }));
+      }
+    }
+  }, [isManager, activeRole]);
+  
+  // Update URL when filters change
+  useEffect(() => {
+    // Create a new URLSearchParams object
+    const newSearchParams = new URLSearchParams();
+    
+    // Add each filter to the URL if it has a value
+    if (filters.name) newSearchParams.set('name', filters.name);
+    if (filters.type) newSearchParams.set('type', filters.type);
+    if (filters.page > 1) newSearchParams.set('page', filters.page.toString());
+    if (filters.started !== null) newSearchParams.set('started', filters.started.toString());
+    if (filters.ended !== null) newSearchParams.set('ended', filters.ended.toString());
+    
+    // Update the URL
+    setSearchParams(newSearchParams, { replace: true });
+  }, [filters, setSearchParams]);
+  
   // Modals state
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -327,20 +367,6 @@ const Promotions = () => {
       },
     });
   };
-
-  // Effect to update URL when filters change
-  useEffect(() => {
-    const newParams = new URLSearchParams();
-    if (filters.name) newParams.set('name', filters.name);
-    if (filters.type) newParams.set('type', filters.type);
-    if (filters.page > 1) newParams.set('page', filters.page.toString()); // Only set if not default page 1
-    // Handle boolean filters - only add if not null
-    if (filters.started !== null) newParams.set('started', filters.started.toString());
-    if (filters.ended !== null) newParams.set('ended', filters.ended.toString());
-    
-    // Use replace: true to avoid polluting browser history
-    setSearchParams(newParams, { replace: true }); 
-  }, [filters, setSearchParams]);
 
   return (
     <div>

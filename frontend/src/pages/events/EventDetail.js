@@ -100,13 +100,14 @@ const PageActionsContainer = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: ${theme.spacing.sm};
+  justify-content: flex-end;
 
   @media (max-width: 768px) {
     flex-direction: column;
     width: 100%;
 
     button {
-      width: 100%; // Each button individually takes up the entire row
+      width: 100%;
     }
   }
 `;
@@ -638,7 +639,6 @@ const EventDetail = () => {
       {
         onSuccess: () => {
           refetch();
-          toast.success('Event successfully published!');
         },
       }
     );
@@ -648,12 +648,25 @@ const EventDetail = () => {
   const handleEditEvent = () => {
     if (!event) return;
     
+    // First try to use the original points allocation if available
+    // If not, use the remaining points
+    const pointsValue = 
+      // Original points allocation takes precedence
+      typeof event.points === 'number' ? event.points : 
+      // Fallback to other possible properties
+      typeof event.pointsTotal === 'number' ? event.pointsTotal :
+      // If we have both awarded and remaining, we can calculate the total
+      (typeof event.pointsAwarded === 'number' && typeof event.pointsRemain === 'number') 
+        ? (event.pointsAwarded + event.pointsRemain) :
+      // Last resort, just use the remaining points
+      typeof event.pointsRemain === 'number' ? event.pointsRemain : '';
+    
     setEventData({
       name: event.name || '',
       description: event.description || '',
       location: event.location || '',
       capacity: event.capacity || '',
-      points: event.points || '',
+      points: pointsValue,
       startTime: event.startTime ? new Date(event.startTime).toISOString().slice(0, 16) : '',
       endTime: event.endTime ? new Date(event.endTime).toISOString().slice(0, 16) : '',
       published: event.published || false,
@@ -692,7 +705,6 @@ const EventDetail = () => {
         onSuccess: () => {
           setEditModalOpen(false);
           refetch();
-          toast.success('Event updated successfully!');
         },
       }
     );
@@ -708,7 +720,6 @@ const EventDetail = () => {
     deleteEvent(eventId, {
       onSuccess: () => {
         navigate('/events');
-        toast.success('Event deleted successfully!');
       },
     });
   };
@@ -850,7 +861,7 @@ const EventDetail = () => {
           )}
           
           {canEditEventDetails && (
-            <div style={{ display: 'flex', gap: theme.spacing.sm }}>
+            <>
               <Button 
                 variant="outlined"
                 onClick={handleEditEvent}
@@ -875,7 +886,7 @@ const EventDetail = () => {
                   <FaGlobe /> Publish Event
                 </Button>
               )}
-            </div>
+            </>
           )}
         </PageActionsContainer>
       </PageHeader>
