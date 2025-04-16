@@ -146,14 +146,10 @@ const PromotionFilters = ({ filters, onFilterChange, isManager, onCreateClick })
                 <option value="false">Not Ended</option>
               </EnhancedSelect>
             </FilterInput>
-            
-            <CreateButton onClick={onCreateClick}>
-              <FaPlus /> Create Promotion
-            </CreateButton>
           </>
         )}
         
-        {!isManager && (
+        {onCreateClick && (
           <CreateButton onClick={onCreateClick}>
             <FaPlus /> Create Promotion
           </CreateButton>
