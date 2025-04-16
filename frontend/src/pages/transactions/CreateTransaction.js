@@ -290,19 +290,28 @@ const CreateTransaction = () => {
       toast.error(`This promotion requires a minimum spending of $${promotion.minSpending.toFixed(2)}.`);
       return;
     }
-    
+
     setSelectedPromotions((prevSelected) => {
-      // If there are already selected promotions, check if they still meet the criteria
-      const validPromotions = prevSelected.filter(p => 
-        !p.minSpending || parseFloat(amount || 0) >= p.minSpending
-      );
-      
-      // Automatically cancel promotions that don't meet the criteria
-      if (validPromotions.length !== prevSelected.length) {
-        return validPromotions;
+      const isSelected = prevSelected.some(p => p.id === promotion.id);
+
+      if (isSelected) {
+        // If already selected, remove it
+        return prevSelected.filter(p => p.id !== promotion.id);
+      } else {
+        // If not selected, add it (keep existing checks for minimum spending)
+        const validPromotions = prevSelected.filter(p =>
+          !p.minSpending || parseFloat(amount || 0) >= p.minSpending
+        );
+
+        // Automatically cancel promotions that don't meet the criteria
+        if (validPromotions.length !== prevSelected.length) {
+          toast.error('Some promotions were deselected because the amount changed and they no longer meet the spending requirement.');
+          return [...validPromotions, promotion]; // Add the new one after filtering old ones
+        }
+
+        // Add the newly selected promotion
+        return [...prevSelected, promotion];
       }
-      // Otherwise add it
-      return [...prevSelected, promotion];
     });
   };
   
