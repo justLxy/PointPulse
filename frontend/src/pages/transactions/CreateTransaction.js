@@ -244,6 +244,7 @@ const CreateTransaction = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [transaction, setTransaction] = useState(null);
+  const [availablePromotions, setAvailablePromotions] = useState([]);
   
   const queryClient = useQueryClient();
   
@@ -272,6 +273,23 @@ const CreateTransaction = () => {
     
     fetchPromotions();
   }, []);
+  
+  // Update available promotions when user changes or promotions are loaded
+  useEffect(() => {
+    if (user && promotions.length > 0) {
+      // For automatic promotions - show all of them
+      const automaticPromos = promotions.filter(promo => promo.type === 'automatic');
+      
+      // For one-time promotions - only show those available to this user
+      // userPromotions contains the promotions the user hasn't used yet
+      const userOneTimePromotions = user.promotions || [];
+      
+      // Combine automatic and available one-time promotions
+      setAvailablePromotions([...automaticPromos, ...userOneTimePromotions]);
+    } else {
+      setAvailablePromotions([]);
+    }
+  }, [user, promotions]);
   
   // Apply automatic promotions when amount changes and we have a user
   useEffect(() => {
@@ -302,6 +320,9 @@ const CreateTransaction = () => {
       // Try to lookup user directly using the cashier-specific endpoint
       const userData = await UserService.lookupUserByUTORid(utorid);
       setUser(userData);
+      
+      // Clear selected promotions when user changes
+      setSelectedPromotions([]);
     } catch (err) {
       console.error('Search user error:', err);
       setError(err.message || 'User not found or you do not have permission to view this user');
@@ -557,58 +578,56 @@ const CreateTransaction = () => {
                 Available Promotions
               </PromotionsTitle>
               
-              {promotions.length > 0 ? (
-                promotions
-                  .filter(promotion => promotion.type === 'one-time' || promotion.type === 'automatic')
-                  .map((promotion) => {
-                    // Determine if a promotion meets the minimum spending requirement
-                    const isEligible = !promotion.minSpending || parseFloat(amount || 0) >= promotion.minSpending;
-                    const isAutomatic = promotion.type === 'automatic';
-                    const isSelected = selectedPromotions.some(p => p.id === promotion.id);
-                    
-                    return (
-                      <PromotionItem 
-                        key={promotion.id} 
-                        isSelected={isSelected}
-                        onClick={() => handlePromotionToggle(promotion)}
-                        style={{
-                          opacity: isEligible ? 1 : 0.6,
-                          cursor: isEligible && !isAutomatic ? 'pointer' : 'not-allowed',
-                          backgroundColor: isAutomatic && isEligible ? 'rgba(46, 204, 113, 0.1)' : isSelected ? 'rgba(52, 152, 219, 0.1)' : 'transparent',
-                        }}
-                      >
-                        <PromotionIcon>
-                          <FaTag />
-                        </PromotionIcon>
-                        <PromotionInfo>
-                          <h4>{promotion.name} {isAutomatic && '(Automatic)'}</h4>
-                          {promotion.minSpending && (
-                            <p style={{ 
-                              color: isEligible ? theme.colors.text.secondary : theme.colors.error.main 
-                            }}>
-                              Min. Spend: ${promotion.minSpending.toFixed(2)}
-                              {!isEligible && ' (not eligible)'}
-                            </p>
-                          )}
-                        </PromotionInfo>
-                        <PromotionValue>
-                          {promotion.rate ? `${promotion.rate}×` : `+${promotion.points}`}
-                        </PromotionValue>
-                        {isAutomatic && isEligible && (
-                          <div style={{ 
-                            fontSize: '0.75rem', 
-                            fontWeight: 'bold', 
-                            color: theme.colors.success.main,
-                            marginLeft: theme.spacing.md 
+              {availablePromotions.length > 0 ? (
+                availablePromotions.map((promotion) => {
+                  // Determine if a promotion meets the minimum spending requirement
+                  const isEligible = !promotion.minSpending || parseFloat(amount || 0) >= promotion.minSpending;
+                  const isAutomatic = promotion.type === 'automatic';
+                  const isSelected = selectedPromotions.some(p => p.id === promotion.id);
+                  
+                  return (
+                    <PromotionItem 
+                      key={promotion.id} 
+                      isSelected={isSelected}
+                      onClick={() => handlePromotionToggle(promotion)}
+                      style={{
+                        opacity: isEligible ? 1 : 0.6,
+                        cursor: isEligible && !isAutomatic ? 'pointer' : 'not-allowed',
+                        backgroundColor: isAutomatic && isEligible ? 'rgba(46, 204, 113, 0.1)' : isSelected ? 'rgba(52, 152, 219, 0.1)' : 'transparent',
+                      }}
+                    >
+                      <PromotionIcon>
+                        <FaTag />
+                      </PromotionIcon>
+                      <PromotionInfo>
+                        <h4>{promotion.name} {isAutomatic && '(Automatic)'}</h4>
+                        {promotion.minSpending && (
+                          <p style={{ 
+                            color: isEligible ? theme.colors.text.secondary : theme.colors.error.main 
                           }}>
-                            Applied
-                          </div>
+                            Min. Spend: ${promotion.minSpending.toFixed(2)}
+                            {!isEligible && ' (not eligible)'}
+                          </p>
                         )}
-                      </PromotionItem>
-                    );
-                  })
+                      </PromotionInfo>
+                      <PromotionValue>
+                        {promotion.rate ? `${promotion.rate}×` : `+${promotion.points}`}
+                      </PromotionValue>
+                      {isAutomatic && isEligible && (
+                        <div style={{ 
+                          fontSize: '0.75rem', 
+                          fontWeight: 'bold', 
+                          color: theme.colors.success.main,
+                          marginLeft: theme.spacing.md 
+                        }}>
+                          Applied
+                        </div>
+                      )}
+                    </PromotionItem>
+                  );
+                })
               ) : (
-                <p>No promotions available</p>
+                <p>{user ? 'No promotions available for this user' : 'Please select a user to see available promotions'}</p>
               )}
             </PromotionsContainer>
           </Card.Body>

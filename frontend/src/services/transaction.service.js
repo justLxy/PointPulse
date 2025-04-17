@@ -14,10 +14,23 @@ const TransactionService = {
         const { status, data } = error.response;
         
         if (status === 400) {
+          if (data.error && data.error.includes('Cashier not found')) {
+            throw new Error('Cashier account not found. Please ensure your user profile is set up correctly to process transactions.');
+          }
+          
           if (data.message && data.message.includes('amount')) {
             throw new Error('Invalid amount. Amount must be positive.');
           }
-          throw new Error(data.message || 'Invalid purchase request. Please check the data and try again.');
+          
+          if (data.error && data.error.includes('Promotion already used')) {
+            throw new Error('One or more selected promotions have already been used by this customer.');
+          }
+          
+          if (data.error && data.error.includes('Minimum spending not met')) {
+            throw new Error('Minimum spending requirement not met for one or more selected promotions.');
+          }
+          
+          throw new Error(data.error || data.message || 'Invalid purchase request. Please check the data and try again.');
         }
         
         if (status === 403) {
@@ -28,7 +41,7 @@ const TransactionService = {
           throw new Error('User not found. Please verify the user information.');
         }
         
-        throw new Error(data.message || 'Failed to create purchase');
+        throw new Error(data.error || data.message || 'Failed to create purchase');
       }
       
       throw new Error('Network error: Could not connect to server');

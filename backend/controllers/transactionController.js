@@ -95,6 +95,10 @@ const createTransaction = async (req, res) => {
                     console.log('===== CREATE TRANSACTION REQUEST END (400) =====\n\n');
                     return res.status(400).json({ error: 'Minimum spending requirement not met for one or more promotions' });
                 }
+                if (error.message === 'Cashier not found') {
+                    console.log('===== CREATE TRANSACTION REQUEST END (400) =====\n\n');
+                    return res.status(400).json({ error: 'Cashier not found' });
+                }
                 throw error;
             }
         } else if (type === 'adjustment') {
