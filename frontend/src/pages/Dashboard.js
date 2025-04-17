@@ -934,10 +934,6 @@ const Dashboard = () => {
             className="transfer-button" 
             onClick={() => setIsTransferModalOpen(true)} 
             size="small"
-            style={{
-              backgroundColor: theme.colors.secondary.main,
-              color: theme.colors.secondary.contrastText
-            }}
           >
             <FaExchangeAlt /> Transfer
           </Button>

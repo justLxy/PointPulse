@@ -284,13 +284,25 @@ const Events = () => {
     // Immediately set the selected event and what we have
     setSelectedEvent(event);
     
+    // Try to get the best points value from the event object
+    const initialPointsValue = 
+      // Original points allocation takes precedence
+      typeof event.points === 'number' ? event.points : 
+      // Fallback to other possible properties
+      typeof event.pointsTotal === 'number' ? event.pointsTotal :
+      // If we have both awarded and remaining, we can calculate the total
+      (typeof event.pointsAwarded === 'number' && typeof event.pointsRemain === 'number') 
+        ? (event.pointsAwarded + event.pointsRemain) :
+      // Last resort, just use the remaining points
+      typeof event.pointsRemain === 'number' ? event.pointsRemain : '';
+    
     // Create a new object for the form data to ensure React detects the change
     const initialFormData = {
       name: event.name || '',
       description: event.description || '',
       location: event.location || '',
       capacity: event.capacity || '',
-      points: event.points || '',
+      points: initialPointsValue,
       startTime: event.startTime ? new Date(event.startTime).toISOString().slice(0, 16) : '',
       endTime: event.endTime ? new Date(event.endTime).toISOString().slice(0, 16) : '',
       published: event.published || false,
@@ -311,14 +323,29 @@ const Events = () => {
         .then(fullEvent => {
           console.log("Received complete event data:", fullEvent);
           
+          // Get the best points value from the complete event data
+          const fullPointsValue = 
+            // Original points allocation takes precedence
+            typeof fullEvent.points === 'number' ? fullEvent.points : 
+            // Fallback to other possible properties
+            typeof fullEvent.pointsTotal === 'number' ? fullEvent.pointsTotal :
+            // If we have both awarded and remaining, we can calculate the total
+            (typeof fullEvent.pointsAwarded === 'number' && typeof fullEvent.pointsRemain === 'number') 
+              ? (fullEvent.pointsAwarded + fullEvent.pointsRemain) :
+            // Last resort, just use the remaining points
+            typeof fullEvent.pointsRemain === 'number' ? fullEvent.pointsRemain : 
+            // If we couldn't get a better value from the full event data, use what we had initially
+            initialFormData.points;
+          
           // Update the form if we got new data
-          if (fullEvent && fullEvent.description) {
+          if (fullEvent) {
             setEventData(prevData => ({
               ...prevData,
               description: fullEvent.description || '',
               // Update any other fields that might have more complete data
               name: fullEvent.name || prevData.name,
-              location: fullEvent.location || prevData.location
+              location: fullEvent.location || prevData.location,
+              points: fullPointsValue
             }));
           }
         })
