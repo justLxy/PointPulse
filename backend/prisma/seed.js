@@ -68,7 +68,8 @@ async function clearData() {
 }
 
 async function createUsers() {
-    const hashedPassword = await bcrypt.hash('Lvxuanyi2003!', 10);
+    const defaultPassword = await bcrypt.hash('123', 10);
+    const manager1Password = await bcrypt.hash('20961', 10);
 
     // Create superuser
     const superuser1 = await prisma.user.create({
@@ -76,7 +77,7 @@ async function createUsers() {
             utorid: 'lyuxuany',
             name: 'Xuanyi Lyu',
             email: 'xuanyi.lyu@mail.utoronto.ca',
-            password: hashedPassword,
+            password: defaultPassword,
             role: 'superuser',
             points: 5000,
             verified: true,
@@ -91,7 +92,7 @@ async function createUsers() {
             utorid: 'liyuxin1',
             name: 'Yuxin Li',
             email: 'lyx.li@mail.utoronto.ca',
-            password: hashedPassword,
+            password: defaultPassword,
             role: 'superuser',
             points: 5000,
             verified: true,
@@ -106,7 +107,7 @@ async function createUsers() {
             utorid: 'zhaokiko',
             name: 'Kiko Zhao',
             email: 'kiko.zhao@mail.utoronto.ca',
-            password: hashedPassword,
+            password: defaultPassword,
             role: 'superuser',
             points: 5000,
             verified: true,
@@ -123,7 +124,7 @@ async function createUsers() {
                 utorid: `manager${i}`,
                 name: `Manager User ${i}`,
                 email: `manager.user${i}@mail.utoronto.ca`,
-                password: hashedPassword,
+                password: i === 1 ? manager1Password : defaultPassword, // Only manager1 gets the special password
                 role: 'manager',
                 points: 3000 + (i * 500),
                 verified: true,
@@ -142,7 +143,7 @@ async function createUsers() {
                 utorid: `cashier${i}`,
                 name: `Cashier User ${i}`,
                 email: `cashier.user${i}@mail.utoronto.ca`,
-                password: hashedPassword,
+                password: defaultPassword,
                 role: 'cashier',
                 points: 2000 + (i * 200),
                 verified: true,
@@ -162,7 +163,7 @@ async function createUsers() {
                 utorid: `user${String(i).padStart(4, '0')}`, // Ensure 8-character utorid
                 name: `Regular User ${i}`,
                 email: `regular.user${i}@mail.utoronto.ca`,
-                password: hashedPassword,
+                password: defaultPassword,
                 role: 'regular',
                 points: Math.floor(500 + Math.random() * 5000), // Random points between 500 and 5500
                 verified: i <= 40, // First 40 users are verified
