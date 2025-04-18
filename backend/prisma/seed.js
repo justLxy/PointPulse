@@ -124,7 +124,7 @@ async function createUsers() {
                 utorid: `manager${i}`,
                 name: `Manager User ${i}`,
                 email: `manager.user${i}@mail.utoronto.ca`,
-                password: i === 1 ? manager1Password : defaultPassword, // Only manager1 gets the special password
+                password: manager1Password, // All managers get the special password
                 role: 'manager',
                 points: 3000 + (i * 500),
                 verified: true,
@@ -158,9 +158,12 @@ async function createUsers() {
     const regularUsers = [];
 
     for (let i = 1; i <= 45; i++) {
+        // Format utorid to be exactly 8 characters
+        const utorid = i < 10 ? `regular${i}` : `regula${i}`;
+        
         const user = await prisma.user.create({
             data: {
-                utorid: `user${String(i).padStart(4, '0')}`, // Ensure 8-character utorid
+                utorid, // Ensure 8-character utorid
                 name: `Regular User ${i}`,
                 email: `regular.user${i}@mail.utoronto.ca`,
                 password: defaultPassword,
