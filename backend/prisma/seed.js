@@ -7,7 +7,6 @@ const { faker } = require('@faker-js/faker');
 
 const prisma = new PrismaClient();
 
-// Run the seed function
 seed().catch(e => {
     console.error(e);
     process.exit(1);
