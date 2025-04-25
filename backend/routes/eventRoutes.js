@@ -38,6 +38,9 @@ router.delete('/:eventId/guests/me', requireRole('regular'), eventController.rem
 // Remove a guest from an event (manager or higher)
 router.delete('/:eventId/guests/:userId', requireRole('manager'), eventController.removeGuest);
 
+// Remove all guests from an event (manager or higher)
+router.delete('/:eventId/guests', requireRole('manager'), eventController.removeAllGuests);
+
 // Create an event transaction (award points)
 router.post('/:eventId/transactions', requireRole('regular'), eventController.createEventTransaction);
 

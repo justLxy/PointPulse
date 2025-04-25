@@ -148,6 +148,17 @@ export const useEvents = (params = {}) => {
     },
   });
   
+  const removeAllGuestsMutation = useMutation({
+    mutationFn: ({ eventId }) => EventService.removeAllGuests(eventId),
+    onSuccess: (_, variables) => {
+      toast.success('All guests removed successfully');
+      queryClient.invalidateQueries({ queryKey: ['event', variables.eventId] });
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to remove all guests');
+    },
+  });
+  
   const awardPointsMutation = useMutation({
     mutationFn: ({ eventId, userId, points }) => EventService.awardPoints(eventId, userId, points),
     onSuccess: (_, variables) => {
@@ -193,6 +204,8 @@ export const useEvents = (params = {}) => {
       isAddingGuest: addGuestMutation.isPending,
       removeGuest: removeGuestMutation.mutate,
       isRemovingGuest: removeGuestMutation.isPending,
+      removeAllGuests: removeAllGuestsMutation.mutate,
+      isRemovingAllGuests: removeAllGuestsMutation.isPending,
       awardPoints: awardPointsMutation.mutate,
       isAwardingPoints: awardPointsMutation.isPending,
     };

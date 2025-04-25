@@ -1261,6 +1261,53 @@ const createEventTransaction = async (req, res) => {
     }
 };
 
+/**
+ * Remove all guests from an event (manager only)
+ */
+const removeAllGuests = async (req, res) => {
+    try {
+        const eventId = parseInt(req.params.eventId);
+        
+        if (isNaN(eventId) || eventId <= 0) {
+            return res.status(400).json({ error: 'Invalid event ID' });
+        }
+
+        // Check if event exists
+        const event = await prisma.event.findUnique({
+            where: { id: eventId }
+        });
+
+        if (!event) {
+            return res.status(404).json({ error: 'Event not found' });
+        }
+
+        // Check if event has ended
+        if (event.endTime <= new Date()) {
+            return res.status(410).json({ error: 'Event has already ended' });
+        }
+
+        // Verify that the requester has at least a manager role
+        if (!checkRole(req.auth, 'manager')) {
+            return res.status(403).json({ error: 'Unauthorized to remove all guests' });
+        }
+
+        try {
+            await eventService.removeAllGuests(eventId);
+            return res.status(204).send();
+        } catch (error) {
+            if (error.message === 'Event not found') {
+                return res.status(404).json({ error: error.message });
+            } else if (error.message === 'Event has already ended') {
+                return res.status(410).json({ error: error.message });
+            }
+            throw error;
+        }
+    } catch (error) {
+        console.error('Error removing all guests:', error);
+        res.status(500).json({ error: 'Failed to remove all guests' });
+    }
+};
+
 module.exports = {
     createEvent,
     getEvents,
@@ -1273,5 +1320,6 @@ module.exports = {
     removeGuest,
     addCurrentUserAsGuest,
     removeCurrentUserAsGuest,
-    createEventTransaction
+    createEventTransaction,
+    removeAllGuests
 };

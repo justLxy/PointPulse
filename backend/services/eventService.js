@@ -1393,6 +1393,38 @@ const createEventTransaction = async (eventId, data, creatorId) => {
     }
 };
 
+/**
+ * Remove all guests from an event
+ */
+const removeAllGuests = async (eventId) => {
+    const event = await prisma.event.findUnique({
+        where: { id: parseInt(eventId) },
+        include: {
+            guests: true
+        }
+    });
+
+    if (!event) {
+        throw new Error('Event not found');
+    }
+
+    if (event.endTime <= new Date()) {
+        throw new Error('Event has already ended');
+    }
+
+    // Remove all guests
+    await prisma.event.update({
+        where: { id: parseInt(eventId) },
+        data: {
+            guests: {
+                set: [] // This removes all connections
+            }
+        }
+    });
+
+    return { success: true };
+};
+
 module.exports = {
     createEvent,
     getEvents,
@@ -1403,6 +1435,7 @@ module.exports = {
     removeOrganizer,
     addGuest,
     removeGuest,
+    removeAllGuests,
     addCurrentUserAsGuest,
     removeCurrentUserAsGuest,
     createEventTransaction

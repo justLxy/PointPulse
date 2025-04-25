@@ -27,6 +27,7 @@ import {
   FaUserCog,
   FaUserMinus,
   FaGlobe,
+  FaTrashAlt
 } from 'react-icons/fa';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { toast } from 'react-hot-toast';
@@ -444,6 +445,7 @@ const EventDetail = () => {
   const [awardPointsModalOpen, setAwardPointsModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteAllGuestsModalOpen, setDeleteAllGuestsModalOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [selectedUtorid, setSelectedUtorid] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -478,6 +480,7 @@ const EventDetail = () => {
     deleteEvent,
     isUpdating,
     isDeleting,
+    removeAllGuests,
   } = useEvents();
   
   const { data: event, isLoading, error, refetch } = getEvent(eventId);
@@ -788,6 +791,28 @@ const EventDetail = () => {
     }
   }, [searchQuery]);
   
+  // Handle remove all guests
+  const handleRemoveAllGuests = () => {
+    setDeleteAllGuestsModalOpen(true);
+  };
+  
+  // Confirm and execute remove all guests
+  const confirmRemoveAllGuests = () => {
+    removeAllGuests(
+      { eventId },
+      {
+        onSuccess: () => {
+          refetch();
+          setDeleteAllGuestsModalOpen(false);
+          toast.success('All guests have been removed');
+        },
+        onError: (err) => {
+          toast.error(err?.message || 'Failed to remove all guests');
+        }
+      }
+    );
+  };
+  
   if (isLoading) {
     return <LoadingSpinner text="Loading event details..." />;
   }
@@ -1017,6 +1042,15 @@ const EventDetail = () => {
                       >
                         <FaTrophy /> Award Points
                       </Button>
+                      {isManager && event.guests && Array.isArray(event.guests) && event.guests.length > 0 && (
+                        <Button 
+                          size="small"
+                          color="error"
+                          onClick={handleRemoveAllGuests}
+                        >
+                          <FaTrashAlt /> Delete All
+                        </Button>
+                      )}
                     </div>
                   )}
                 </Card.Header>
@@ -1630,6 +1664,33 @@ const EventDetail = () => {
               loading={isDeleting}
             >
               Delete
+            </Button>
+          </ModalActions>
+        </ModalContent>
+      </Modal>
+      
+      {/* Delete All Guests Confirmation Modal */}
+      <Modal
+        isOpen={deleteAllGuestsModalOpen}
+        onClose={() => setDeleteAllGuestsModalOpen(false)}
+        title="Delete All Guests"
+        size="small"
+      >
+        <ModalContent>
+          <p>Are you sure you want to remove all guests? This action cannot be undone.</p>
+          
+          <ModalActions>
+            <Button
+              variant="outlined"
+              onClick={() => setDeleteAllGuestsModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              color="error"
+              onClick={confirmRemoveAllGuests}
+            >
+              Delete All Guests
             </Button>
           </ModalActions>
         </ModalContent>

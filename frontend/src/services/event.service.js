@@ -357,6 +357,38 @@ const EventService = {
     }
   },
 
+  // Remove all guests from an event (Manager+)
+  removeAllGuests: async (eventId) => {
+    try {
+      const response = await api.delete(`/events/${eventId}/guests`);
+      return response.data;
+    } catch (error) {
+      if (error.response) {
+        const { status, data } = error.response;
+        
+        if (status === 400) {
+          if (data.error && data.error.includes('Invalid event ID')) {
+            throw new Error('Invalid event ID');
+          }
+          
+          throw new Error(data.error || 'Invalid request to remove all guests');
+        }
+        
+        if (status === 403) {
+          throw new Error('You do not have permission to remove all guests from this event');
+        }
+        
+        if (status === 404) {
+          throw new Error('Event not found');
+        }
+        
+        throw new Error(data.error || 'Failed to remove all guests');
+      }
+      
+      throw new Error('Network error: Could not connect to server');
+    }
+  },
+
   // RSVP to an event (Regular+)
   rsvpToEvent: async (eventId) => {
     try {
