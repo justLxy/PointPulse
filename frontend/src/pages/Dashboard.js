@@ -1160,6 +1160,18 @@ const Dashboard = () => {
                   const month = date.toLocaleString('default', { month: 'short' });
                   const day = date.getDate();
                   
+                  // Format start and end time for display
+                  const startTime = date.toLocaleTimeString(undefined, {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  });
+                  const endTime = event.endTime ? new Date(event.endTime).toLocaleTimeString(undefined, {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  }) : '';
+                  
+                  const isManagerOrAbove = ['manager', 'superuser'].includes(activeRole);
+                  
                   return (
                     <EventPreview key={event.id} as={Link} to={`/events/${event.id}`}>
                       <EventDate>
@@ -1173,8 +1185,17 @@ const Dashboard = () => {
                           {event.location}
                         </p>
                         <p>
-                          <FaCoins size={14} style={{ marginRight: theme.spacing.xs, color: theme.colors.text.secondary }} />
-                          {event.pointValue || 0} points available
+                          {isManagerOrAbove ? (
+                            <>
+                              <FaCoins size={14} style={{ marginRight: theme.spacing.xs, color: theme.colors.text.secondary }} />
+                              {event.pointsRemain || event.points || 0} points available
+                            </>
+                          ) : (
+                            <>
+                              <FaClock size={14} style={{ marginRight: theme.spacing.xs, color: theme.colors.text.secondary }} />
+                              {startTime} {endTime ? `- ${endTime}` : ''}
+                            </>
+                          )}
                         </p>
                       </EventInfo>
                     </EventPreview>

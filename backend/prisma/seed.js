@@ -232,13 +232,22 @@ async function createEvents(users) {
         const eventDuration = 1 + Math.floor(Math.random() * 2); // 1-3 days
         const name = `${eventNames[i % eventNames.length]} ${Math.floor(i / eventNames.length) + 1}`;
         
+        // Add random hours to start and end times
+        const startHour = Math.floor(Math.random() * 12) + 9; // Random hour between 9 AM and 8 PM
+        const startTime = new Date(now.getTime() + daysInFuture * 24 * 60 * 60 * 1000);
+        startTime.setHours(startHour, 0, 0, 0); // Set specific hour, reset minutes/seconds
+        
+        const eventLengthHours = Math.floor(Math.random() * 4) + 2; // 2-5 hours for event length
+        const endTime = new Date(now.getTime() + (daysInFuture + eventDuration) * 24 * 60 * 60 * 1000);
+        endTime.setHours(startHour + eventLengthHours, 0, 0, 0); // End time is start time + event length
+        
         const upcomingEvent = await prisma.event.create({
             data: {
                 name,
                 description: `Join us for ${name}, where students can engage with industry professionals and academic experts.`,
                 location: eventLocations[i % eventLocations.length],
-                startTime: new Date(now.getTime() + daysInFuture * 24 * 60 * 60 * 1000),
-                endTime: new Date(now.getTime() + (daysInFuture + eventDuration) * 24 * 60 * 60 * 1000),
+                startTime,
+                endTime,
                 capacity: 50 + i * 10,
                 pointsRemain: 2000 + i * 500,
                 pointsAwarded: 0,
@@ -268,13 +277,22 @@ async function createEvents(users) {
         const pointsAwarded = 500 + i * 200;
         const totalPoints = 2000 + i * 500;
         
+        // Add random hours to start and end times
+        const startHour = Math.floor(Math.random() * 12) + 9; // Random hour between 9 AM and 8 PM
+        const startTime = new Date(now.getTime() - daysInPast * 24 * 60 * 60 * 1000);
+        startTime.setHours(startHour, 0, 0, 0); // Set specific hour, reset minutes/seconds
+        
+        const eventLengthHours = Math.floor(Math.random() * 4) + 2; // 2-5 hours for event length
+        const endTime = new Date(now.getTime() - (daysInPast - eventDuration) * 24 * 60 * 60 * 1000);
+        endTime.setHours(startHour + eventLengthHours, 0, 0, 0); // End time is start time + event length
+        
         const pastEvent = await prisma.event.create({
             data: {
                 name,
                 description: `This event featured presentations, networking, and opportunities for professional development.`,
                 location: eventLocations[(i + 5) % eventLocations.length],
-                startTime: new Date(now.getTime() - daysInPast * 24 * 60 * 60 * 1000),
-                endTime: new Date(now.getTime() - (daysInPast - eventDuration) * 24 * 60 * 60 * 1000),
+                startTime,
+                endTime,
                 capacity: 50 + i * 10,
                 pointsRemain: totalPoints - pointsAwarded,
                 pointsAwarded,
@@ -302,13 +320,22 @@ async function createEvents(users) {
         const eventDuration = 1 + Math.floor(Math.random() * 2); // 1-3 days
         const name = `Upcoming ${eventNames[(i + 10) % eventNames.length]} ${Math.floor(i / eventNames.length) + 1}`;
         
+        // Add random hours to start and end times
+        const startHour = Math.floor(Math.random() * 12) + 9; // Random hour between 9 AM and 8 PM
+        const startTime = new Date(now.getTime() + daysInFuture * 24 * 60 * 60 * 1000);
+        startTime.setHours(startHour, 0, 0, 0); // Set specific hour, reset minutes/seconds
+        
+        const eventLengthHours = Math.floor(Math.random() * 4) + 2; // 2-5 hours for event length
+        const endTime = new Date(now.getTime() + (daysInFuture + eventDuration) * 24 * 60 * 60 * 1000);
+        endTime.setHours(startHour + eventLengthHours, 0, 0, 0); // End time is start time + event length
+        
         const unpublishedEvent = await prisma.event.create({
             data: {
                 name,
                 description: `Planning is underway for this exciting event. Stay tuned for more details.`,
                 location: eventLocations[(i + 2) % eventLocations.length],
-                startTime: new Date(now.getTime() + daysInFuture * 24 * 60 * 60 * 1000),
-                endTime: new Date(now.getTime() + (daysInFuture + eventDuration) * 24 * 60 * 60 * 1000),
+                startTime,
+                endTime,
                 capacity: 100 + i * 20,
                 pointsRemain: 5000 + i * 1000,
                 pointsAwarded: 0,
