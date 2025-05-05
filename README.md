@@ -2,4 +2,4 @@
 
 ## Overview
 
-PointPulse is a comprehensive, points-based loyalty rewards web application designed to engage users and provide robust management tools for administrators. Inspired by popular programs like Tim Hortons Rewards and PC Optimum, this platform enables users to earn, redeem, and transfer loyalty points through various interactions, including purchases, event participation, and promotions. The system features distinct interfaces tailored to different user roles, ensuring appropriate access control and functionality for Regular Users, Cashiers, Managers, Event Organizers, and Superusers.
+PointPulse is a user-friendly loyalty rewards platform that lets users earn, redeem, and transfer points through everyday activities like purchases, events, and promotions. Designed with both users and administrators in mind, it offers easy-to-navigate interfaces for different roles such as Regular Users, Cashiers, Managers, Event Organizers, and Superusers. The system ensures that everyone has the right level of access and functionality based on their role, much like popular programs such as Tim Hortons Rewards and PC Optimum.
