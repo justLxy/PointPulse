@@ -164,6 +164,15 @@ const Avatar = styled.div`
   justify-content: center;
   font-weight: ${theme.typography.fontWeights.bold};
   margin-right: ${theme.spacing.md};
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    margin: 0;
+    border-radius: ${theme.radius.full};
+  }
 `;
 
 const TransferModal = ({ isOpen, onClose, availablePoints = 0 }) => {

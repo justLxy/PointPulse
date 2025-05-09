@@ -29,6 +29,7 @@ model User {
   processedRedemptions Transaction[] @relation("ProcessedRedemptions")
   organizedEvents      Event[]       @relation("EventOrganizers")
   attendedEvents       Event[]       @relation("EventGuests")
+  attendances          EventAttendance[]
   usedPromotions       Promotion[]   @relation("UserPromotions")
 }
 
@@ -84,6 +85,7 @@ model Event {
   organizers   User[]        @relation("EventOrganizers")
   guests       User[]        @relation("EventGuests")
   transactions Transaction[]
+  attendances  EventAttendance[]
 }
 
 model Promotion {
@@ -110,4 +112,15 @@ model PromotionTransaction {
   transaction   Transaction @relation(fields: [transactionId], references: [id])
 
   @@id([promotionId, transactionId])
+}
+
+model EventAttendance {
+  eventId Int
+  userId Int
+  checkedInAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@id([eventId, userId])
 }

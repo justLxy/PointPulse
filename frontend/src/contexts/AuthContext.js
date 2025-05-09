@@ -226,7 +226,16 @@ export const AuthProvider = ({ children }) => {
   };
   
   const updateCurrentUser = (userData) => {
-    setCurrentUser({ ...currentUser, ...userData });
+    // Merge new data with existing user
+    const updated = { ...currentUser, ...userData };
+    setCurrentUser(updated);
+
+    // Persist to localStorage so that page reload uses latest avatar / info
+    try {
+      localStorage.setItem('user', JSON.stringify(updated));
+    } catch (err) {
+      console.warn('Failed to persist updated user to localStorage', err);
+    }
   };
   
   const switchRole = (role) => {

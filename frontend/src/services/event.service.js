@@ -458,12 +458,20 @@ const EventService = {
           throw new Error(data.error || 'Invalid request to cancel RSVP');
         }
         
+        if (status === 403) {
+          throw new Error(data.error || 'You do not have permission to cancel this RSVP');
+        }
+        
         if (status === 404) {
           if (data.error && data.error.includes('not a guest')) {
             throw new Error('You are not RSVP\'d to this event');
           }
           
           throw new Error('Event not found');
+        }
+        
+        if (status === 410) {
+          throw new Error('Cannot cancel RSVP: Event has already ended');
         }
         
         throw new Error(data.error || 'Failed to cancel RSVP');
@@ -540,6 +548,49 @@ const EventService = {
         throw new Error(data.error || 'Failed to award points');
       }
       
+      throw new Error('Network error: Could not connect to server');
+    }
+  },
+
+  // Generate a dynamic check-in token (Manager or Organizer)
+  getCheckinToken: async (eventId) => {
+    try {
+      const response = await api.get(`/events/${eventId}/checkin-token`);
+      return response.data; // { eventId, timestamp, signature, token }
+    } catch (error) {
+      if (error.response) {
+        const { status, data } = error.response;
+        if (status === 403) throw new Error('You are not authorized to generate check-in tokens.');
+        if (status === 404) throw new Error('Event not found');
+        if (status === 410) throw new Error('Event has already ended');
+        throw new Error(data.error || 'Failed to generate check-in token');
+      }
+      throw new Error('Network error: Could not connect to server');
+    }
+  },
+
+  // Submit an attendee check-in using a token
+  submitCheckin: async (eventId, { timestamp, signature }) => {
+    try {
+      const response = await api.post(`/events/${eventId}/checkin`, { timestamp, signature });
+      return response.data;
+    } catch (error) {
+      if (error.response) {
+        const { status, data } = error.response;
+        if (status === 401) {
+          // Not authenticated
+          throw new Error('Please log in to check in.');
+        }
+        if (status === 403 && data.needsRsvp) {
+          // Pass through the needsRsvp flag from the backend
+          error.response.data.needsRsvp = true;
+          throw error;
+        }
+        if (status === 400) throw new Error(data.error || 'Invalid check-in token.');
+        if (status === 410) throw new Error(data.error || 'Check-in token expired.');
+        if (status === 404) throw new Error('Event not found');
+        throw new Error(data.error || 'Failed to check in');
+      }
       throw new Error('Network error: Could not connect to server');
     }
   },

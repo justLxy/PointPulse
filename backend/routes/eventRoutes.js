@@ -44,4 +44,10 @@ router.delete('/:eventId/guests', requireRole('manager'), eventController.remove
 // Create an event transaction (award points)
 router.post('/:eventId/transactions', requireRole('regular'), eventController.createEventTransaction);
 
+// Generate a dynamic check-in token (manager or organizer)
+router.get('/:eventId/checkin-token', requireRole('regular'), eventController.getCheckinToken);
+
+// For attendees to check in using a token
+router.post('/:eventId/checkin', requireRole('regular'), eventController.checkInWithToken);
+
 module.exports = router;

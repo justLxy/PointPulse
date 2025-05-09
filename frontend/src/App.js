@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import styled from '@emotion/styled';
@@ -32,6 +32,8 @@ import CreateAdjustment from './pages/transactions/CreateAdjustment';
 import Promotions from './pages/promotions/Promotions';
 import Events from './pages/events/Events';
 import EventDetail from './pages/events/EventDetail';
+import EventCheckinDisplay from './pages/events/EventCheckinDisplay';
+import EventCheckinAttend from './pages/events/EventCheckinAttend';
 
 // Create a QueryClientProvider with logout reset capability
 const AppQueryClientProvider = ({ children }) => {
@@ -72,6 +74,7 @@ const LoadingContainer = styled.div`
 
 const ProtectedRoute = ({ children, allowedRoles = ['regular', 'cashier', 'manager', 'superuser'] }) => {
   const { isAuthenticated, activeRole, loading } = useAuth();
+  const location = useLocation();
   
   // If we're still loading auth status, display a loading spinner
   if (loading) {
@@ -84,7 +87,7 @@ const ProtectedRoute = ({ children, allowedRoles = ['regular', 'cashier', 'manag
   
   if (!isAuthenticated) {
     console.log('Not authenticated, redirecting to login');
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
   
   if (!allowedRoles.includes(activeRole)) {
@@ -179,6 +182,24 @@ const App = () => {
                     <EventDetail />
                   </Layout>
                 </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/events/:eventId/checkin-display"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <EventCheckinDisplay />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/events/:eventId/attend"
+              element={
+                <Layout>
+                  <EventCheckinAttend />
+                </Layout>
               }
             />
             <Route

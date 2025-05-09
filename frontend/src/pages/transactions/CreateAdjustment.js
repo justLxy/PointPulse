@@ -13,6 +13,7 @@ import theme from '../../styles/theme';
 import { toast } from 'react-hot-toast';
 import { FaUser, FaExchangeAlt, FaClipboard, FaSearch, FaCheckCircle, FaLink } from 'react-icons/fa';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { API_URL } from '../../services/api';
 
 const PageTitle = styled.h1`
   font-size: ${theme.typography.fontSize['3xl']};
@@ -93,6 +94,15 @@ const Avatar = styled.div`
   justify-content: center;
   font-weight: ${theme.typography.fontWeights.bold};
   margin-right: ${theme.spacing.md};
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    margin: 0;
+    border-radius: ${theme.radius.full};
+  }
 `;
 
 const SearchInput = styled.div`
@@ -496,7 +506,13 @@ const CreateAdjustment = () => {
                   {selectedUser && (
                     <UserInfo>
                       {selectedUser.avatarUrl ? (
-                        <img src={selectedUser.avatarUrl} alt={selectedUser.name} />
+                        (() => {
+                          const isAbsolute = /^(?:[a-z]+:)?\/\//i.test(selectedUser.avatarUrl);
+                          const version = localStorage.getItem('avatarVersion');
+                          const baseSrc = isAbsolute ? selectedUser.avatarUrl : `${API_URL}${selectedUser.avatarUrl}`;
+                          const src = version ? `${baseSrc}?v=${version}` : baseSrc;
+                          return <img src={src} alt={selectedUser.name} />;
+                        })()
                       ) : (
                         <Avatar>{getInitials(selectedUser.name)}</Avatar>
                       )}

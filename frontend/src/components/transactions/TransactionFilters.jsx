@@ -30,6 +30,10 @@ const PageTitle = styled.h1`
 const PageActions = styled.div`
   display: flex;
   gap: ${theme.spacing.md};
+  
+  @media (max-width: 768px) {
+    width: 100%;
+  }
 `;
 
 const CreateButton = styled(Button)`
@@ -47,7 +51,7 @@ const CreateButton = styled(Button)`
   
   @media (max-width: 768px) {
     width: 100%;
-    margin-top: ${theme.spacing.md};
+    justify-content: center;
   }
 `;
 

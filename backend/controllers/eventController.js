@@ -3,8 +3,16 @@
 const eventService = require('../services/eventService');
 const { checkRole } = require('../middlewares/authMiddleware');
 const { PrismaClient } = require('@prisma/client');
+const crypto = require('crypto');
 
 const prisma = new PrismaClient();
+const CHECKIN_SECRET = process.env.CHECKIN_SECRET || 'pointpulse_checkin_secret';
+
+// Utility to generate HMAC signature
+const generateCheckinSignature = (eventId, timestamp) => {
+    const data = `${eventId}:${timestamp}`;
+    return crypto.createHmac('sha256', CHECKIN_SECRET).update(data).digest('hex');
+};
 
 /**
  * Create a new event (manager or higher role required)
@@ -1017,9 +1025,9 @@ const addCurrentUserAsGuest = async (req, res) => {
 
         try {
             console.log('Calling eventService.addCurrentUserAsGuest');
+            // Ensure user is in guest list (RSVP)
             const result = await eventService.addCurrentUserAsGuest(eventId, userId);
-            console.log('User successfully added as guest:', JSON.stringify(result, null, 2));
-            console.log('===== ADD CURRENT USER AS GUEST REQUEST END (201) =====\n\n');
+
             return res.status(201).json(result);
         } catch (error) {
             console.log('Error adding current user as guest:', error.message);
@@ -1124,6 +1132,21 @@ const removeCurrentUserAsGuest = async (req, res) => {
             return res.status(404).json({ error: 'User is not a guest for this event' });
         }
         console.log('User is confirmed as a guest');
+
+        // Check if user has already checked in
+        console.log('Checking if user has already checked in');
+        const attendance = await prisma.eventAttendance.findUnique({
+            where: { eventId_userId: { eventId, userId } },
+        });
+
+        if (attendance) {
+            console.log('User has already checked in at:', attendance.checkedInAt);
+            console.log('===== REMOVE CURRENT USER AS GUEST REQUEST END (403) =====\n\n');
+            return res.status(403).json({ 
+                error: 'You cannot cancel your RSVP after checking in to an event'
+            });
+        }
+        console.log('User has not checked in yet, proceeding with RSVP cancellation');
 
         try {
             console.log('Calling eventService.removeCurrentUserAsGuest');
@@ -1308,6 +1331,166 @@ const removeAllGuests = async (req, res) => {
     }
 };
 
+/**
+ * GET /events/:eventId/checkin-token
+ * Generate a short-lived check-in token for an event. Only managers or organizers can request this.
+ * The token contains the eventId, a Unix timestamp (ms) and an HMAC-SHA256 signature.
+ */
+const getCheckinToken = async (req, res) => {
+    try {
+        const eventId = parseInt(req.params.eventId);
+        if (isNaN(eventId) || eventId <= 0) {
+            return res.status(400).json({ error: 'Invalid event ID' });
+        }
+
+        const userId = req.auth.id;
+        const isManager = checkRole(req.auth, 'manager');
+
+        // Check if requester is an organizer for this event (or manager)
+        const event = await prisma.event.findUnique({
+            where: { id: eventId },
+            include: {
+                organizers: {
+                    where: { id: userId },
+                    select: { id: true }
+                },
+            },
+        });
+
+        if (!event) {
+            return res.status(404).json({ error: 'Event not found' });
+        }
+
+        if (!isManager && event.organizers.length === 0) {
+            return res.status(403).json({ error: 'Only managers or organizers can generate check-in tokens' });
+        }
+
+        // Ensure the event has not ended
+        if (event.endTime <= new Date()) {
+            return res.status(410).json({ error: 'Event has already ended' });
+        }
+
+        const timestamp = Date.now();
+        const signature = generateCheckinSignature(eventId, timestamp);
+
+        // We encode the token as `${eventId}:${timestamp}:${signature}`
+        const token = `${eventId}:${timestamp}:${signature}`;
+
+        return res.json({ eventId, timestamp, signature, token });
+    } catch (error) {
+        console.error('Error generating check-in token:', error);
+        res.status(500).json({ error: 'Failed to generate check-in token' });
+    }
+};
+
+/**
+ * POST /events/:eventId/checkin
+ * Body: { timestamp, signature }
+ * Validate the token and record attendance for the current user.
+ */
+const checkInWithToken = async (req, res) => {
+    try {
+        const eventId = parseInt(req.params.eventId);
+        if (isNaN(eventId) || eventId <= 0) {
+            return res.status(400).json({ error: 'Invalid event ID' });
+        }
+
+        const { timestamp, signature } = req.body;
+        if (!timestamp || !signature) {
+            return res.status(400).json({ error: 'Missing timestamp or signature' });
+        }
+
+        const expectedSig = generateCheckinSignature(eventId, timestamp);
+        if (expectedSig !== signature) {
+            return res.status(400).json({ error: 'Invalid signature' });
+        }
+
+        const now = Date.now();
+        const MAX_AGE_MS = 60 * 1000; // 60 seconds tolerance
+        if (now - Number(timestamp) > MAX_AGE_MS) {
+            return res.status(410).json({ error: 'Token expired' });
+        }
+
+        // Use existing service to add the user as guest (attendance)
+        const userId = req.auth.id;
+        try {
+            // First check if the user is already an RSVP'd guest
+            const event = await prisma.event.findUnique({
+                where: { id: eventId },
+                include: {
+                    guests: {
+                        where: { id: userId },
+                        select: { id: true }
+                    }
+                }
+            });
+
+            if (!event) {
+                return res.status(404).json({ error: 'Event not found' });
+            }
+
+            // If the user is not an RSVP'd guest, don't allow check-in
+            if (event.guests.length === 0) {
+                return res.status(403).json({ 
+                    error: 'You must RSVP to this event before checking in',
+                    needsRsvp: true 
+                });
+            }
+
+            // 检查用户是否已经签到
+            const existing = await prisma.eventAttendance.findUnique({
+                where: { eventId_userId: { eventId, userId } },
+            });
+
+            if (!existing) {
+                // 记录签到情况
+                await prisma.eventAttendance.upsert({
+                    where: { eventId_userId: { eventId, userId } },
+                    update: {}, // 如果记录已存在，不做任何更新
+                    create: { eventId, userId }, // 如果记录不存在，创建新记录
+                });
+                return res.status(201).json({ 
+                    message: 'Successfully checked in',
+                    checkedInAt: new Date().toISOString()
+                });
+            } else {
+                // 用户已经签到过
+                return res.status(200).json({ 
+                    message: 'Already checked in',
+                    checkedInAt: existing.checkedInAt
+                });
+            }
+        } catch (err) {
+            if (
+                err.message === 'User is already registered as a guest' ||
+                err.message === 'User is already a guest'
+            ) {
+                // Still ensure attendance recorded
+                const attendance = await prisma.eventAttendance.upsert({
+                    where: { eventId_userId: { eventId, userId } },
+                    update: {},
+                    create: { eventId, userId },
+                });
+                // If already checked in, still return success, but 200
+                return res.status(200).json({ 
+                  message: 'Already checked in',
+                  checkedInAt: attendance.checkedInAt
+                });
+            }
+            if (err.message === 'Event is full') {
+                return res.status(410).json({ error: 'Event is full' });
+            }
+            if (err.message === 'Event has already ended') {
+                return res.status(410).json({ error: 'Event has already ended' });
+            }
+            throw err;
+        }
+    } catch (error) {
+        console.error('Error during check-in:', error);
+        res.status(500).json({ error: 'Failed to check in' });
+    }
+};
+
 module.exports = {
     createEvent,
     getEvents,
@@ -1321,5 +1504,7 @@ module.exports = {
     addCurrentUserAsGuest,
     removeCurrentUserAsGuest,
     createEventTransaction,
-    removeAllGuests
+    removeAllGuests,
+    getCheckinToken,
+    checkInWithToken,
 };

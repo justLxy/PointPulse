@@ -12,7 +12,8 @@ import PromotionService from '../../services/promotion.service';
 import UserService from '../../services/user.service';
 import theme from '../../styles/theme';
 import { toast } from 'react-hot-toast';
-import { FaUser, FaDollarSign, FaTag, FaClipboard, FaSearch, FaCheckCircle, FaMoneyBillWave, FaReceipt } from 'react-icons/fa';
+import { FaUser, FaDollarSign, FaTag, FaClipboard, FaSearch, FaCheckCircle, FaMoneyBillWave, FaReceipt, FaTimesCircle } from 'react-icons/fa';
+import { API_URL } from '../../services/api';
 
 const PageTitle = styled.h1`
   font-size: ${theme.typography.fontSize['3xl']};
@@ -87,6 +88,15 @@ const Avatar = styled.div`
   justify-content: center;
   font-weight: ${theme.typography.fontWeights.bold};
   margin-right: ${theme.spacing.md};
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    margin: 0; /* override global margin-right on img inside UserInfo */
+    border-radius: ${theme.radius.full};
+  }
 `;
 
 const PromotionsContainer = styled.div`
@@ -495,7 +505,19 @@ const CreateTransaction = () => {
             {user && (
               <UserSection>
                 <UserInfo>
-                  <Avatar>{getInitials(user.name)}</Avatar>
+                  <Avatar>
+                    {user.avatarUrl ? (
+                      (() => {
+                        const isAbsolute = /^(?:[a-z]+:)?\/\//i.test(user.avatarUrl);
+                        const version = localStorage.getItem('avatarVersion');
+                        const baseSrc = isAbsolute ? user.avatarUrl : `${API_URL}${user.avatarUrl}`;
+                        const src = version ? `${baseSrc}?v=${version}` : baseSrc;
+                        return <img src={src} alt={user.name} />;
+                      })()
+                    ) : (
+                      getInitials(user.name)
+                    )}
+                  </Avatar>
                   <UserInfoText>
                     <h3>{user.name}</h3>
                     <p>

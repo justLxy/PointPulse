@@ -49,6 +49,10 @@ async function seed() {
         console.log(`- Redemption: ${transactionCount.redemption}`);
         console.log(`- Transfer: ${transactionCount.transfer}`);
         console.log(`- Event: ${transactionCount.event}`);
+
+        // Attendance summary
+        const attendanceTotal = await prisma.eventAttendance.count();
+        console.log(`Total attendances recorded: ${attendanceTotal}`);
     } catch (error) {
         console.error('Error during seeding:', error);
         process.exit(1);
@@ -58,7 +62,9 @@ async function seed() {
 }
 
 async function clearData() {
-    // Delete data in a specific order to respect foreign key constraints
+    // New: clear attendance before events/users (composite FK)
+    await prisma.eventAttendance?.deleteMany({});
+
     await prisma.promotionTransaction.deleteMany({});
     await prisma.transaction.deleteMany({});
     await prisma.promotion.deleteMany({});
@@ -69,6 +75,25 @@ async function clearData() {
 async function createUsers() {
     const defaultPassword = await bcrypt.hash('123', 10);
     const manager1Password = await bcrypt.hash('20961', 10);
+    
+    // Avatar URL collections for users
+    const avatarUrls = [
+        "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=150&h=150&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=150&h=150&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1599566150163-29194dcaad36?q=80&w=150&h=150&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=150&h=150&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1607746882042-944635dfe10e?q=80&w=150&h=150&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=150&h=150&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=150&h=150&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=150&h=150&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1527980965255-d3b416303d12?q=80&w=150&h=150&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=150&h=150&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=150&h=150&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=150&h=150&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?q=80&w=150&h=150&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=150&h=150&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?q=80&w=150&h=150&auto=format&fit=crop",
+    ];
 
     // Create superuser
     const superuser1 = await prisma.user.create({
@@ -82,6 +107,7 @@ async function createUsers() {
             verified: true,
             lastLogin: new Date(),
             createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000), // 60 days ago
+            avatarUrl: avatarUrls[0]
         }
     });
 
@@ -97,6 +123,7 @@ async function createUsers() {
             verified: true,
             lastLogin: new Date(),
             createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000), // 60 days ago
+            avatarUrl: avatarUrls[1]
         }
     });
 
@@ -112,6 +139,7 @@ async function createUsers() {
             verified: true,
             lastLogin: new Date(),
             createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000), // 60 days ago
+            avatarUrl: avatarUrls[2]
         }
     });
 
@@ -129,6 +157,7 @@ async function createUsers() {
                 verified: true,
                 lastLogin: new Date(),
                 createdAt: new Date(Date.now() - (50 - i) * 24 * 60 * 60 * 1000), // Staggered creation dates
+                avatarUrl: avatarUrls[2 + i]
             }
         });
         managers.push(manager);
@@ -148,6 +177,7 @@ async function createUsers() {
                 verified: true,
                 lastLogin: new Date(),
                 createdAt: new Date(Date.now() - (40 - i * 2) * 24 * 60 * 60 * 1000), // Staggered creation dates
+                avatarUrl: avatarUrls[4 + i]
             }
         });
         cashiers.push(cashier);
@@ -159,6 +189,10 @@ async function createUsers() {
     for (let i = 1; i <= 45; i++) {
         // Format utorid to be exactly 8 characters
         const utorid = i < 10 ? `regular${i}` : `regula${i}`;
+        
+        // Add avatar to ~80% of regular users
+        const shouldHaveAvatar = Math.random() < 0.8;
+        const avatarUrl = shouldHaveAvatar ? avatarUrls[i % avatarUrls.length] : null;
         
         const user = await prisma.user.create({
             data: {
@@ -172,6 +206,7 @@ async function createUsers() {
                 lastLogin: i <= 42 ? new Date(Date.now() - i % 10 * 24 * 60 * 60 * 1000) : null, // Most users have logged in
                 createdAt: new Date(Date.now() - (30 + i % 30) * 24 * 60 * 60 * 1000),
                 birthday: i % 3 === 0 ? `199${i % 10}-0${(i % 12) + 1}-${(i % 28) + 1}` : null, // Some users have birthdays
+                avatarUrl
             }
         });
         regularUsers.push(user);
@@ -266,6 +301,23 @@ async function createEvents(users) {
             }
         });
         upcomingEvents.push(upcomingEvent);
+
+        // Randomly mark ~30% of these guests as already checked in (demo purpose)
+        const guestIdsForAttendance = users.regularUsers
+            .slice(5, 5 + (5 + i % 20))
+            .filter(() => Math.random() < 0.3)
+            .map(user => user.id);
+
+        if (guestIdsForAttendance.length) {
+            await prisma.eventAttendance.createMany({
+                data: guestIdsForAttendance.map(uid => ({
+                    eventId: upcomingEvent.id,
+                    userId: uid,
+                    // Set check-in time a bit after start
+                    checkedInAt: new Date(upcomingEvent.startTime.getTime() + 15 * 60 * 1000)
+                }))
+            });
+        }
     }
 
     // Create 20 past events
@@ -310,6 +362,23 @@ async function createEvents(users) {
                 }
             }
         });
+
+        // For past events, assume ~70% of guests attended
+        const pastGuestIds = users.regularUsers
+            .slice(10, 10 + (10 + i % 15))
+            .filter(() => Math.random() < 0.7)
+            .map(user => user.id);
+
+        if (pastGuestIds.length) {
+            await prisma.eventAttendance.createMany({
+                data: pastGuestIds.map(uid => ({
+                    eventId: pastEvent.id,
+                    userId: uid,
+                    checkedInAt: new Date(pastEvent.startTime.getTime() + 30 * 60 * 1000)
+                }))
+            });
+        }
+
         pastEvents.push(pastEvent);
     }
 

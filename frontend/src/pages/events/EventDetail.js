@@ -10,6 +10,7 @@ import Input from '../../components/common/Input';
 import Modal from '../../components/common/Modal';
 import Badge from '../../components/common/Badge';
 import theme from '../../styles/theme';
+import { API_URL } from '../../services/api';
 import { Tooltip } from 'react-tooltip';
 
 
@@ -27,7 +28,8 @@ import {
   FaUserCog,
   FaUserMinus,
   FaGlobe,
-  FaTrashAlt
+  FaTrashAlt,
+  FaQrcode
 } from 'react-icons/fa';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { toast } from 'react-hot-toast';
@@ -77,7 +79,12 @@ const PageSubtitle = styled.p`
   margin-bottom: ${theme.spacing.md};
   display: flex;
   align-items: center;
+  flex-wrap: nowrap;
   gap: ${theme.spacing.sm};
+  
+  @media (max-width: 768px) {
+    flex-wrap: wrap;
+  }
 `;
 
 const EventBadge = styled.span`
@@ -91,6 +98,7 @@ const EventBadge = styled.span`
   font-weight: ${theme.typography.fontWeights.medium};
   margin-left: ${theme.spacing.sm};
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  white-space: nowrap;
 
   svg {
     margin-right: ${theme.spacing.xs};
@@ -354,12 +362,14 @@ const AvatarContainer = styled.div`
   border-radius: 50%;
   overflow: hidden;
   background-color: ${theme.colors.background.light};
-  border: 3px solid ${theme.colors.primary.light};
+  border: 3px solid ${props => props.checkedIn ? theme.colors.success.main : theme.colors.primary.light};
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: ${theme.spacing.sm};
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: ${props => props.checkedIn ? `0 0 8px ${theme.colors.success.main}` : '0 4px 6px rgba(0, 0, 0, 0.1)'};
+  position: relative;
+  transition: all 0.3s ease;
 `;
 
 const Avatar = styled.div`
@@ -371,6 +381,14 @@ const Avatar = styled.div`
   font-size: ${theme.typography.fontSize.xl};
   color: ${theme.colors.text.primary};
   background-color: ${props => props.randomColor || theme.colors.primary.light};
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    margin: 0;
+  }
 `;
 
 const AudienceName = styled.div`
@@ -424,6 +442,52 @@ const ActionButton = styled(Button)`
     background-color: rgba(255, 255, 255, 0.95);
     transform: translateY(-1px);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+`;
+
+// Add a status badge styled component for check-in
+const CheckInBadge = styled.div`
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  background-color: ${theme.colors.success.main};
+  color: white;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+`;
+
+// Add check-in stats component
+const CheckInStats = styled.div`
+  margin: ${theme.spacing.md} 0;
+  padding: ${theme.spacing.md};
+  background-color: ${theme.colors.background.light};
+  border-radius: ${theme.radius.md};
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+`;
+
+const StatItem = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  
+  span:first-of-type {
+    font-size: ${theme.typography.fontSize.xl};
+    font-weight: ${theme.typography.fontWeights.bold};
+    color: ${props => props.color || theme.colors.text.primary};
+  }
+  
+  span:last-of-type {
+    font-size: ${theme.typography.fontSize.sm};
+    color: ${theme.colors.text.secondary};
   }
 `;
 
@@ -517,6 +581,10 @@ const EventDetail = () => {
       onSuccess: () => {
         refetch();
       },
+      onError: (error) => {
+        // Display error message to user
+        toast.error(error.message || 'Failed to cancel RSVP');
+      }
     });
   };
   
@@ -722,7 +790,7 @@ const EventDetail = () => {
   const handleDeleteEvent = () => {
     deleteEvent(eventId, {
       onSuccess: () => {
-        navigate('/events');
+        refetch();
       },
     });
   };
@@ -911,6 +979,15 @@ const EventDetail = () => {
                   <FaGlobe /> Publish Event
                 </Button>
               )}
+
+              {(isCurrentUserOrganizerForEvent || isManager) && (
+                <Button
+                  variant="outlined"
+                  onClick={() => navigate(`/events/${event.id}/checkin-display`)}
+                >
+                  <FaQrcode /> Check-In QR
+                </Button>
+              )}
             </>
           )}
         </PageActionsContainer>
@@ -1057,6 +1134,24 @@ const EventDetail = () => {
                 <Card.Body>
                   <AudienceContainer>
                     <AudienceStage>🎬 STAGE 🎬</AudienceStage>
+                    
+                    {event.guests && Array.isArray(event.guests) && event.guests.length > 0 && (
+                      <CheckInStats>
+                        <StatItem>
+                          <span>{event.guests.length}</span>
+                          <span>Total Guests</span>
+                        </StatItem>
+                        <StatItem color={theme.colors.success.main}>
+                          <span>{event.guests.filter(g => g.checkedIn).length}</span>
+                          <span>Checked In</span>
+                        </StatItem>
+                        <StatItem color={theme.colors.warning.main}>
+                          <span>{event.guests.length - event.guests.filter(g => g.checkedIn).length}</span>
+                          <span>Not Checked In</span>
+                        </StatItem>
+                      </CheckInStats>
+                    )}
+                    
                     {event.guests && Array.isArray(event.guests) && event.guests.length > 0 ? (
                       <AudienceSeats>
                         {/* ... guest mapping logic ... */}
@@ -1072,16 +1167,35 @@ const EventDetail = () => {
                           
                           const pointsAwarded = event.pointsAwardedToGuests?.find(p => p.userId === guest.id)?.points || 0;
                           
+                          const version = localStorage.getItem('avatarVersion');
+                          const isAbsolute = /^(?:[a-z]+:)?\/\//i.test(guest.avatarUrl);
+                          const baseSrc = isAbsolute ? guest.avatarUrl : `${API_URL}${guest.avatarUrl}`;
+                          const src = version ? `${baseSrc}?v=${version}` : baseSrc;
+                          
                           return (
                             <AudienceSeat key={guest.id}>
-                              <AvatarContainer>
+                              <AvatarContainer checkedIn={guest.checkedIn}>
                                 <Avatar randomColor={randomColor}>
                                   {guest.avatarUrl ? (
-                                    <img src={guest.avatarUrl} alt={guest.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    (() => {
+                                      const isAbsolute = /^(?:[a-z]+:)?\/\//i.test(guest.avatarUrl);
+                                      const baseSrc = isAbsolute ? guest.avatarUrl : `${API_URL}${guest.avatarUrl}`;
+                                      const src = version ? `${baseSrc}?v=${version}` : baseSrc;
+                                      return (
+                                        <img
+                                          src={src}
+                                          alt={guest.name}
+                                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                        />
+                                      );
+                                    })()
                                   ) : (
                                     guest.name?.charAt(0).toUpperCase() || 'U'
                                   )}
                                 </Avatar>
+                                {guest.checkedIn && (
+                                  <CheckInBadge>✓</CheckInBadge>
+                                )}
                               </AvatarContainer>
                               <AudienceName 
                                 data-tooltip-id={`guest-tooltip-${guest.id}`}

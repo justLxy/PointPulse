@@ -45,6 +45,8 @@ export const useUserProfile = () => {
       toast.success('Avatar updated successfully');
       // Update auth context with the latest user data
       updateCurrentUser(data);
+      // Store cache-busting version so images refresh after upload
+      localStorage.setItem('avatarVersion', Date.now().toString());
       // Invalidate user profile cache
       queryClient.invalidateQueries({ queryKey: ['userProfile'] });
     },

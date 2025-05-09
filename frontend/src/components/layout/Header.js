@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styled from '@emotion/styled';
 import { css } from '@emotion/react';
 import theme from '../../styles/theme';
@@ -327,6 +327,7 @@ const RoleDropdownItem = styled.button`
 const Header = () => {
   const { currentUser, activeRole, logout, switchRole } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
@@ -453,11 +454,15 @@ const Header = () => {
   }
   
   const handleProfileClick = (e) => {
-    // On mobile, toggle dropdown instead of navigating directly
+    // Prevent parent handlers
+    if (e) e.stopPropagation();
+
     if (isMobileView) {
+      // On mobile, just toggle dropdown menu
       toggleProfileDropdown(e);
     } else {
-      window.location.href = "/profile";
+      // In desktop view, use SPA navigation to avoid full page reload
+      navigate('/profile');
     }
   };
   
@@ -514,7 +519,13 @@ const Header = () => {
                   onClick={handleProfileClick}
                 >
                   {currentUser.avatarUrl ? (
-                    <img src={`${API_URL}${currentUser.avatarUrl}`} alt={currentUser.name} />
+                    (() => {
+                      const isAbsolute = /^(?:[a-z]+:)?\/\//i.test(currentUser.avatarUrl);
+                      const version = localStorage.getItem('avatarVersion');
+                      const baseSrc = isAbsolute ? currentUser.avatarUrl : `${API_URL}${currentUser.avatarUrl}`;
+                      const src = version ? `${baseSrc}?v=${version}` : baseSrc;
+                      return <img src={src} alt={currentUser.name} />;
+                    })()
                   ) : (
                     getInitials(currentUser.name)
                   )}

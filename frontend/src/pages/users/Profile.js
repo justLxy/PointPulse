@@ -8,6 +8,7 @@ import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import theme from '../../styles/theme';
+import { API_URL } from '../../services/api';
 import { 
   FaUser, 
   FaEnvelope, 
@@ -20,7 +21,6 @@ import {
   FaEyeSlash
 } from 'react-icons/fa';
 import QRCode from '../../components/common/QRCode';
-import { API_URL } from '../../services/api';
 
 const ProfileContainer = styled.div`
   display: grid;
@@ -815,7 +815,13 @@ const Profile = () => {
                 {avatarPreview ? (
                   <img src={avatarPreview} alt="Avatar preview" />
                 ) : profile?.avatarUrl ? (
-                  <img src={`${API_URL}${profile.avatarUrl}`} alt={profile.name} />
+                  (() => {
+                    const isAbsolute = /^(?:[a-z]+:)?\/\//i.test(profile.avatarUrl);
+                    const version = localStorage.getItem('avatarVersion');
+                    const baseSrc = isAbsolute ? profile.avatarUrl : `${API_URL}${profile.avatarUrl}`;
+                    const src = version ? `${baseSrc}?v=${version}` : baseSrc;
+                    return <img src={src} alt={profile.name} />;
+                  })()
                 ) : (
                   getInitials(profile?.name)
                 )}

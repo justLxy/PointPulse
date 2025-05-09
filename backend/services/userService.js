@@ -5,6 +5,8 @@ const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
 const { validateUTORid, validateEmail, validatePassword } = require('../utils/validators');
 const emailService = require('./emailService');
+const fs = require('fs');
+const path = require('path');
 
 const prisma = new PrismaClient();
 
@@ -164,7 +166,8 @@ const getUserByCashier = async (userId) => {
             name: true,
             points: true,
             verified: true,
-            suspicious: true
+            suspicious: true,
+            avatarUrl: true
         }
     });
 
@@ -611,6 +614,38 @@ const updateCurrentUser = async (userId, updateData, avatarUrl = null) => {
 
     // Add avatar URL if present
     if (avatarUrl) {
+        // --- Remove old avatar files for this user ---
+        try {
+            // Fetch user to get utorid and any existing avatar URL
+            const existingUser = await prisma.user.findUnique({
+                where: { id: userId },
+                select: { utorid: true }
+            });
+
+            if (existingUser && existingUser.utorid) {
+                const uploadDir = path.join(__dirname, '..', 'uploads', 'avatars');
+                const files = fs.readdirSync(uploadDir);
+                const newFileName = path.basename(avatarUrl);
+
+                files.forEach((file) => {
+                    // Delete any previous avatar belonging to this utorid except the newly uploaded file
+                    if (
+                        file.startsWith(`${existingUser.utorid}-`) &&
+                        file !== newFileName
+                    ) {
+                        try {
+                            fs.unlinkSync(path.join(uploadDir, file));
+                            console.log('Deleted old avatar:', file);
+                        } catch (err) {
+                            console.warn('Failed to delete old avatar', file, err.message);
+                        }
+                    }
+                });
+            }
+        } catch (cleanupErr) {
+            console.warn('Avatar cleanup error:', cleanupErr.message);
+        }
+
         cleanUpdateData.avatarUrl = avatarUrl;
         console.log('Added avatar URL to update data:', avatarUrl);
     }

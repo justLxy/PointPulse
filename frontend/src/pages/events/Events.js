@@ -6,6 +6,7 @@ import EventFilters from '../../components/events/EventFilters';
 import EventList from '../../components/events/EventList';
 import { CreateEventModal, EditEventModal, DeleteEventModal, RsvpEventModal } from '../../components/events/EventModals';
 import EventService from '../../services/event.service';
+import toast from 'react-hot-toast';
 
 const Events = () => {
   const { activeRole } = useAuth();
@@ -476,6 +477,12 @@ const Events = () => {
           refetch();
         }, 100);
       },
+      onError: (error) => {
+        // Display error message to user
+        toast.error(error.message || 'Failed to cancel RSVP');
+        // Close the modal
+        setRsvpModalOpen(false);
+      }
     });
   };
   

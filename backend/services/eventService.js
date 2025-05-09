@@ -369,11 +369,18 @@ const getEvent = async (eventId, isManager = false, isOrganizer = false, include
                 select: {
                     id: true,
                     utorid: true,
-                    name: true
+                    name: true,
+                    avatarUrl: true
                 }
             } : {
                 select: {
                     id: true
+                }
+            },
+            attendances: {
+                select: {
+                    userId: true,
+                    checkedInAt: true
                 }
             }
         }
@@ -407,7 +414,13 @@ const getEvent = async (eventId, isManager = false, isOrganizer = false, include
     if (isManager || isOrganizer) {
         formattedEvent.pointsRemain = event.pointsRemain;
         formattedEvent.pointsAwarded = event.pointsAwarded;
-        formattedEvent.guests = event.guests;
+        const attendedMap = new Map();
+        event.attendances.forEach(a => attendedMap.set(a.userId, a.checkedInAt));
+        formattedEvent.guests = event.guests.map(g => ({
+            ...g,
+            checkedIn: attendedMap.has(g.id),
+            checkedInAt: attendedMap.get(g.id) || null
+        }));
     } else {
         formattedEvent.numGuests = event.guests.length;
     }
