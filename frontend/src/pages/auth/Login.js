@@ -216,22 +216,18 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
-  const fromState = location.state?.from;
-  // 获取URL中的returnUrl参数，如果存在则优先使用
-  const searchParams = new URLSearchParams(location.search);
-  const returnUrl = searchParams.get('returnUrl');
-  const decodedReturnUrl = returnUrl ? decodeURIComponent(returnUrl) : null;
-  
-  // 优先使用returnUrl参数，其次是state中的from，最后是首页
-  const from = decodedReturnUrl || (typeof fromState === 'string' ? fromState : (fromState?.pathname || '/'));
+  const from = location.state?.from;
+  const redirectTo = from
+    ? from.pathname + (from.search || '')
+    : '/';
   
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && !loading) {
-      console.log('Already authenticated, redirecting to', from || 'dashboard');
-      navigate(from || '/', { replace: true });
+      console.log('Already authenticated, redirecting to', redirectTo);
+      navigate(redirectTo, { replace: true });
     }
-  }, [isAuthenticated, loading, navigate, from]);
+  }, [isAuthenticated, loading, navigate, redirectTo]);
   
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -248,8 +244,8 @@ const Login = () => {
 
       
       if (success) {
-        console.log('Login successful, redirecting to:', from);
-        navigate(from, { replace: true });
+        console.log('Login successful, redirecting to:', redirectTo);
+        navigate(redirectTo, { replace: true });
       } else {
         if (error?.status === 401) {
           setError('Incorrect UTORid or password. Please check your credentials and try again.');

@@ -79,8 +79,6 @@ const QRCode = ({ value, size = 200, level = 'H', label, renderAs = 'canvas', in
         />
       </StyledQRCode>
       
-      <QRCodeValue>{value}</QRCodeValue>
-      
       <Button
         variant="outlined"
         size="small"
