@@ -29,7 +29,17 @@ const app = express();
 
 // Middlewares
 app.use(cors({
-    origin: FRONTEND_URL,
+    origin: function (origin, callback) {
+        const allowedOrigins = [
+            FRONTEND_URL,
+            // Add other specific origins if needed
+        ];
+        if (!origin || allowedOrigins.indexOf(origin) !== -1 || origin.startsWith('https://pointpulse')) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
 }));
