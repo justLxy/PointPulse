@@ -434,9 +434,10 @@ const updateCurrentUser = async (req, res) => {
         // Handle avatar upload if present
         let avatarUrl = null;
         if (req.file) {
-            const host = process.env.PUBLIC_HOST || `${req.protocol}://${req.get('host')}`;
+            // Convert relative path to absolute URL based on current request host
+            const host = `${req.protocol}://${req.get('host')}`;
             avatarUrl = `${host}/uploads/avatars/${req.file.filename}`;
-            console.log('Avatar URL (absolute):', avatarUrl);
+            console.log('Avatar URL:', avatarUrl);
         }
 
         console.log('Final updateData:', updateData);
