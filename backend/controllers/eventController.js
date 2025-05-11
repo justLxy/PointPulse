@@ -1481,9 +1481,107 @@ const checkInWithToken = async (req, res) => {
                 return res.status(410).json({ error: 'Event is full' });
             }
             if (err.message === 'Event has already ended') {
-                return res.status(410).json({ error: 'Event has already ended' });
+                return res.status(410).json({ error: 'Failed to check in' });
             }
             throw err;
+        }
+    } catch (error) {
+        console.error('Error during check-in:', error);
+        res.status(500).json({ error: 'Failed to check in' });
+    }
+};
+
+/**
+ * POST /events/:eventId/checkin-user
+ * Body: { utorid }
+ * Check in a user by their UTORid. Only managers or organizers can do this.
+ */
+const checkInUser = async (req, res) => {
+    try {
+        const eventId = parseInt(req.params.eventId);
+        if (isNaN(eventId) || eventId <= 0) {
+            return res.status(400).json({ error: 'Invalid event ID' });
+        }
+
+        const { utorid } = req.body;
+        if (!utorid) {
+            return res.status(400).json({ error: 'UTORid is required' });
+        }
+
+        const userId = req.auth.id;
+        const isManager = checkRole(req.auth, 'manager');
+
+        // Check if requester is an organizer for this event (or manager)
+        const event = await prisma.event.findUnique({
+            where: { id: eventId },
+            include: {
+                organizers: {
+                    where: { id: userId },
+                    select: { id: true }
+                },
+            },
+        });
+
+        if (!event) {
+            return res.status(404).json({ error: 'Event not found' });
+        }
+
+        if (!isManager && event.organizers.length === 0) {
+            return res.status(403).json({ error: 'Only managers or organizers can check in users' });
+        }
+
+        // Ensure the event has not ended
+        if (event.endTime <= new Date()) {
+            return res.status(410).json({ error: 'Event has already ended' });
+        }
+
+        // Find the user by UTORid
+        const user = await prisma.user.findUnique({
+            where: { utorid }
+        });
+
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Check if user is a guest
+        const isGuest = await prisma.event.findUnique({
+            where: { id: eventId },
+            include: {
+                guests: {
+                    where: { id: user.id },
+                    select: { id: true }
+                }
+            }
+        });
+
+        if (!isGuest || isGuest.guests.length === 0) {
+            return res.status(403).json({ 
+                error: 'User must be registered as a guest before checking in',
+                needsRsvp: true
+            });
+        }
+
+        // Check if user has already checked in
+        const existing = await prisma.eventAttendance.findUnique({
+            where: { eventId_userId: { eventId, userId: user.id } },
+        });
+
+        if (!existing) {
+            // Record attendance
+            await prisma.eventAttendance.create({
+                data: { eventId, userId: user.id }
+            });
+            return res.status(201).json({ 
+                message: 'Successfully checked in',
+                checkedInAt: new Date().toISOString()
+            });
+        } else {
+            // User already checked in
+            return res.status(200).json({ 
+                message: 'Already checked in',
+                checkedInAt: existing.checkedInAt
+            });
         }
     } catch (error) {
         console.error('Error during check-in:', error);
@@ -1507,4 +1605,5 @@ module.exports = {
     removeAllGuests,
     getCheckinToken,
     checkInWithToken,
+    checkInUser,
 };
