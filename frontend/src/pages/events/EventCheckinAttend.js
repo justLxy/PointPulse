@@ -300,6 +300,23 @@ const EventCheckinAttend = () => {
       try {
         const eventDetail = await EventService.getEvent(eventId);
         setEventName(eventDetail.name);
+
+        // ===== NEW: Restrict check-in to ongoing events only =====
+        const now = new Date();
+        const start = new Date(eventDetail.startTime);
+        const end = eventDetail.endTime ? new Date(eventDetail.endTime) : null;
+
+        if (start > now) {
+          setStatus('error');
+          setErrorMsg('This event has not started yet. Check-in will open once the event is ongoing.');
+          return;
+        }
+        if (end && end < now) {
+          setStatus('error');
+          setErrorMsg('This event has already ended. Check-in is closed.');
+          return;
+        }
+        // =========================================================
       } catch (error) {
         console.error("Could not fetch event details", error);
       }

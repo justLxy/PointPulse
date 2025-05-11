@@ -282,6 +282,19 @@ const EventCheckinDisplay = () => {
 
   const isLoading = isLoadingToken || isLoadingEvent;
 
+  // ===== NEW: Determine event status (upcoming / ongoing / ended) =====
+  const eventStatus = useMemo(() => {
+    if (!eventData) return null;
+    const now = new Date();
+    const start = new Date(eventData.startTime);
+    const end = eventData.endTime ? new Date(eventData.endTime) : null;
+
+    if (start > now) return 'upcoming';
+    if (end && end < now) return 'ended';
+    return 'ongoing';
+  }, [eventData]);
+  // ===================================================================
+
   if (isLoading) {
     return (
       <Container>
@@ -289,6 +302,63 @@ const EventCheckinDisplay = () => {
       </Container>
     );
   }
+
+  // ===== NEW: Restrict check-in to ongoing events only =====
+  if (eventStatus === 'upcoming' || eventStatus === 'ended') {
+    const message = eventStatus === 'upcoming'
+      ? 'Check-in has not started yet. Please come back once the event is in progress.'
+      : 'This event has already ended. Check-in is now closed.';
+
+    return (
+      <Container>
+        <ErrorContainer
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: [0.43, 0.13, 0.23, 0.96] }}
+        >
+          <ErrorIconWrapper
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+          >
+            <FaExclamationTriangle size={56} />
+          </ErrorIconWrapper>
+
+          <ErrorTitle
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+          >
+            Check-in Unavailable
+          </ErrorTitle>
+
+          <ErrorMessage
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+          >
+            {message}
+          </ErrorMessage>
+
+          <ButtonGroup
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.5 }}
+          >
+            <BackButton
+              as="a"
+              href="/events"
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <FaArrowLeft style={{ marginRight: '8px' }} /> Back to Events
+            </BackButton>
+          </ButtonGroup>
+        </ErrorContainer>
+      </Container>
+    );
+  }
+  // ===================================================================
 
   if (isTokenError) {
     return (

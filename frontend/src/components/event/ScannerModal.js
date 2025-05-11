@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import styled from '@emotion/styled';
 import { Html5Qrcode } from 'html5-qrcode';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -372,6 +373,24 @@ const ScannerModal = ({ isOpen, onClose, eventId, onScanSuccess }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [scannerKey, setScannerKey] = useState(Date.now()); // Key to force remount
 
+  // ===== NEW: Fetch event details to verify status =====
+  const { data: eventData, isLoading: isLoadingEvent } = useQuery({
+    queryKey: ['event', eventId, 'scanner-modal'],
+    queryFn: () => EventService.getEvent(eventId),
+    enabled: isOpen, // only fetch when modal is open
+  });
+
+  const eventStatus = (() => {
+    if (!eventData) return null;
+    const now = new Date();
+    const start = new Date(eventData.startTime);
+    const end = eventData.endTime ? new Date(eventData.endTime) : null;
+    if (start > now) return 'upcoming';
+    if (end && end < now) return 'ended';
+    return 'ongoing';
+  })();
+  // ====================================================
+
   const handleClose = () => {
     onClose();
   };
@@ -395,97 +414,136 @@ const ScannerModal = ({ isOpen, onClose, eventId, onScanSuccess }) => {
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Attendee Check-in" size="large">
       <ScannerContainer>
-        <AnimatePresence mode="wait">
-          {!scanResult && !isProcessing && (
-            <motion.div
-              key="scanner"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
-            >
-              <Instructions>
-                <QrIcon />
-                <span>Position the QR code within the scanner frame</span>
-              </Instructions>
-              
-              {/* Use key to force remount */}
-              <QrScanner 
-                key={scannerKey} 
-                eventId={eventId} 
-                onScanComplete={(result) => {
-                  setIsProcessing(true);
-                  // Add a small delay to show processing state
-                  setTimeout(() => handleScanComplete(result), 500);
-                }} 
-              />
-            </motion.div>
-          )}
+        {/* Show loading while event details are being fetched */}
+        {isLoadingEvent && (
+          <motion.div
+            key="loading-event"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <p>Loading event details...</p>
+          </motion.div>
+        )}
 
-          {isProcessing && (
-            <motion.div
-              key="processing"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
-            >
-              <LoadingSpinner 
-                animate={{ rotate: 360 }}
-                transition={{ 
-                  repeat: Infinity,
-                  duration: 1,
-                  ease: "linear"
-                }}
-              />
-              <p>Processing scan...</p>
-            </motion.div>
-          )}
+        {/* If event is not ongoing, display message and disable scanner */}
+        {!isLoadingEvent && (eventStatus === 'upcoming' || eventStatus === 'ended') && (
+          <motion.div
+            key="unavailable"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ type: 'spring', damping: 25 }}
+          >
+            <ResultCard status="error">
+              <IconWrapper status="error">
+                <FaTimesCircle />
+              </IconWrapper>
+              <ResultTitle status="error">Check-in Unavailable</ResultTitle>
+              <ResultMessage>
+                {eventStatus === 'upcoming'
+                  ? 'This event has not started yet. Check-in will open once the event is ongoing.'
+                  : 'This event has already ended. Check-in is closed.'}
+              </ResultMessage>
+              <Button onClick={handleClose}>Close</Button>
+            </ResultCard>
+          </motion.div>
+        )}
 
-          {scanResult && (
-            <motion.div
-              key="result"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ type: 'spring', damping: 25 }}
-            >
-              <ResultCard status={scanResult.status}>
-                <IconWrapper status={scanResult.status}>
-                  {scanResult.status === 'success' ? <SuccessIcon /> : <ErrorIcon />}
-                </IconWrapper>
+        {/* Render scanner only when event is ongoing */}
+        {!isLoadingEvent && eventStatus === 'ongoing' && (
+          <AnimatePresence mode="wait">
+            {!scanResult && !isProcessing && (
+              <motion.div
+                key="scanner"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+              >
+                <Instructions>
+                  <QrIcon />
+                  <span>Position the QR code within the scanner frame</span>
+                </Instructions>
                 
-                <ResultTitle status={scanResult.status}>
-                  {scanResult.status === 'success' ? 'Check-in Successful' : 'Check-in Failed'}
-                </ResultTitle>
-                
-                <ResultMessage>{scanResult.message}</ResultMessage>
-                
-                {scanResult.name && (
-                  <AttendeeInfo>
-                    <h4 style={{ margin: '0 0 4px 0' }}>{scanResult.name}</h4>
-                    <p style={{ margin: 0, fontSize: '0.9rem', color: theme.colors.text.secondary }}>
-                      {scanResult.utorid}
+                {/* Use key to force remount */}
+                <QrScanner 
+                  key={scannerKey} 
+                  eventId={eventId} 
+                  onScanComplete={(result) => {
+                    setIsProcessing(true);
+                    // Add a small delay to show processing state
+                    setTimeout(() => handleScanComplete(result), 500);
+                  }} 
+                />
+              </motion.div>
+            )}
+
+            {isProcessing && (
+              <motion.div
+                key="processing"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+              >
+                <LoadingSpinner 
+                  animate={{ rotate: 360 }}
+                  transition={{ 
+                    repeat: Infinity,
+                    duration: 1,
+                    ease: "linear"
+                  }}
+                />
+                <p>Processing scan...</p>
+              </motion.div>
+            )}
+
+            {scanResult && (
+              <motion.div
+                key="result"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ type: 'spring', damping: 25 }}
+              >
+                <ResultCard status={scanResult.status}>
+                  <IconWrapper status={scanResult.status}>
+                    {scanResult.status === 'success' ? <SuccessIcon /> : <ErrorIcon />}
+                  </IconWrapper>
+                  
+                  <ResultTitle status={scanResult.status}>
+                    {scanResult.status === 'success' ? 'Check-in Successful' : 'Check-in Failed'}
+                  </ResultTitle>
+                  
+                  <ResultMessage>{scanResult.message}</ResultMessage>
+                  
+                  {scanResult.name && (
+                    <AttendeeInfo>
+                      <h4 style={{ margin: '0 0 4px 0' }}>{scanResult.name}</h4>
+                      <p style={{ margin: 0, fontSize: '0.9rem', color: theme.colors.text.secondary }}>
+                        {scanResult.utorid}
+                      </p>
+                    </AttendeeInfo>
+                  )}
+                  
+                  {scanResult.time && (
+                    <p style={{ fontSize: '0.85rem', color: theme.colors.text.secondary, margin: 0 }}>
+                      {scanResult.time}
                     </p>
-                  </AttendeeInfo>
-                )}
-                
-                {scanResult.time && (
-                  <p style={{ fontSize: '0.85rem', color: theme.colors.text.secondary, margin: 0 }}>
-                    {scanResult.time}
-                  </p>
-                )}
-                
-                <Button 
-                  onClick={handleContinue}
-                  style={{ marginTop: theme.spacing.md }}
-                >
-                  Scan Next Attendee
-                </Button>
-              </ResultCard>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                  )}
+                  
+                  <Button 
+                    onClick={handleContinue}
+                    style={{ marginTop: theme.spacing.md }}
+                  >
+                    Scan Next Attendee
+                  </Button>
+                </ResultCard>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        )}
       </ScannerContainer>
     </Modal>
   );
