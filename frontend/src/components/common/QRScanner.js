@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { BrowserMultiFormatReader } from '@zxing/browser';
+import VConsole from 'vconsole';
 
 const QRScanner = ({ onResult, onError }) => {
   const videoRef = useRef(null);
@@ -11,6 +12,9 @@ const QRScanner = ({ onResult, onError }) => {
     let isMounted = true;
     let stream = null;
 
+    if (process.env.NODE_ENV !== 'production') {
+      new VConsole();
+    }
    
     const timeout = setTimeout(() => {
       setCameraError('cant access camera, please check device permission or connection');
