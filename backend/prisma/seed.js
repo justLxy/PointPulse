@@ -41,7 +41,7 @@ async function seed() {
         // Print summary
         console.log('\nDatabase seeding summary:');
         console.log(`Total users: ${3 + 2 + users.cashiers.length + users.regularUsers.length} (3 superusers, 2 managers, ${users.cashiers.length} cashiers, ${users.regularUsers.length} regular users)`);
-        console.log(`Total events: ${events.upcomingEvents.length + events.pastEvents.length + events.unpublishedEvents.length} (${events.upcomingEvents.length} upcoming, ${events.pastEvents.length} past, ${events.unpublishedEvents.length} unpublished)`);
+        console.log(`Total events: ${events.upcomingEvents.length + events.ongoingEvents.length + events.pastEvents.length + events.unpublishedEvents.length} (${events.upcomingEvents.length} upcoming, ${events.ongoingEvents.length} ongoing, ${events.pastEvents.length} past, ${events.unpublishedEvents.length} unpublished)`);
         console.log(`Total promotions: ${Object.keys(promotions).length}`);
         console.log(`Total transactions: ${Object.values(transactionCount).reduce((a, b) => a + b, 0)}`);
         console.log(`- Purchase: ${transactionCount.purchase}`);
@@ -260,6 +260,63 @@ async function createEvents(users) {
         'Semester Party'
     ];
 
+    // Create 5 ongoing events (started in the past, ends in the future)
+    const ongoingEvents = [];
+    for (let i = 0; i < 5; i++) {
+        const hoursInPast = 2 + Math.floor(Math.random() * 10); // Started 2-12 hours ago
+        const hoursInFuture = 2 + Math.floor(Math.random() * 10); // Ends 2-12 hours in the future
+        const name = `Ongoing ${eventNames[i]} ${Math.floor(i / eventNames.length) + 1}`;
+        
+        // Create start time in the past (today, but few hours ago)
+        const startTime = new Date(now.getTime() - hoursInPast * 60 * 60 * 1000);
+        
+        // Create end time in the future (today, but few hours from now)
+        const endTime = new Date(now.getTime() + hoursInFuture * 60 * 60 * 1000);
+        
+        const ongoingEvent = await prisma.event.create({
+            data: {
+                name,
+                description: `This event is currently in progress! ${name} features interactive sessions and networking opportunities.`,
+                location: eventLocations[(i + 7) % eventLocations.length],
+                startTime,
+                endTime,
+                capacity: 80 + i * 15,
+                pointsRemain: 3000 + i * 500,
+                pointsAwarded: 200 * i,
+                published: true,
+                organizers: {
+                    connect: [
+                        { id: users.managers[i % users.managers.length].id },
+                        { id: users.regularUsers[(i + 15) % users.regularUsers.length].id }
+                    ]
+                },
+                guests: {
+                    connect: users.regularUsers
+                        .slice(20, 20 + (5 + i * 3))
+                        .map(user => ({ id: user.id }))
+                }
+            }
+        });
+        
+        // Mark ~40% of guests as checked in for these ongoing events
+        const guestIdsForAttendance = users.regularUsers
+            .slice(20, 20 + (5 + i * 3))
+            .filter(() => Math.random() < 0.4)
+            .map(user => user.id);
+
+        if (guestIdsForAttendance.length) {
+            await prisma.eventAttendance.createMany({
+                data: guestIdsForAttendance.map(uid => ({
+                    eventId: ongoingEvent.id,
+                    userId: uid,
+                    checkedInAt: new Date(startTime.getTime() + 30 * 60 * 1000) // 30 minutes after start
+                }))
+            });
+        }
+        
+        ongoingEvents.push(ongoingEvent);
+    }
+
     // Create 20 upcoming events
     const upcomingEvents = [];
     for (let i = 0; i < 20; i++) {
@@ -301,23 +358,6 @@ async function createEvents(users) {
             }
         });
         upcomingEvents.push(upcomingEvent);
-
-        // Randomly mark ~30% of these guests as already checked in (demo purpose)
-        const guestIdsForAttendance = users.regularUsers
-            .slice(5, 5 + (5 + i % 20))
-            .filter(() => Math.random() < 0.3)
-            .map(user => user.id);
-
-        if (guestIdsForAttendance.length) {
-            await prisma.eventAttendance.createMany({
-                data: guestIdsForAttendance.map(uid => ({
-                    eventId: upcomingEvent.id,
-                    userId: uid,
-                    // Set check-in time a bit after start
-                    checkedInAt: new Date(upcomingEvent.startTime.getTime() + 15 * 60 * 1000)
-                }))
-            });
-        }
     }
 
     // Create 20 past events
@@ -419,10 +459,11 @@ async function createEvents(users) {
         unpublishedEvents.push(unpublishedEvent);
     }
 
-    console.log(`Created events: ${upcomingEvents.length} upcoming, ${pastEvents.length} past, ${unpublishedEvents.length} unpublished`);
+    console.log(`Created events: ${upcomingEvents.length} upcoming, ${ongoingEvents.length} ongoing, ${pastEvents.length} past, ${unpublishedEvents.length} unpublished`);
 
     return {
         upcomingEvents,
+        ongoingEvents,
         pastEvents,
         unpublishedEvents
     };
