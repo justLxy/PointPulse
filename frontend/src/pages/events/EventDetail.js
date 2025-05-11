@@ -13,8 +13,11 @@ import theme from '../../styles/theme';
 import { API_URL } from '../../services/api';
 import { Tooltip } from 'react-tooltip';
 import { QRCodeSVG } from 'qrcode.react';
-import QRCode from '../../components/common/QRCode';
 import QRScanner from '../../components/common/QRScanner';
+import EventService from '../../services/event.service';
+import { toast } from 'react-hot-toast';
+import QRCode from '../../components/common/QRCode';
+import useUserProfile from '../../hooks/useUserProfile';
 
 import { 
   FaCalendarAlt, 
@@ -34,7 +37,6 @@ import {
   FaQrcode
 } from 'react-icons/fa';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
-import { toast } from 'react-hot-toast';
 
 const PageHeader = styled.div`
   display: flex;
@@ -525,10 +527,15 @@ const EventDetail = () => {
   const { user } = useAuth();
   const { event, loading, error, refreshEvent } = useEvents(eventId);
   const { currentUser } = useUsers();
+  const { profile, isLoading: isProfileLoading } = useUserProfile();
   
   const isManager = ['manager', 'superuser'].includes(activeRole);
   const isRegularOrCashier = ['regular', 'cashier'].includes(activeRole);
- 
+  
+  // 添加useEffect钩子，确认user对象是否正确加载
+  useEffect(() => {
+    console.log('user对象:', user);
+  }, [user]);
 
   // State for tabs
   const [activeTab, setActiveTab] = useState('details');
@@ -938,12 +945,25 @@ const EventDetail = () => {
     );
   };
   
-  // 扫码签到处理函数（你可补充API调用）
-  const handleCheckin = (scannedValue) => {
-    setScanModalOpen(false);
+ 
+  const handleCheckin = async (scannedValue) => {
     setScanResult(scannedValue);
-    // TODO: 调用签到API，如 checkinUserByUtorid(eventId, scannedValue)
-    // toast.success(`扫码成功: ${scannedValue}`);
+    console.log('result:', scannedValue);
+    try {
+      const res = await EventService.checkinUserByUtorid(eventDetails.id, scannedValue.trim());
+      if (res?.message === 'Already checked in') {
+        toast.error('User already checked in');
+      } else if (res?.message === 'Successfully checked in') {
+        toast.success('Check-in successful!');
+        refetch();
+      } else {
+        toast(res?.message || 'Unknown check-in result');
+      }
+    } catch (err) {
+      toast.error(err.message || 'Check-in failed');
+      console.error('Check-in failed:', err);
+    }
+    setTimeout(() => setScanResult(null), 1000);
   };
   
   if (isLoading) {
@@ -1416,13 +1436,19 @@ const EventDetail = () => {
                 )}
             </Card.Body>
           </SummaryCard>
-          {/* 在Event Summary下方添加用户身份二维码 */}
-          <QRCode
-            value={user?.id?.toString() || ''}
-            label="Your User ID QR Code"
-            size={200}
-            level="H"
-          />
+          {/* Event Summary下方渲染用户二维码，完全模仿Dashboard */}
+          {isProfileLoading ? (
+            <div>Loading QR code...</div>
+          ) : (
+            profile?.utorid && (
+              <QRCode
+                value={profile.utorid}
+                label="My Check-In QR Code"
+                size={200}
+                level="H"
+              />
+            )
+          )}
 
           {/* 仅manager+或本活动organizer可见扫码签到按钮 */}
           {(isManager || isCurrentUserOrganizerForEvent) && (

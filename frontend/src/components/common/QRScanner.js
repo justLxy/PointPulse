@@ -15,7 +15,7 @@ const QRScanner = ({ onResult, onError }) => {
     const timeout = setTimeout(() => {
       setCameraError('Cannot access camera. Please check device permissions or connection.');
       onError && onError(new Error('Camera not found'));
-    }, 10000);
+    }, 30000);
     timeoutId = timeout;
 
     codeReader.decodeFromVideoDevice(null, videoRef.current, (result, err) => {
@@ -28,7 +28,6 @@ const QRScanner = ({ onResult, onError }) => {
         const now = Date.now();
         const scannedText = result.getText();
 
-        // 防止连续扫描同一个内容（1.5 秒节流）
         if (
           scannedText !== lastScannedRef.current.text ||
           now - lastScannedRef.current.time > 1500
@@ -51,9 +50,9 @@ const QRScanner = ({ onResult, onError }) => {
     return () => {
       isMounted = false;
       clearTimeout(timeoutId);
-      codeReader.reset();
-
-      // 释放摄像头资源
+      if (codeReader.reset) codeReader.reset();
+      if (codeReader.stopDecoding) codeReader.stopDecoding();
+      if (codeReader.stopContinuousDecode) codeReader.stopContinuousDecode();
       if (videoRef.current?.srcObject) {
         videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
         videoRef.current.srcObject = null;

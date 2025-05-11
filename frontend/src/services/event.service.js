@@ -595,7 +595,7 @@ const EventService = {
     }
   },
 
-  // 组织者通过UTORid为嘉宾签到
+  // organizer check in a guest by utorid
   checkinUserByUtorid: async (eventId, utorid) => {
     try {
       const response = await api.post(`/events/${eventId}/checkin-user`, { utorid });
