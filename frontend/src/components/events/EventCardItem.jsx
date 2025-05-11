@@ -140,6 +140,9 @@ const EventCardItem = ({
   const eventStatus = getEventStatus(event.startTime, event.endTime);
   const isUserRsvpd = isRsvpd(event);
   
+  // Calculate if the event is at full capacity
+  const isFull = event.capacity && event.numGuests >= event.capacity;
+  
   return (
     <EventCard>
       <Card.Body>
@@ -223,7 +226,7 @@ const EventCardItem = ({
           </div>
           
           <div style={{ display: 'flex', gap: theme.spacing.sm }}>
-            {eventStatus.text === 'Upcoming' && (
+            {(eventStatus.text === 'Upcoming' || eventStatus.text === 'Ongoing') && !isFull && (
               <Button 
                 size="small" 
                 variant={isUserRsvpd ? "outlined" : "default"}

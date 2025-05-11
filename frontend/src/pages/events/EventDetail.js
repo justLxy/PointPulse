@@ -973,7 +973,8 @@ const EventDetail = () => {
         </div>
         
         <PageActionsContainer>
-          {eventStatus.text === 'Upcoming' && !isCurrentUserOrganizerForEvent && (
+          {(eventStatus.text === 'Upcoming' || eventStatus.text === 'Ongoing') && !isCurrentUserOrganizerForEvent && 
+           (!event.capacity || event.numGuests < event.capacity) && (
             attending ? (
               <Button 
                 variant="outlined" 
