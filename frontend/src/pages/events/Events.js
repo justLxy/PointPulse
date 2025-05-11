@@ -484,8 +484,7 @@ const Events = () => {
         }, 100);
       },
       onError: (error) => {
-        // Display error message to user
-        toast.error(error.message || 'Failed to cancel RSVP');
+        // onError logic for UI updates, but no toast.error here
         // Close the modal
         setRsvpModalOpen(false);
       }

@@ -589,10 +589,6 @@ const EventDetail = () => {
       onSuccess: () => {
         refetch();
       },
-      onError: (error) => {
-        // Display error message to user
-        toast.error(error.message || 'Failed to cancel RSVP');
-      }
     });
   };
   
