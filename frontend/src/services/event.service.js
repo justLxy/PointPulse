@@ -594,23 +594,6 @@ const EventService = {
       throw new Error('Network error: Could not connect to server');
     }
   },
-
-  // organizer check in a guest by utorid
-  checkinUserByUtorid: async (eventId, utorid) => {
-    try {
-      const response = await api.post(`/events/${eventId}/checkin-user`, { utorid });
-      return response.data;
-    } catch (error) {
-      if (error.response) {
-        const { status, data } = error.response;
-        if (status === 400) throw new Error(data.error || 'Invalid check-in request');
-        if (status === 403) throw new Error(data.error || 'You do not have permission to check in users for this event');
-        if (status === 404) throw new Error('Event or user not found');
-        throw new Error(data.error || 'Failed to check in user');
-      }
-      throw new Error('Network error: Could not connect to server');
-    }
-  },
 };
 
 export default EventService; 

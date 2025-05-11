@@ -12,12 +12,7 @@ import Badge from '../../components/common/Badge';
 import theme from '../../styles/theme';
 import { API_URL } from '../../services/api';
 import { Tooltip } from 'react-tooltip';
-import { QRCodeSVG } from 'qrcode.react';
-import QRScanner from '../../components/common/QRScanner';
-import EventService from '../../services/event.service';
-import { toast } from 'react-hot-toast';
-import QRCode from '../../components/common/QRCode';
-import useUserProfile from '../../hooks/useUserProfile';
+
 
 import { 
   FaCalendarAlt, 
@@ -37,6 +32,7 @@ import {
   FaQrcode
 } from 'react-icons/fa';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { toast } from 'react-hot-toast';
 
 const PageHeader = styled.div`
   display: flex;
@@ -495,47 +491,14 @@ const StatItem = styled.div`
   }
 `;
 
-const QRCodeContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: ${theme.spacing.md};
-  padding: ${theme.spacing.lg};
-  background-color: ${theme.colors.background.default};
-  border-radius: ${theme.radius.md};
-  margin-top: ${theme.spacing.lg};
-`;
-
-const QRCodeTitle = styled.h3`
-  font-size: ${theme.typography.fontSize.lg};
-  font-weight: ${theme.typography.fontWeights.semiBold};
-  color: ${theme.colors.text.primary};
-  margin: 0;
-`;
-
-const QRCodeDescription = styled.p`
-  font-size: ${theme.typography.fontSize.sm};
-  color: ${theme.colors.text.secondary};
-  text-align: center;
-  margin: 0;
-`;
-
 const EventDetail = () => {
   const { eventId } = useParams();
   const navigate = useNavigate();
   const { activeRole } = useAuth();
-  const { user } = useAuth();
-  const { event, loading, error, refreshEvent } = useEvents(eventId);
-  const { currentUser } = useUsers();
-  const { profile, isLoading: isProfileLoading } = useUserProfile();
   
   const isManager = ['manager', 'superuser'].includes(activeRole);
   const isRegularOrCashier = ['regular', 'cashier'].includes(activeRole);
-  
-  // 添加useEffect钩子，确认user对象是否正确加载
-  useEffect(() => {
-    console.log('user对象:', user);
-  }, [user]);
+ 
 
   // State for tabs
   const [activeTab, setActiveTab] = useState('details');
@@ -551,8 +514,6 @@ const EventDetail = () => {
   const [selectedUtorid, setSelectedUtorid] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [pointsAmount, setPointsAmount] = useState('');
-  const [scanModalOpen, setScanModalOpen] = useState(false);
-  const [scanResult, setScanResult] = useState(null);
   
   // Form state for editing event
   const [eventData, setEventData] = useState({
@@ -586,10 +547,10 @@ const EventDetail = () => {
     removeAllGuests,
   } = useEvents();
   
-  const { data: eventDetails, isLoading, error: eventError, refetch } = getEvent(eventId);
+  const { data: event, isLoading, error, refetch } = getEvent(eventId);
   
   // --- Define Permission Flags --- 
-  const isCurrentUserOrganizerForEvent = eventDetails?.isOrganizer || false; // Is the current user an organizer for THIS event?
+  const isCurrentUserOrganizerForEvent = event?.isOrganizer || false; // Is the current user an organizer for THIS event?
   const canManageGuests = isManager || isCurrentUserOrganizerForEvent; // Can the user see/manage the guest list?
   const canEditEventDetails = isManager || isCurrentUserOrganizerForEvent; // Can the user edit general event details (name, desc, etc.)?
   // Note: isManager remains the flag for manager-only actions (delete, publish, manage organizers, see points summary)
@@ -651,7 +612,7 @@ const EventDetail = () => {
  
   // Is user attending
   const isUserAttending = () => {
-    return eventDetails?.isAttending || false;
+    return event?.isAttending || false;
   };
   
   // Calculate event status
@@ -739,11 +700,11 @@ const EventDetail = () => {
   
   // Handle publish event
   const handlePublishEvent = () => {
-    if (!eventDetails) return;
+    if (!event) return;
     
     updateEvent(
       { 
-        eventId, 
+        id: eventId, 
         data: { published: true } 
       },
       {
@@ -756,30 +717,30 @@ const EventDetail = () => {
   
   // Set up event for editing
   const handleEditEvent = () => {
-    if (!eventDetails) return;
+    if (!event) return;
     
     // First try to use the original points allocation if available
     // If not, use the remaining points
     const pointsValue = 
       // Original points allocation takes precedence
-      typeof eventDetails.points === 'number' ? eventDetails.points : 
+      typeof event.points === 'number' ? event.points : 
       // Fallback to other possible properties
-      typeof eventDetails.pointsTotal === 'number' ? eventDetails.pointsTotal :
+      typeof event.pointsTotal === 'number' ? event.pointsTotal :
       // If we have both awarded and remaining, we can calculate the total
-      (typeof eventDetails.pointsAwarded === 'number' && typeof eventDetails.pointsRemain === 'number') 
-        ? (eventDetails.pointsAwarded + eventDetails.pointsRemain) :
+      (typeof event.pointsAwarded === 'number' && typeof event.pointsRemain === 'number') 
+        ? (event.pointsAwarded + event.pointsRemain) :
       // Last resort, just use the remaining points
-      typeof eventDetails.pointsRemain === 'number' ? eventDetails.pointsRemain : '';
+      typeof event.pointsRemain === 'number' ? event.pointsRemain : '';
     
     setEventData({
-      name: eventDetails.name || '',
-      description: eventDetails.description || '',
-      location: eventDetails.location || '',
-      capacity: eventDetails.capacity || '',
+      name: event.name || '',
+      description: event.description || '',
+      location: event.location || '',
+      capacity: event.capacity || '',
       points: pointsValue,
-      startTime: eventDetails.startTime ? new Date(eventDetails.startTime).toISOString().slice(0, 16) : '',
-      endTime: eventDetails.endTime ? new Date(eventDetails.endTime).toISOString().slice(0, 16) : '',
-      published: eventDetails.published || false,
+      startTime: event.startTime ? new Date(event.startTime).toISOString().slice(0, 16) : '',
+      endTime: event.endTime ? new Date(event.endTime).toISOString().slice(0, 16) : '',
+      published: event.published || false,
     });
     
     setEditModalOpen(true);
@@ -787,7 +748,7 @@ const EventDetail = () => {
   
   // Update event
   const handleUpdateEvent = () => {
-    if (!eventDetails) return;
+    if (!event) return;
     
     // Format data for API
     let formattedData = {
@@ -800,7 +761,7 @@ const EventDetail = () => {
       formattedData.points = eventData.points ? parseInt(eventData.points) : 0;
       
       // Only include published status if it was changed and user is admin
-      if (eventData.published && !eventDetails.published) {
+      if (eventData.published && !event.published) {
         formattedData.published = true;
       }
     } else {
@@ -810,7 +771,7 @@ const EventDetail = () => {
     }
     
     updateEvent(
-      { eventId, data: formattedData },
+      { id: eventId, data: formattedData },
       {
         onSuccess: () => {
           setEditModalOpen(false);
@@ -920,65 +881,19 @@ const EventDetail = () => {
     );
   };
   
-  // check if current user is a guest
-  const isCurrentUserGuest = () => {
-    if (!event || !user) return false;
-    return event.guests.some(guest => guest.id === user.id);
-  };
-
-  // render QR code
-  const renderQRCode = () => {
-    if (!isCurrentUserGuest()) return null;
-    return (
-      <QRCodeContainer>
-        <QRCodeTitle>My Check-In QR Code</QRCodeTitle>
-        <QRCodeSVG 
-          value={user.utorid}
-          size={200}
-          level="H"
-          includeMargin={true}
-        />
-        <QRCodeDescription>
-          Please show this QR code to the event organizer to complete check-in
-        </QRCodeDescription>
-      </QRCodeContainer>
-    );
-  };
-  
- 
-  const handleCheckin = async (scannedValue) => {
-    setScanResult(scannedValue);
-    console.log('result:', scannedValue);
-    try {
-      const res = await EventService.checkinUserByUtorid(eventDetails.id, scannedValue.trim());
-      if (res?.message === 'Already checked in') {
-        toast.error('User already checked in');
-      } else if (res?.message === 'Successfully checked in') {
-        toast.success('Check-in successful!');
-        refetch();
-      } else {
-        toast(res?.message || 'Unknown check-in result');
-      }
-    } catch (err) {
-      toast.error(err.message || 'Check-in failed');
-      console.error('Check-in failed:', err);
-    }
-    setTimeout(() => setScanResult(null), 1000);
-  };
-  
   if (isLoading) {
     return <LoadingSpinner text="Loading event details..." />;
   }
   
-  if (eventError) {
-    return <EmptyState>Error loading event: {eventError.message}</EmptyState>;
+  if (error) {
+    return <EmptyState>Error loading event: {error.message}</EmptyState>;
   }
   
-  if (!eventDetails) {
+  if (!event) {
     return <EmptyState>Event not found</EmptyState>;
   }
   
-  const eventStatus = getEventStatus(eventDetails.startTime, eventDetails.endTime);
+  const eventStatus = getEventStatus(event.startTime, event.endTime);
   const attending = isUserAttending();
   
   return (
@@ -995,21 +910,21 @@ const EventDetail = () => {
               eventStatus.text === 'Ongoing' ? '🎬' : '🎭'
             }
           >
-            {eventDetails.name}
+            {event.name}
           </PageTitle>
           <PageSubtitle>
-            {eventDetails.startTime && (
+            {event.startTime && (
               <>
-                {formatDate(eventDetails.startTime)}
-                {eventDetails.endTime && new Date(eventDetails.startTime).toDateString() !== new Date(eventDetails.endTime).toDateString() && 
-                  ` - ${formatDate(eventDetails.endTime)}`}
+                {formatDate(event.startTime)}
+                {event.endTime && new Date(event.startTime).toDateString() !== new Date(event.endTime).toDateString() && 
+                  ` - ${formatDate(event.endTime)}`}
                 {' at '}
-                {formatTime(eventDetails.startTime)}
-                {eventDetails.endTime && ` - ${formatTime(eventDetails.endTime)}`}
+                {formatTime(event.startTime)}
+                {event.endTime && ` - ${formatTime(event.endTime)}`}
                 
                 <EventBadge>
                    <FaUsers size={12} /> 
-                {`${eventDetails.numGuests ?? eventDetails.guests?.length ?? 0}/${eventDetails.capacity || '∞'} attendees`}
+                {`${event.numGuests ?? event.guests?.length ?? 0}/${event.capacity || '∞'} attendees`}
                 </EventBadge>
 
               </>
@@ -1057,7 +972,7 @@ const EventDetail = () => {
                 </Button>
               )}
               
-              {isManager && !eventDetails.published && (
+              {isManager && !event.published && (
                 <Button 
                   onClick={handlePublishEvent}
                 >
@@ -1068,7 +983,7 @@ const EventDetail = () => {
               {(isCurrentUserOrganizerForEvent || isManager) && (
                 <Button
                   variant="outlined"
-                  onClick={() => navigate(`/events/${eventDetails.id}/checkin-display`)}
+                  onClick={() => navigate(`/events/${event.id}/checkin-display`)}
                 >
                   <FaQrcode /> Check-In QR
                 </Button>
@@ -1085,14 +1000,14 @@ const EventDetail = () => {
               <Card.Title>Event Details</Card.Title>
             </Card.Header>
             <Card.Body>
-              <EventDescription>{eventDetails.description}</EventDescription>
+              <EventDescription>{event.description}</EventDescription>
               
               <EventMetadata>
                 <EventDetailItem>
                   <FaMapMarkerAlt />
                   <div>
                     <strong>Location</strong>
-                    <div>{eventDetails.location}</div>
+                    <div>{event.location}</div>
                   </div>
                 </EventDetailItem>
                 
@@ -1101,9 +1016,9 @@ const EventDetail = () => {
                   <div>
                     <strong>Date</strong>
                     <div>
-                      {formatDate(eventDetails.startTime)}
-                      {eventDetails.endTime && new Date(eventDetails.startTime).toDateString() !== new Date(eventDetails.endTime).toDateString() && 
-                        ` - ${formatDate(eventDetails.endTime)}`}
+                      {formatDate(event.startTime)}
+                      {event.endTime && new Date(event.startTime).toDateString() !== new Date(event.endTime).toDateString() && 
+                        ` - ${formatDate(event.endTime)}`}
                     </div>
                   </div>
                 </EventDetailItem>
@@ -1113,7 +1028,7 @@ const EventDetail = () => {
                   <div>
                     <strong>Time</strong>
                     <div>
-                      {formatTime(eventDetails.startTime)} - {eventDetails.endTime ? formatTime(eventDetails.endTime) : 'TBD'}
+                      {formatTime(event.startTime)} - {event.endTime ? formatTime(event.endTime) : 'TBD'}
                     </div>
                   </div>
                 </EventDetailItem>
@@ -1124,7 +1039,7 @@ const EventDetail = () => {
                   <div>
                     <strong>Capacity</strong>
                     <div>
-                    {`${eventDetails.numGuests ?? eventDetails.guests?.length ?? 0}/${eventDetails.capacity || '∞'} attendees`}
+                    {`${event.numGuests ?? event.guests?.length ?? 0}/${event.capacity || '∞'} attendees`}
                     </div>
                   </div>
                 </EventDetailItem>
@@ -1136,8 +1051,8 @@ const EventDetail = () => {
                     <div>
                       <strong>Points</strong>
                       <div>
-                        {eventDetails.pointsAwarded || 0} points awarded 
-                        ({eventDetails.pointsRemain ?? eventDetails.points ?? 0} remaining)
+                        {event.pointsAwarded || 0} points awarded 
+                        ({event.pointsRemain ?? event.points ?? 0} remaining)
                       </div>
                     </div>
                   </EventDetailItem>
@@ -1146,9 +1061,6 @@ const EventDetail = () => {
               </EventMetadata>
             </Card.Body>
           </Card>
-          
-          {/* 在活动信息下方添加二维码 */}
-          {renderQRCode()}
           
           <TabContainer>
             <TabHeader>
@@ -1164,7 +1076,7 @@ const EventDetail = () => {
                   active={activeTab === 'guests'} 
                   onClick={() => setActiveTab('guests')}
                 >
-                  Guests ({eventDetails.numGuests ?? eventDetails.guests?.length ?? 0})
+                  Guests ({event.numGuests ?? event.guests?.length ?? 0})
                 </TabButton>
               )}
               {/* Conditionally render Organizers tab */} 
@@ -1173,7 +1085,7 @@ const EventDetail = () => {
                   active={activeTab === 'organizers'} 
                   onClick={() => setActiveTab('organizers')}
                 >
-                  Organizers ({eventDetails.organizers && Array.isArray(eventDetails.organizers) ? eventDetails.organizers.length : 0})
+                  Organizers ({event.organizers && Array.isArray(event.organizers) ? event.organizers.length : 0})
                 </TabButton>
               )}
             </TabHeader>
@@ -1182,7 +1094,7 @@ const EventDetail = () => {
               <Card>
                 <Card.Body>
                   <h3>About this Event</h3>
-                  <p>{eventDetails.description}</p>
+                  <p>{event.description}</p>
                 </Card.Body>
               </Card>
             )}
@@ -1207,7 +1119,7 @@ const EventDetail = () => {
                       >
                         <FaTrophy /> Award Points
                       </Button>
-                      {isManager && eventDetails.guests && Array.isArray(eventDetails.guests) && eventDetails.guests.length > 0 && (
+                      {isManager && event.guests && Array.isArray(event.guests) && event.guests.length > 0 && (
                         <Button 
                           size="small"
                           color="error"
@@ -1223,27 +1135,27 @@ const EventDetail = () => {
                   <AudienceContainer>
                     <AudienceStage>🎬 STAGE 🎬</AudienceStage>
                     
-                    {eventDetails.guests && Array.isArray(eventDetails.guests) && eventDetails.guests.length > 0 && (
+                    {event.guests && Array.isArray(event.guests) && event.guests.length > 0 && (
                       <CheckInStats>
                         <StatItem>
-                          <span>{eventDetails.guests.length}</span>
+                          <span>{event.guests.length}</span>
                           <span>Total Guests</span>
                         </StatItem>
                         <StatItem color={theme.colors.success.main}>
-                          <span>{eventDetails.guests.filter(g => g.checkedIn).length}</span>
+                          <span>{event.guests.filter(g => g.checkedIn).length}</span>
                           <span>Checked In</span>
                         </StatItem>
                         <StatItem color={theme.colors.warning.main}>
-                          <span>{eventDetails.guests.length - eventDetails.guests.filter(g => g.checkedIn).length}</span>
+                          <span>{event.guests.length - event.guests.filter(g => g.checkedIn).length}</span>
                           <span>Not Checked In</span>
                         </StatItem>
                       </CheckInStats>
                     )}
                     
-                    {eventDetails.guests && Array.isArray(eventDetails.guests) && eventDetails.guests.length > 0 ? (
+                    {event.guests && Array.isArray(event.guests) && event.guests.length > 0 ? (
                       <AudienceSeats>
                         {/* ... guest mapping logic ... */}
-                         {eventDetails.guests.map(guest => {
+                         {event.guests.map(guest => {
                           const colorSeed = guest.id % 5; // Example seed for color
                           const randomColor = [
                             theme.colors.primary.light,
@@ -1253,7 +1165,7 @@ const EventDetail = () => {
                             theme.colors.info.light
                           ][colorSeed];
                           
-                          const pointsAwarded = eventDetails.pointsAwardedToGuests?.find(p => p.userId === guest.id)?.points || 0;
+                          const pointsAwarded = event.pointsAwardedToGuests?.find(p => p.userId === guest.id)?.points || 0;
                           
                           const version = localStorage.getItem('avatarVersion');
                           const isAbsolute = /^(?:[a-z]+:)?\/\//i.test(guest.avatarUrl);
@@ -1374,8 +1286,8 @@ const EventDetail = () => {
                 </Card.Header>
                 <Card.Body>
                   <AttendeesContainer>
-                    {eventDetails.organizers && Array.isArray(eventDetails.organizers) && eventDetails.organizers.length > 0 ? (
-                      eventDetails.organizers.map(organizer => (
+                    {event.organizers && Array.isArray(event.organizers) && event.organizers.length > 0 ? (
+                      event.organizers.map(organizer => (
                         <AttendeeRow key={organizer.id}>
                           <AttendeeInfo>
                             <AttendeeName>{organizer.name}</AttendeeName>
@@ -1412,7 +1324,7 @@ const EventDetail = () => {
             <Card.Body>
               <SummaryItem>
                 <strong>Created by:</strong>
-                <span>{eventDetails.organizers?.[0]?.name || 'N/A'}</span>
+                <span>{event.organizers?.[0]?.name || 'N/A'}</span>
               </SummaryItem>
               <SummaryItem>
                 <strong>Status:</strong>
@@ -1421,8 +1333,8 @@ const EventDetail = () => {
               <SummaryItem>
                 <strong>Guests:</strong>
                 <span>
-                {eventDetails.numGuests ?? eventDetails.guests?.length ?? 0}
-                  {eventDetails.capacity ? ` / ${eventDetails.capacity} capacity` : ' (unlimited)'}
+                {event.numGuests ?? event.guests?.length ?? 0}
+                  {event.capacity ? ` / ${event.capacity} capacity` : ' (unlimited)'}
                 </span>
                </SummaryItem>
                {/* Conditionally render Points summary */} 
@@ -1430,51 +1342,12 @@ const EventDetail = () => {
                   <SummaryItem>
                     <strong>Points:</strong>
                     <span>
-                      {eventDetails.pointsAwarded || 0} awarded ({eventDetails.pointsRemain ?? eventDetails.points ?? 0} remaining)
+                      {event.pointsAwarded || 0} awarded ({event.pointsRemain ?? event.points ?? 0} remaining)
                     </span>
                   </SummaryItem>
                 )}
             </Card.Body>
           </SummaryCard>
-          {/* Event Summary下方渲染用户二维码，完全模仿Dashboard */}
-          {isProfileLoading ? (
-            <div>Loading QR code...</div>
-          ) : (
-            profile?.utorid && (
-              <QRCode
-                value={profile.utorid}
-                label="My Check-In QR Code"
-                size={200}
-                level="H"
-              />
-            )
-          )}
-
-          {/* 仅manager+或本活动organizer可见扫码签到按钮 */}
-          {(isManager || isCurrentUserOrganizerForEvent) && (
-            <Button
-              style={{ marginTop: 24, width: '100%' }}
-              onClick={() => setScanModalOpen(true)}
-            >
-              Scan to Check-in
-            </Button>
-          )}
-
-          {/* 扫码签到Modal */}
-          <Modal
-            isOpen={scanModalOpen}
-            onClose={() => setScanModalOpen(false)}
-            title="Scan Guest QR Code"
-            size="medium"
-          >
-            <QRScanner
-              onResult={handleCheckin}
-              onError={(err) => {
-                // 可选：处理扫码错误
-                // toast.error('扫码失败，请重试');
-              }}
-            />
-          </Modal>
         </div>
       </ContentGrid>
       
@@ -1682,20 +1555,20 @@ const EventDetail = () => {
               placeholder="Enter points amount"
               min="1"
               step="1"
-              max={eventDetails.points}
+              max={event.points}
               required
-              helperText={`Available points: ${eventDetails.pointsRemain !== undefined ? eventDetails.pointsRemain : (eventDetails.points || 0)}`}
+              helperText={`Available points: ${event.pointsRemain !== undefined ? event.pointsRemain : (event.points || 0)}`}
             />
             
             {selectedUserId && (
               <p>
-                Selected user: {eventDetails.guests && Array.isArray(eventDetails.guests) ? eventDetails.guests.find(g => g.id === selectedUserId)?.name || 'Unknown user' : 'Unknown user'}
+                Selected user: {event.guests && Array.isArray(event.guests) ? event.guests.find(g => g.id === selectedUserId)?.name || 'Unknown user' : 'Unknown user'}
               </p>
             )}
             
             {!selectedUserId && (
               <p>
-                This will award points to all {eventDetails.guests && Array.isArray(eventDetails.guests) ? eventDetails.guests.length : 0} guests who have RSVP'd to this event.
+                This will award points to all {event.guests && Array.isArray(event.guests) ? event.guests.length : 0} guests who have RSVP'd to this event.
               </p>
             )}
           </ModalForm>
@@ -1742,7 +1615,7 @@ const EventDetail = () => {
         onClose={() => {
           setEditModalOpen(false);
         }}
-        title={`Edit Event: ${eventDetails?.name || ''}`}
+        title={`Edit Event: ${event?.name || ''}`}
         size="large"
       >
         <ModalContent>
@@ -1831,15 +1704,15 @@ const EventDetail = () => {
                   checked={eventData.published}
                   onChange={(e) => handleFormChange('published', e.target.checked)}
                   style={{ marginRight: theme.spacing.sm }}
-                  disabled={eventDetails?.published} // Disable if already published
+                  disabled={event?.published} // Disable if already published
                 />
                 <label htmlFor="published" style={{ 
                   fontSize: theme.typography.fontSize.sm,
                   display: 'flex',
                   alignItems: 'center',
-                  cursor: eventDetails?.published ? 'not-allowed' : 'pointer'
+                  cursor: event?.published ? 'not-allowed' : 'pointer'
                 }}>
-                  {eventDetails?.published ? (
+                  {event?.published ? (
                     <>
                       <span style={{ 
                         color: theme.colors.success.main, 
@@ -1886,7 +1759,7 @@ const EventDetail = () => {
       >
         <ModalContent>
           <p>Are you sure you want to delete this event?</p>
-          <p><strong>{eventDetails?.name}</strong></p>
+          <p><strong>{event?.name}</strong></p>
           <p>This action cannot be undone and will remove all RSVPs.</p>
           
           <ModalActions>
