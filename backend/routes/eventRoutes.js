@@ -50,7 +50,4 @@ router.get('/:eventId/checkin-token', requireRole('regular'), eventController.ge
 // For attendees to check in using a token
 router.post('/:eventId/checkin', requireRole('regular'), eventController.checkInWithToken);
 
-// For organizers to check in users by UTORid
-router.post('/:eventId/checkin-user', requireRole('regular'), eventController.checkInUser);
-
 module.exports = router;
