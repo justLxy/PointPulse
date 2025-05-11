@@ -235,21 +235,30 @@ const LoadingSpinner = styled(motion.div)`
 const QrScanner = ({ eventId, onScanComplete }) => {
   const readerRef = useRef(null);
   const html5QrRef = useRef(null);
-  const [scannerStarted, setScannerStarted] = useState(false);
   
+  // Ensure camera is properly released when scanner unmounts or modal closes
   const cleanupScanner = async () => {
-    if (html5QrRef.current) {
-      try {
-        if (scannerStarted) {
-          await html5QrRef.current.stop();
-          setScannerStarted(false);
-        }
-        html5QrRef.current.clear();
-        html5QrRef.current = null;
-      } catch (error) {
-        console.error("Error cleaning up scanner:", error);
+    if (!html5QrRef.current) return;
+
+    try {
+      // Attempt to stop the video stream even if the scanner is paused or not fully started yet.
+      await html5QrRef.current.stop();
+    } catch (error) {
+      // html5-qrcode throws an error if stop is called before start succeeds; we can safely ignore it.
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('html5-qrcode stop() warning:', error?.message || error);
       }
     }
+
+    try {
+      await html5QrRef.current.clear();
+    } catch (error) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('html5-qrcode clear() warning:', error?.message || error);
+      }
+    }
+
+    html5QrRef.current = null;
   };
   
   useEffect(() => {
@@ -312,7 +321,6 @@ const QrScanner = ({ eventId, onScanComplete }) => {
           onFailure
         );
         
-        setScannerStarted(true);
       } catch (error) {
         console.error("Error initializing scanner:", error);
       }
