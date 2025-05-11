@@ -7,7 +7,7 @@ import theme from '../../styles/theme';
 import EventService from '../../services/event.service';
 import Button from '../common/Button';
 import Modal from '../common/Modal';
-import { FaCheckCircle, FaTimesCircle, FaQrcode } from 'react-icons/fa';
+import { FaCheckCircle, FaTimesCircle, FaQrcode, FaExclamationTriangle } from 'react-icons/fa';
 
 const ScannerContainer = styled.div`
   display: flex;
@@ -437,7 +437,7 @@ const ScannerModal = ({ isOpen, onClose, eventId, onScanSuccess }) => {
           >
             <ResultCard status="error">
               <IconWrapper status="error">
-                <FaTimesCircle />
+                <FaExclamationTriangle size={56} color={theme.colors.error.main} />
               </IconWrapper>
               <ResultTitle status="error">Check-in Unavailable</ResultTitle>
               <ResultMessage>

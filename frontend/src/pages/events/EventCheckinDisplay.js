@@ -151,7 +151,7 @@ const ErrorContainer = styled(motion.div)`
 const ErrorIconWrapper = styled(motion.div)`
   width: 96px;
   height: 96px;
-  background-color: ${theme.colors.error.lighter};
+  background-color: ${theme.colors.error.light + '20'};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -321,7 +321,7 @@ const EventCheckinDisplay = () => {
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.2, duration: 0.5 }}
           >
-            <FaExclamationTriangle size={56} />
+            <FaExclamationTriangle size={56} color={theme.colors.error.main} />
           </ErrorIconWrapper>
 
           <ErrorTitle
