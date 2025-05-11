@@ -16,6 +16,22 @@ const Events = () => {
   
   // Initialize filters from search params or defaults
   const [filters, setFilters] = useState(() => {
+    // First try to get filters from sessionStorage if coming back from detail page
+    const savedFilters = sessionStorage.getItem('events-filters');
+    
+    if (savedFilters) {
+      try {
+        // Parse saved filters and use them
+        const parsedFilters = JSON.parse(savedFilters);
+        // Clean sessionStorage to prevent using these filters on a fresh visit
+        sessionStorage.removeItem('events-filters');
+        return parsedFilters;
+      } catch (e) {
+        console.error('Error parsing saved filters:', e);
+      }
+    }
+    
+    // Fall back to URL params or defaults if no saved filters
     const initialFilters = {
       name: searchParams.get('name') || '',
       location: searchParams.get('location') || '',
@@ -68,6 +84,9 @@ const Events = () => {
     if (isManager && filters.publishedStatus) newParams.set('publishedStatus', filters.publishedStatus);
     
     setSearchParams(newParams, { replace: true });
+    
+    // Save current filters to sessionStorage
+    sessionStorage.setItem('events-filters', JSON.stringify(filters));
   }, [filters, setSearchParams, isManager]);
   
   // Prepare API params from filters
@@ -496,6 +515,13 @@ const Events = () => {
     return event && event.isAttending || false;
   };
   
+  // Function to navigate to event detail
+  const navigateToEventDetail = (eventId) => {
+    // Save current filters before navigating
+    sessionStorage.setItem('events-filters', JSON.stringify(filters));
+    navigate(`/events/${eventId}`);
+  };
+  
   return (
     <div>
       <EventFilters 
@@ -520,6 +546,7 @@ const Events = () => {
         getEventCardDate={getEventCardDate}
         getEventStatus={getEventStatus}
         isRsvpd={(event) => !!event.isAttending}
+        navigateToEventDetail={navigateToEventDetail}
         handleEditEvent={handleEditEvent}
         handleDeleteEventClick={handleDeleteEventClick}
         handleRsvpClick={handleRsvpClick}

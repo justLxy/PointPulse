@@ -124,6 +124,7 @@ const EventCardItem = ({
   handleEditEvent, 
   handleDeleteEventClick, 
   handleRsvpClick,
+  navigateToEventDetail,
   handleCancelRsvpClick,
   handleViewDetails,
   isCreatingRsvp,
@@ -213,9 +214,12 @@ const EventCardItem = ({
         
         <EventActions>
           <div>
-            <Link to={`/events/${event.id}`} state={{ fromRsvp: isUserRsvpd }}>
-              <Button size="small">View Details</Button>
-            </Link>
+            <Button 
+              size="small" 
+              onClick={() => navigateToEventDetail ? navigateToEventDetail(event.id) : window.location.href = `/events/${event.id}`}
+            >
+              View Details
+            </Button>
           </div>
           
           <div style={{ display: 'flex', gap: theme.spacing.sm }}>

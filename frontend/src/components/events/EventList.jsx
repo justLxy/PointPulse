@@ -123,6 +123,7 @@ const EventList = ({
   getEventCardDate,
   getEventStatus,
   isRsvpd,
+  navigateToEventDetail,
   handleEditEvent,
   handleDeleteEventClick,
   handleRsvpClick,
@@ -164,6 +165,7 @@ const EventList = ({
                 getEventCardDate={getEventCardDate}
                 getEventStatus={getEventStatus}
                 isRsvpd={isRsvpd}
+                navigateToEventDetail={navigateToEventDetail}
                 handleEditEvent={handleEditEvent}
                 handleDeleteEventClick={handleDeleteEventClick}
                 handleRsvpClick={handleRsvpClick}
