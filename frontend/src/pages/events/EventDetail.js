@@ -503,6 +503,8 @@ const EventDetail = () => {
  
   // Add state to track if we need to refresh data after RSVP
   const [refreshAfterRsvp, setRefreshAfterRsvp] = useState(false);
+  // Add state to track if we need to refresh after scan
+  const [refreshAfterScan, setRefreshAfterScan] = useState(false);
 
   // State for tabs
   const [activeTab, setActiveTab] = useState('details');
@@ -899,6 +901,29 @@ const EventDetail = () => {
       setRefreshAfterRsvp(false);
     }
   }, [location.state, refreshAfterRsvp, eventId, refetch]);
+
+  // Add an effect to refresh data after scanning
+  useEffect(() => {
+    if (refreshAfterScan && eventId) {
+      refetch();
+      setRefreshAfterScan(false);
+    }
+  }, [refreshAfterScan, eventId, refetch]);
+  
+  // Update the Scanner modal to trigger refresh after scan
+  const handleScanModalClose = () => {
+    setScanModalOpen(false);
+    // Only refresh if not already refreshed by successful scan
+    if (!refreshAfterScan) {
+      setRefreshAfterScan(true);
+    }
+  };
+
+  // Handle successful scan
+  const handleScanSuccess = () => {
+    // Immediately trigger a refresh when scan is successful
+    refetch();
+  };
   
   if (isLoading) {
     return <LoadingSpinner text="Loading event details..." />;
@@ -1375,7 +1400,12 @@ const EventDetail = () => {
                {/* QR code for attendees */}
                {isUserAttending() && currentUser && (
                  <div style={{ marginTop: theme.spacing.lg }}>
-                   <QRCode value={currentUser.utorid} label="Your Check-in QR" size={180} />
+                   <QRCode 
+                     value={`${currentUser.utorid}|${eventId}`} 
+                     label="Your Check-in QR" 
+                     size={180}
+                     showValue={false} 
+                   />
                  </div>
                )}
             </Card.Body>
@@ -1845,8 +1875,9 @@ const EventDetail = () => {
       {/* Scanner modal for organizers/managers */}
       <ScannerModal
         isOpen={scanModalOpen}
-        onClose={() => setScanModalOpen(false)}
+        onClose={handleScanModalClose}
         eventId={eventId}
+        onScanSuccess={handleScanSuccess}
       />
     </div>
   );

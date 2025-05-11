@@ -47,7 +47,7 @@ const QRCodeLabel = styled.div`
   margin-bottom: ${theme.spacing.xs};
 `;
 
-const QRCode = ({ value, size = 200, level = 'H', label, renderAs = 'canvas', includeMargin = true }) => {
+const QRCode = ({ value, size = 200, level = 'H', label, renderAs = 'canvas', includeMargin = true, showValue = true }) => {
   const qrRef = useRef();
   
   const downloadQRCode = () => {
@@ -79,7 +79,7 @@ const QRCode = ({ value, size = 200, level = 'H', label, renderAs = 'canvas', in
         />
       </StyledQRCode>
       
-      <QRCodeValue>{value}</QRCodeValue>
+      {showValue && <QRCodeValue>{value}</QRCodeValue>}
       
       <Button
         variant="outlined"
