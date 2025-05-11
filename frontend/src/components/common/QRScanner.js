@@ -1,51 +1,63 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { BrowserMultiFormatReader } from '@zxing/browser';
-import VConsole from 'vconsole';
+import { NotFoundException } from '@zxing/library';
 
 const QRScanner = ({ onResult, onError }) => {
   const videoRef = useRef(null);
   const [cameraError, setCameraError] = useState(null);
-  const [timeoutId, setTimeoutId] = useState(null);
+  const lastScannedRef = useRef({ text: '', time: 0 });
 
   useEffect(() => {
     const codeReader = new BrowserMultiFormatReader();
     let isMounted = true;
-    let stream = null;
+    let timeoutId = null;
 
-    if (process.env.NODE_ENV !== 'production') {
-      new VConsole();
-    }
-   
     const timeout = setTimeout(() => {
-      setCameraError('cant access camera, please check device permission or connection');
+      setCameraError('Cannot access camera. Please check device permissions or connection.');
       onError && onError(new Error('Camera not found'));
     }, 10000);
-    setTimeoutId(timeout);
+    timeoutId = timeout;
 
     codeReader.decodeFromVideoDevice(null, videoRef.current, (result, err) => {
       if (!isMounted) return;
+
       if (result) {
-        clearTimeout(timeout);
+        clearTimeout(timeoutId);
         setCameraError(null);
-        onResult(result.getText());
+
+        const now = Date.now();
+        const scannedText = result.getText();
+
+        // 防止连续扫描同一个内容（1.5 秒节流）
+        if (
+          scannedText !== lastScannedRef.current.text ||
+          now - lastScannedRef.current.time > 1500
+        ) {
+          lastScannedRef.current = { text: scannedText, time: now };
+          onResult(scannedText);
+        }
       }
-      if (err && !(err instanceof codeReader.NotFoundException)) {
-        setCameraError('scanning failed, please try again');
+
+      if (err && !(err instanceof NotFoundException)) {
+        setCameraError('Scanning failed. Please try again.');
         onError && onError(err);
       }
     }).catch((err) => {
-      clearTimeout(timeout);
-      setCameraError('cant access camera, please check device permission or connection');
+      clearTimeout(timeoutId);
+      setCameraError('Cannot access camera. Please check device permissions or connection.');
       onError && onError(err);
     });
 
     return () => {
       isMounted = false;
-      clearTimeout(timeout);
- 
-      if (codeReader.reset) codeReader.reset();
-      if (codeReader.stopDecoding) codeReader.stopDecoding();
-      if (codeReader.stopContinuousDecode) codeReader.stopContinuousDecode();
+      clearTimeout(timeoutId);
+      codeReader.reset();
+
+      // 释放摄像头资源
+      if (videoRef.current?.srcObject) {
+        videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
+        videoRef.current.srcObject = null;
+      }
     };
   }, [onResult, onError]);
 
