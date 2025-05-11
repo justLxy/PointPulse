@@ -1152,7 +1152,7 @@ const EventDetail = () => {
                 <Card.Header>
                   <Card.Title>Guests</Card.Title>
                   {/* Keep internal button logic based on canEditEventDetails */} 
-                  {canEditEventDetails && eventStatus.text === 'Upcoming' && ( 
+                  {canEditEventDetails && (eventStatus.text === 'Upcoming' || eventStatus.text === 'Ongoing') && ( 
                     <div style={{ display: 'flex', gap: theme.spacing.sm }}>
                       <Button 
                         size="small" 
@@ -1256,7 +1256,7 @@ const EventDetail = () => {
                               <AudienceRole>
                                 {pointsAwarded > 0 ? (
                                   <Badge color="success">{pointsAwarded}pt</Badge>
-                                ) : canEditEventDetails && eventStatus.text === 'Upcoming' ? (
+                                ) : canEditEventDetails && (eventStatus.text === 'Upcoming' || eventStatus.text === 'Ongoing') ? (
                                   <ActionButton 
                                     size="tiny" 
                                     onClick={() => {
@@ -1283,7 +1283,7 @@ const EventDetail = () => {
                         })}
 
                         {/* Add guest seat - keep internal logic based on canEditEventDetails */}
-                        {canEditEventDetails && eventStatus.text === 'Upcoming' && ( 
+                        {canEditEventDetails && (eventStatus.text === 'Upcoming' || eventStatus.text === 'Ongoing') && ( 
                           <AudienceSeat>
                             <EmptyAudienceSeat onClick={() => setAddGuestModalOpen(true)}>
                               <FaUserPlus color={theme.colors.text.secondary} />
@@ -1295,7 +1295,7 @@ const EventDetail = () => {
                     ) : (
                       <EmptyState>
                         {/* Keep internal button logic based on canEditEventDetails */} 
-                        {canEditEventDetails ? ( 
+                        {canEditEventDetails && (eventStatus.text === 'Upcoming' || eventStatus.text === 'Ongoing') ? ( 
                           <>
                             <p>No guests registered for this event yet.</p>
                             <Button 
