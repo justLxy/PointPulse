@@ -1481,7 +1481,7 @@ const checkInWithToken = async (req, res) => {
                 return res.status(410).json({ error: 'Event is full' });
             }
             if (err.message === 'Event has already ended') {
-                return res.status(410).json({ error: 'Event has already ended' });
+                return res.status(410).json({ error: 'Failed to check in' });
             }
             throw err;
         }
