@@ -16,9 +16,10 @@ PointPulse is a user-friendly loyalty rewards platform that lets users earn, red
 
 ## Technology Stack
 
-- **Frontend**: React with modern UI libraries for a responsive and interactive user experience
-- **Backend**: RESTful API serving data
-- **Authentication**: JWT-based authentication for secure access
+- **Frontend**: React, React Query, Axios, Vite
+- **Backend**: Node.js, Express, PostgreSQL, SQLite
+- **Authentication**: JSON Web Tokens (JWT)
+- **Deployment**: Vercel, Railway
 
 ## User Roles
 
