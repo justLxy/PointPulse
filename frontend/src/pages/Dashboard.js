@@ -1138,16 +1138,10 @@ const Dashboard = () => {
             </Card.Header>
             <Card.Body>
               <QRCode 
-                value={`${window.location.origin}/events/checkin-manually?utorid=${profile?.utorid || ''}`}
+                value={profile?.utorid || ''} 
                 size={180}
                 level="H"
-                style={{ cursor: 'default' }}
               />
-              <div className="text-center mt-3">
-                <span style={{ display: 'inline-block', background: '#f5f7fa', borderRadius: '8px', padding: '8px 16px', color: '#2d3a4a', fontWeight: 500, fontSize: '1rem', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-                  Please ask an <span style={{ color: '#1976d2', fontWeight: 600 }}>organizer</span> to check in for you: <span style={{ color: '#333', fontWeight: 700, fontSize: '1.1rem', letterSpacing: '1px' }}>{profile?.utorid}</span>
-                </span>
-              </div>
             </Card.Body>
           </Card>
           

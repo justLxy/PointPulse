@@ -1,40 +1,5 @@
 import api from './api';
 
-/**
- * Unified API error handler
- * @param {Error} error - API error object
- * @returns {Error} Processed error object
- */
-const handleApiError = (error) => {
-  if (error.response) {
-    const { status, data } = error.response;
-    
-    if (status === 400) {
-      throw new Error(data.error || 'Invalid request parameters');
-    }
-    
-    if (status === 403) {
-      if (data.needsRsvp) {
-        error.response.data.needsRsvp = true;
-        throw error;
-      }
-      throw new Error(data.error || 'You do not have permission to perform this action');
-    }
-    
-    if (status === 404) {
-      throw new Error(data.error || 'Requested resource not found');
-    }
-    
-    if (status === 410) {
-      throw new Error(data.error || 'Event has ended');
-    }
-    
-    throw new Error(data.error || 'Operation failed');
-  }
-  
-  throw new Error('Network error: Could not connect to server');
-};
-
 const EventService = {
   // Create an event (Manager+)
   createEvent: async (eventData) => {
@@ -630,38 +595,20 @@ const EventService = {
     }
   },
 
-  // Get events where user is an organizer
-  getOrganizerEvents: async () => {
-    try {
-      const response = await api.get('/events/organizer-events');
-      return response.data;
-    } catch (error) {
-      if (error.response) {
-        const { status, data } = error.response;
-        
-        if (status === 403) {
-          throw new Error('no permission to view organizer events');
-        }
-        
-        throw new Error(data.error || 'failed to get organizer events');
-      }
-      
-      throw new Error('network error: could not connect to server');
-    }
-  },
-
-  /**
-   * Check in a user by their UTORid
-   * @param {number} eventId - The ID of the event
-   * @param {string} utorid - The UTORid of the user to check in
-   * @returns {Promise<Object>} The check-in result
-   */
-  checkInUser: async (eventId, utorid) => {
+  // 组织者通过UTORid为嘉宾签到
+  checkinUserByUtorid: async (eventId, utorid) => {
     try {
       const response = await api.post(`/events/${eventId}/checkin-user`, { utorid });
       return response.data;
     } catch (error) {
-      throw handleApiError(error);
+      if (error.response) {
+        const { status, data } = error.response;
+        if (status === 400) throw new Error(data.error || 'Invalid check-in request');
+        if (status === 403) throw new Error(data.error || 'You do not have permission to check in users for this event');
+        if (status === 404) throw new Error('Event or user not found');
+        throw new Error(data.error || 'Failed to check in user');
+      }
+      throw new Error('Network error: Could not connect to server');
     }
   },
 };

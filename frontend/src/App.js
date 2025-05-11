@@ -34,7 +34,6 @@ import Events from './pages/events/Events';
 import EventDetail from './pages/events/EventDetail';
 import EventCheckinDisplay from './pages/events/EventCheckinDisplay';
 import EventCheckinAttend from './pages/events/EventCheckinAttend';
-import EventCheckinManually from './pages/events/EventCheckinManually';
 
 // Create a QueryClientProvider with logout reset capability
 const AppQueryClientProvider = ({ children }) => {
@@ -201,16 +200,6 @@ const App = () => {
                 <Layout>
                   <EventCheckinAttend />
                 </Layout>
-              }
-            />
-            <Route
-              path="/events/checkin-manually"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <EventCheckinManually />
-                  </Layout>
-                </ProtectedRoute>
               }
             />
             <Route
