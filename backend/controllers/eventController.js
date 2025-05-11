@@ -250,6 +250,7 @@ const getEvent = async (req, res) => {
             console.log('Calling eventService.getEvent');
             const eventDetails = await eventService.getEvent(
                 eventId,
+                req.auth.id,
                 isManager,
                 isOrganizer,
                 includeAsOrganizer
@@ -1491,6 +1492,100 @@ const checkInWithToken = async (req, res) => {
     }
 };
 
+/**
+ * POST /events/:eventId/checkin/scan
+ * Body: { utorid }
+ * Organizers, managers or superusers can scan a guest's static QR code (containing their UTORid)
+ * to record attendance for the specified event.
+ */
+const checkInByScan = async (req, res) => {
+    try {
+        const eventId = parseInt(req.params.eventId);
+        if (isNaN(eventId) || eventId <= 0) {
+            return res.status(400).json({ error: 'Invalid event ID' });
+        }
+
+        const { utorid } = req.body;
+        if (!utorid || typeof utorid !== 'string') {
+            return res.status(400).json({ error: 'Missing or invalid utorid' });
+        }
+
+        // Fetch event with organizers and guests for quick checks
+        const event = await prisma.event.findUnique({
+            where: { id: eventId },
+            include: {
+                organizers: true,
+                guests: true,
+            },
+        });
+
+        if (!event) {
+            return res.status(404).json({ error: 'Event not found' });
+        }
+
+        // Ensure event not ended
+        if (event.endTime <= new Date()) {
+            return res.status(410).json({ error: 'Event has already ended' });
+        }
+
+        // Validate requester permissions – must be manager/superuser OR organizer of this event
+        const requesterId = req.auth.id;
+        const requester = await prisma.user.findUnique({
+            where: { id: requesterId },
+            select: { id: true, role: true, utorid: true },
+        });
+
+        if (!requester) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        const isOrganizer = event.organizers.some((org) => org.id === requesterId);
+        const isManagerOrHigher = ['manager', 'superuser'].includes(requester.role);
+        if (!isOrganizer && !isManagerOrHigher) {
+            return res.status(403).json({ error: 'Only organizers or managers can record attendance' });
+        }
+
+        // Find attendee by utorid
+        const attendee = await prisma.user.findUnique({
+            where: { utorid },
+            select: {
+                id: true,
+                name: true,
+                utorid: true,
+            },
+        });
+
+        if (!attendee) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Ensure attendee has RSVP'd (is in guest list)
+        const isGuest = event.guests.some((g) => g.id === attendee.id);
+        if (!isGuest) {
+            return res.status(400).json({ error: "User has not RSVP'd to this event" });
+        }
+
+        // Upsert attendance record
+        const attendance = await prisma.eventAttendance.upsert({
+            where: { eventId_userId: { eventId, userId: attendee.id } },
+            update: {},
+            create: { eventId, userId: attendee.id },
+        });
+
+        const alreadyCheckedIn = attendance.checkedInAt && attendance.checkedInAt.getTime() < Date.now() - 1000; // existing record
+
+        return res.status(alreadyCheckedIn ? 200 : 201).json({
+            message: alreadyCheckedIn ? 'Already checked in' : 'Check-in successful',
+            name: attendee.name,
+            utorid: attendee.utorid,
+            checkedInAt: attendance.checkedInAt,
+        });
+    } catch (error) {
+        console.error('Error during manual scan check-in:', error);
+        return res.status(500).json({ error: 'Failed to record attendance' });
+    }
+};
+
 module.exports = {
     createEvent,
     getEvents,
@@ -1507,4 +1602,5 @@ module.exports = {
     removeAllGuests,
     getCheckinToken,
     checkInWithToken,
+    checkInByScan,
 };

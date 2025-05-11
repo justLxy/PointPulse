@@ -354,7 +354,7 @@ const getEvents = async (filters = {}, isManager = false, page = 1, limit = 10, 
 /**
  * Get a single event
  */
-const getEvent = async (eventId, isManager = false, isOrganizer = false, includeAsOrganizer = false) => {
+const getEvent = async (eventId, userId = null, isManager = false, isOrganizer = false, includeAsOrganizer = false) => {
     const event = await prisma.event.findUnique({
         where: { id: parseInt(eventId) },
         include: {
@@ -407,7 +407,8 @@ const getEvent = async (eventId, isManager = false, isOrganizer = false, include
         capacity: event.capacity,
         organizers: event.organizers,
         published: event.published, // 添加published状态
-        isOrganizer: isOrganizer // 添加用户是否为组织者的标志
+        isOrganizer: isOrganizer,
+        isAttending: userId ? event.guests.some(g => g.id === parseInt(userId)) : false
     };
 
     // Add different fields based on user role

@@ -50,4 +50,7 @@ router.get('/:eventId/checkin-token', requireRole('regular'), eventController.ge
 // For attendees to check in using a token
 router.post('/:eventId/checkin', requireRole('regular'), eventController.checkInWithToken);
 
+// Add manual QR scan check-in route – managers or organizers can record attendance by scanning a guest QR code
+router.post('/:eventId/checkin/scan', requireRole('regular'), eventController.checkInByScan);
+
 module.exports = router;

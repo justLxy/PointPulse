@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import styled from '@emotion/styled';
 import { useEvents } from '../../hooks/useEvents';
 import { useUsers } from '../../hooks/useUsers';
@@ -12,7 +12,8 @@ import Badge from '../../components/common/Badge';
 import theme from '../../styles/theme';
 import { API_URL } from '../../services/api';
 import { Tooltip } from 'react-tooltip';
-
+import QRCode from '../../components/common/QRCode';
+import ScannerModal from '../../components/event/ScannerModal';
 
 import { 
   FaCalendarAlt, 
@@ -494,11 +495,14 @@ const StatItem = styled.div`
 const EventDetail = () => {
   const { eventId } = useParams();
   const navigate = useNavigate();
-  const { activeRole } = useAuth();
+  const { activeRole, currentUser } = useAuth();
+  const location = useLocation();
   
   const isManager = ['manager', 'superuser'].includes(activeRole);
   const isRegularOrCashier = ['regular', 'cashier'].includes(activeRole);
  
+  // Add state to track if we need to refresh data after RSVP
+  const [refreshAfterRsvp, setRefreshAfterRsvp] = useState(false);
 
   // State for tabs
   const [activeTab, setActiveTab] = useState('details');
@@ -570,6 +574,8 @@ const EventDetail = () => {
   const handleRsvp = () => {
     rsvpToEvent(eventId, {
       onSuccess: () => {
+        // Set flag to force refresh when navigating back to this page
+        setRefreshAfterRsvp(true);
         refetch();
       },
     });
@@ -881,6 +887,19 @@ const EventDetail = () => {
     );
   };
   
+  // Modal state for QR scanning
+  const [scanModalOpen, setScanModalOpen] = useState(false);
+  
+  // Add an effect to check the rsvp state parameter from location
+  useEffect(() => {
+    // If we have just RSVPed (from state), or the flag is set, force refetch
+    if ((location.state?.fromRsvp || refreshAfterRsvp) && eventId) {
+      refetch();
+      // Reset the flag after refetch
+      setRefreshAfterRsvp(false);
+    }
+  }, [location.state, refreshAfterRsvp, eventId, refetch]);
+  
   if (isLoading) {
     return <LoadingSpinner text="Loading event details..." />;
   }
@@ -986,6 +1005,12 @@ const EventDetail = () => {
                   onClick={() => navigate(`/events/${event.id}/checkin-display`)}
                 >
                   <FaQrcode /> Check-In QR
+                </Button>
+              )}
+
+              {(isCurrentUserOrganizerForEvent || isManager) && (
+                <Button onClick={() => setScanModalOpen(true)}>
+                  <FaQrcode /> Scan Guest QR
                 </Button>
               )}
             </>
@@ -1346,6 +1371,13 @@ const EventDetail = () => {
                     </span>
                   </SummaryItem>
                 )}
+
+               {/* QR code for attendees */}
+               {isUserAttending() && currentUser && (
+                 <div style={{ marginTop: theme.spacing.lg }}>
+                   <QRCode value={currentUser.utorid} label="Your Check-in QR" size={180} />
+                 </div>
+               )}
             </Card.Body>
           </SummaryCard>
         </div>
@@ -1809,6 +1841,13 @@ const EventDetail = () => {
           </ModalActions>
         </ModalContent>
       </Modal>
+
+      {/* Scanner modal for organizers/managers */}
+      <ScannerModal
+        isOpen={scanModalOpen}
+        onClose={() => setScanModalOpen(false)}
+        eventId={eventId}
+      />
     </div>
   );
 };

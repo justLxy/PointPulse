@@ -594,6 +594,25 @@ const EventService = {
       throw new Error('Network error: Could not connect to server');
     }
   },
+
+  // Submit an attendee check-in using a scanned utorid (Organizer/Manager)
+  checkinByScan: async (eventId, utorid) => {
+    try {
+      const response = await api.post(`/events/${eventId}/checkin/scan`, { utorid });
+      return response.data;
+    } catch (error) {
+      if (error.response) {
+        const { status, data } = error.response;
+        if (status === 400) throw new Error(data.error || 'Invalid request');
+        if (status === 401) throw new Error('Please log in');
+        if (status === 403) throw new Error(data.error || 'You are not authorized to record attendance');
+        if (status === 404) throw new Error(data.error || 'Event or user not found');
+        if (status === 410) throw new Error(data.error || 'Event has already ended');
+        return Promise.reject(new Error(data.error || 'Failed to record attendance'));
+      }
+      throw new Error('Network error: Could not connect to server');
+    }
+  },
 };
 
 export default EventService; 

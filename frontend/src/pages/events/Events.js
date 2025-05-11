@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useEvents } from '../../hooks/useEvents';
 import { useAuth } from '../../contexts/AuthContext';
 import EventFilters from '../../components/events/EventFilters';
@@ -12,6 +12,7 @@ const Events = () => {
   const { activeRole } = useAuth();
   const isManager = ['manager', 'superuser'].includes(activeRole);
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   
   // Initialize filters from search params or defaults
   const [filters, setFilters] = useState(() => {
@@ -441,6 +442,11 @@ const Events = () => {
       onSuccess: () => {
         // Close the modal and clear selection
         setRsvpModalOpen(false);
+        
+        // Navigate to event detail with the fromRsvp flag
+        navigate(`/events/${selectedEvent.id}`, { state: { fromRsvp: true } });
+        
+        // Clear the selected event after navigation
         setSelectedEvent(null);
         
         // Trigger a refetch to update the UI state

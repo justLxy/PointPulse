@@ -213,7 +213,7 @@ const EventCardItem = ({
         
         <EventActions>
           <div>
-            <Link to={`/events/${event.id}`}>
+            <Link to={`/events/${event.id}`} state={{ fromRsvp: isUserRsvpd }}>
               <Button size="small">View Details</Button>
             </Link>
           </div>
