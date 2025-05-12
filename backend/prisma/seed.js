@@ -264,19 +264,19 @@ async function createEvents(users) {
     const ongoingEvents = [];
     for (let i = 0; i < 5; i++) {
         const hoursInPast = 2 + Math.floor(Math.random() * 10); // Started 2-12 hours ago
-        const hoursInFuture = 2 + Math.floor(Math.random() * 10); // Ends 2-12 hours in the future
+        const daysInFuture = 3 + Math.floor(Math.random() * 4); // Ends 3-7 days in the future
         const name = `Ongoing ${eventNames[i]} ${Math.floor(i / eventNames.length) + 1}`;
         
         // Create start time in the past (today, but few hours ago)
         const startTime = new Date(now.getTime() - hoursInPast * 60 * 60 * 1000);
         
-        // Create end time in the future (today, but few hours from now)
-        const endTime = new Date(now.getTime() + hoursInFuture * 60 * 60 * 1000);
+        // Create end time in the future (several days from now)
+        const endTime = new Date(now.getTime() + daysInFuture * 24 * 60 * 60 * 1000);
         
         const ongoingEvent = await prisma.event.create({
             data: {
                 name,
-                description: `This event is currently in progress! ${name} features interactive sessions and networking opportunities.`,
+                description: `This event is currently in progress! ${name} features interactive sessions and networking opportunities over multiple days.`,
                 location: eventLocations[(i + 7) % eventLocations.length],
                 startTime,
                 endTime,
