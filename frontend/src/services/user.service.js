@@ -36,11 +36,6 @@ const UserService = {
         formData.append('avatar', userData.avatar);
       }
       
-      // Log the FormData contents for debugging
-      for (let [key, value] of formData.entries()) {
-        console.log(`FormData: ${key}:`, value instanceof File ? `File: ${value.name}` : value);
-      }
-      
       const response = await api.patch('/users/me', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -48,8 +43,6 @@ const UserService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Profile update error:', error);
-      
       if (error.response) {
         const { status, data } = error.response;
         
@@ -97,8 +90,6 @@ const UserService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Avatar update error:', error);
-      
       if (error.response) {
         const { status, data } = error.response;
         
@@ -148,8 +139,6 @@ const UserService = {
   // Get all users (Manager+)
   getUsers: async (params = {}) => {
     try {
-      console.log('Fetching users with params:', params);
-      
       // Ensure boolean values in params are correctly passed
       const response = await api.get('/users', { 
         params,
@@ -169,17 +158,13 @@ const UserService = {
               }
             });
             
-            console.log('Serialized params:', result.toString());
             return result.toString();
           }
         }
       });
       
-      console.log('Users API response:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Error fetching users:', error);
-      
       if (error.response) {
         const { status, data } = error.response;
         
