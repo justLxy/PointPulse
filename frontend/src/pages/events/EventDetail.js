@@ -1214,12 +1214,15 @@ const EventDetail = () => {
                           
                           const pointsAwarded = event.pointsAwardedToGuests?.find(p => p.userId === guest.id)?.points || 0;
                           
-                          const version = localStorage.getItem('avatarVersion');
-                          const isAbsolute = /^(?:[a-z]+:)?\/\//i.test(guest.avatarUrl);
-                          // Fix for double slashes by ensuring avatarUrl doesn't have a leading slash when concatenated
-                          const avatarPath = guest.avatarUrl.startsWith('/') ? guest.avatarUrl : `/${guest.avatarUrl}`;
-                          const baseSrc = isAbsolute ? guest.avatarUrl : `${API_URL}${avatarPath}`;
-                          const src = version ? `${baseSrc}?v=${version}` : baseSrc;
+                          // Add proper null checks for avatarUrl
+                          let avatarPath, baseSrc, src;
+                          if (guest.avatarUrl) {
+                            const version = localStorage.getItem('avatarVersion');
+                            const isAbsolute = /^(?:[a-z]+:)?\/\//i.test(guest.avatarUrl);
+                            avatarPath = guest.avatarUrl.startsWith('/') ? guest.avatarUrl : `/${guest.avatarUrl}`;
+                            baseSrc = isAbsolute ? guest.avatarUrl : `${API_URL}${avatarPath}`;
+                            src = version ? `${baseSrc}?v=${version}` : baseSrc;
+                          }
                           
                           return (
                             <AudienceSeat key={guest.id}>
@@ -1227,8 +1230,10 @@ const EventDetail = () => {
                                 <Avatar randomColor={randomColor}>
                                   {guest.avatarUrl ? (
                                     (() => {
+                                      // Add null checks here too
+                                      if (!guest.avatarUrl) return null;
+                                      
                                       const isAbsolute = /^(?:[a-z]+:)?\/\//i.test(guest.avatarUrl);
-                                      // Fix for double slashes by ensuring avatarUrl doesn't have a leading slash when concatenated
                                       const avatarPath = guest.avatarUrl.startsWith('/') ? guest.avatarUrl : `/${guest.avatarUrl}`;
                                       const baseSrc = isAbsolute ? guest.avatarUrl : `${API_URL}${avatarPath}`;
                                       return <img src={baseSrc} alt={guest.name} />;
