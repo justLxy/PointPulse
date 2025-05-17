@@ -524,6 +524,7 @@ const Header = () => {
                       const version = localStorage.getItem('avatarVersion');
                       const baseSrc = isAbsolute ? currentUser.avatarUrl : `${API_URL}${currentUser.avatarUrl}`;
                       const src = version ? `${baseSrc}?v=${version}` : baseSrc;
+                      console.log('Header avatar URL:', src);
                       return <img src={src} alt={currentUser.name} />;
                     })()
                   ) : (

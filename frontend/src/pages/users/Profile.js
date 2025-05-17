@@ -820,6 +820,7 @@ const Profile = () => {
                     const version = localStorage.getItem('avatarVersion');
                     const baseSrc = isAbsolute ? profile.avatarUrl : `${API_URL}${profile.avatarUrl}`;
                     const src = version ? `${baseSrc}?v=${version}` : baseSrc;
+                    console.log('Avatar image URL:', src);
                     return <img src={src} alt={profile.name} />;
                   })()
                 ) : (

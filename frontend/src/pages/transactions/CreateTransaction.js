@@ -512,6 +512,7 @@ const CreateTransaction = () => {
                         const version = localStorage.getItem('avatarVersion');
                         const baseSrc = isAbsolute ? user.avatarUrl : `${API_URL}${user.avatarUrl}`;
                         const src = version ? `${baseSrc}?v=${version}` : baseSrc;
+                        console.log('Transaction user avatar URL:', src);
                         return <img src={src} alt={user.name} />;
                       })()
                     ) : (

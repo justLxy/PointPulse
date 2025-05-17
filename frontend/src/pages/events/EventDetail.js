@@ -1218,6 +1218,7 @@ const EventDetail = () => {
                           const isAbsolute = /^(?:[a-z]+:)?\/\//i.test(guest.avatarUrl);
                           const baseSrc = isAbsolute ? guest.avatarUrl : `${API_URL}${guest.avatarUrl}`;
                           const src = version ? `${baseSrc}?v=${version}` : baseSrc;
+                          console.log(`Guest ${guest.id} avatar URL:`, src);
                           
                           return (
                             <AudienceSeat key={guest.id}>
@@ -1228,6 +1229,7 @@ const EventDetail = () => {
                                       const isAbsolute = /^(?:[a-z]+:)?\/\//i.test(guest.avatarUrl);
                                       const baseSrc = isAbsolute ? guest.avatarUrl : `${API_URL}${guest.avatarUrl}`;
                                       const src = version ? `${baseSrc}?v=${version}` : baseSrc;
+                                      console.log(`Guest ${guest.id} avatar URL:`, src);
                                       return (
                                         <img
                                           src={src}
