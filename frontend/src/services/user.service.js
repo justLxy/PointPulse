@@ -34,7 +34,6 @@ const UserService = {
       // Handle avatar file specifically
       if (userData.avatar && userData.avatar instanceof File) {
         formData.append('avatar', userData.avatar);
-        console.log('Appending avatar file:', userData.avatar.name, userData.avatar.type);
       }
       
       // Log the FormData contents for debugging
@@ -90,8 +89,6 @@ const UserService = {
     try {
       const formData = new FormData();
       formData.append('avatar', avatarFile);
-      
-      console.log('Updating avatar with file:', avatarFile.name, avatarFile.type, avatarFile.size);
       
       const response = await api.patch('/users/me', formData, {
         headers: {

@@ -448,8 +448,6 @@ const Profile = () => {
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      console.log('Avatar file selected:', file.name, file.type, file.size);
-      
       // Show local preview
       const reader = new FileReader();
       reader.onload = () => {
@@ -460,7 +458,6 @@ const Profile = () => {
       // Directly upload avatar file, no need to wait for user to click save button
       updateAvatar(file, {
         onSuccess: () => {
-          console.log('Avatar updated successfully');
           setAvatarPreview(null); // Clear preview, use server-returned URL
         },
         onError: () => {
@@ -821,7 +818,6 @@ const Profile = () => {
                     const avatarPath = profile.avatarUrl.startsWith('/') ? profile.avatarUrl : `/${profile.avatarUrl}`;
                     const baseSrc = isAbsolute ? profile.avatarUrl : `${API_URL}${avatarPath}`;
                     const src = version ? `${baseSrc}?v=${version}` : baseSrc;
-                    console.log('Avatar image URL:', src);
                     return <img src={src} alt={profile.name} />;
                   })()
                 ) : (
