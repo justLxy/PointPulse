@@ -818,7 +818,8 @@ const Profile = () => {
                   (() => {
                     const isAbsolute = /^(?:[a-z]+:)?\/\//i.test(profile.avatarUrl);
                     const version = localStorage.getItem('avatarVersion');
-                    const baseSrc = isAbsolute ? profile.avatarUrl : `${API_URL}${profile.avatarUrl}`;
+                    const avatarPath = profile.avatarUrl.startsWith('/') ? profile.avatarUrl : `/${profile.avatarUrl}`;
+                    const baseSrc = isAbsolute ? profile.avatarUrl : `${API_URL}${avatarPath}`;
                     const src = version ? `${baseSrc}?v=${version}` : baseSrc;
                     console.log('Avatar image URL:', src);
                     return <img src={src} alt={profile.name} />;

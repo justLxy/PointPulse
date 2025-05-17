@@ -522,7 +522,8 @@ const Header = () => {
                     (() => {
                       const isAbsolute = /^(?:[a-z]+:)?\/\//i.test(currentUser.avatarUrl);
                       const version = localStorage.getItem('avatarVersion');
-                      const baseSrc = isAbsolute ? currentUser.avatarUrl : `${API_URL}${currentUser.avatarUrl}`;
+                      const avatarPath = currentUser.avatarUrl.startsWith('/') ? currentUser.avatarUrl : `/${currentUser.avatarUrl}`;
+                      const baseSrc = isAbsolute ? currentUser.avatarUrl : `${API_URL}${avatarPath}`;
                       const src = version ? `${baseSrc}?v=${version}` : baseSrc;
                       console.log('Header avatar URL:', src);
                       return <img src={src} alt={currentUser.name} />;

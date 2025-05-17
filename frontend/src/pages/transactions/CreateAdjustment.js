@@ -508,10 +508,9 @@ const CreateAdjustment = () => {
                       {selectedUser.avatarUrl ? (
                         (() => {
                           const isAbsolute = /^(?:[a-z]+:)?\/\//i.test(selectedUser.avatarUrl);
-                          const version = localStorage.getItem('avatarVersion');
-                          const baseSrc = isAbsolute ? selectedUser.avatarUrl : `${API_URL}${selectedUser.avatarUrl}`;
-                          const src = version ? `${baseSrc}?v=${version}` : baseSrc;
-                          return <img src={src} alt={selectedUser.name} />;
+                          const avatarPath = selectedUser.avatarUrl.startsWith('/') ? selectedUser.avatarUrl : `/${selectedUser.avatarUrl}`;
+                          const baseSrc = isAbsolute ? selectedUser.avatarUrl : `${API_URL}${avatarPath}`;
+                          return <img src={baseSrc} alt={selectedUser.name} />;
                         })()
                       ) : (
                         <Avatar>{getInitials(selectedUser.name)}</Avatar>

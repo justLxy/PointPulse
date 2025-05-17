@@ -1216,9 +1216,10 @@ const EventDetail = () => {
                           
                           const version = localStorage.getItem('avatarVersion');
                           const isAbsolute = /^(?:[a-z]+:)?\/\//i.test(guest.avatarUrl);
-                          const baseSrc = isAbsolute ? guest.avatarUrl : `${API_URL}${guest.avatarUrl}`;
+                          // Fix for double slashes by ensuring avatarUrl doesn't have a leading slash when concatenated
+                          const avatarPath = guest.avatarUrl.startsWith('/') ? guest.avatarUrl : `/${guest.avatarUrl}`;
+                          const baseSrc = isAbsolute ? guest.avatarUrl : `${API_URL}${avatarPath}`;
                           const src = version ? `${baseSrc}?v=${version}` : baseSrc;
-                          console.log(`Guest ${guest.id} avatar URL:`, src);
                           
                           return (
                             <AudienceSeat key={guest.id}>
@@ -1227,16 +1228,10 @@ const EventDetail = () => {
                                   {guest.avatarUrl ? (
                                     (() => {
                                       const isAbsolute = /^(?:[a-z]+:)?\/\//i.test(guest.avatarUrl);
-                                      const baseSrc = isAbsolute ? guest.avatarUrl : `${API_URL}${guest.avatarUrl}`;
-                                      const src = version ? `${baseSrc}?v=${version}` : baseSrc;
-                                      console.log(`Guest ${guest.id} avatar URL:`, src);
-                                      return (
-                                        <img
-                                          src={src}
-                                          alt={guest.name}
-                                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                        />
-                                      );
+                                      // Fix for double slashes by ensuring avatarUrl doesn't have a leading slash when concatenated
+                                      const avatarPath = guest.avatarUrl.startsWith('/') ? guest.avatarUrl : `/${guest.avatarUrl}`;
+                                      const baseSrc = isAbsolute ? guest.avatarUrl : `${API_URL}${avatarPath}`;
+                                      return <img src={baseSrc} alt={guest.name} />;
                                     })()
                                   ) : (
                                     guest.name?.charAt(0).toUpperCase() || 'U'

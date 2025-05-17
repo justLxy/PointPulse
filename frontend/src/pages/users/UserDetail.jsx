@@ -11,6 +11,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion'; 
 import { FaExclamationTriangle } from 'react-icons/fa';
+import { API_URL } from '../../services/api';
 
 const PageWrapper = styled(motion.div)`
   padding: ${theme.spacing.xl};
@@ -199,7 +200,13 @@ const UserDetail = () => {
               <CardContent>
                 <Avatar>
                   {user.avatarUrl ? (
-                    <img src={user.avatarUrl} alt={user.name} />
+                    (() => {
+                      const isAbsolute = /^(?:[a-z]+:)?\/\//i.test(user.avatarUrl);
+                      // Fix for double slashes by ensuring avatarUrl doesn't have a leading slash when concatenated
+                      const avatarPath = user.avatarUrl.startsWith('/') ? user.avatarUrl : `/${user.avatarUrl}`;
+                      const baseSrc = isAbsolute ? user.avatarUrl : `${API_URL}${avatarPath}`;
+                      return <img src={baseSrc} alt={user.name} />;
+                    })()
                   ) : (
                     getInitials(user.name)
                   )}

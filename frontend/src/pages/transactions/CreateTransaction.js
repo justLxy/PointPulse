@@ -509,11 +509,10 @@ const CreateTransaction = () => {
                     {user.avatarUrl ? (
                       (() => {
                         const isAbsolute = /^(?:[a-z]+:)?\/\//i.test(user.avatarUrl);
-                        const version = localStorage.getItem('avatarVersion');
-                        const baseSrc = isAbsolute ? user.avatarUrl : `${API_URL}${user.avatarUrl}`;
-                        const src = version ? `${baseSrc}?v=${version}` : baseSrc;
-                        console.log('Transaction user avatar URL:', src);
-                        return <img src={src} alt={user.name} />;
+                        // Fix for double slashes by ensuring avatarUrl doesn't have a leading slash when concatenated
+                        const avatarPath = user.avatarUrl.startsWith('/') ? user.avatarUrl : `/${user.avatarUrl}`;
+                        const baseSrc = isAbsolute ? user.avatarUrl : `${API_URL}${avatarPath}`;
+                        return <img src={baseSrc} alt={user.name} />;
                       })()
                     ) : (
                       getInitials(user.name)
