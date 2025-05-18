@@ -271,14 +271,10 @@ const App = () => {
               />
               <Route path="/users/:id" element={<UserDetail />} />
 
-              {/* Transfer page (protected) */}
+              {/* TransferPage handles its own auth logic, so it should be accessible without ProtectedRoute */}
               <Route
                 path="/transfer"
-                element={
-                  <ProtectedRoute>
-                    <TransferPage />
-                  </ProtectedRoute>
-                }
+                element={<TransferPage />}
               />
 
               {/* Catch all - redirect to home */}

@@ -256,7 +256,24 @@ const EventCheckinAttend = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const token = searchParams.get('token');
+  // Get token from data parameter first (new format)
+  const dataParam = searchParams.get('data');
+  let token = null;
+  
+  if (dataParam) {
+    try {
+      // Decode the base64 JSON data
+      const decodedData = JSON.parse(atob(decodeURIComponent(dataParam)));
+      if (decodedData && decodedData.type === 'pointpulse' && decodedData.context === 'event' && decodedData.token) {
+        token = decodedData.token;
+      }
+    } catch (error) {
+      console.error('Failed to decode data parameter:', error);
+    }
+  }
+  
+  // If no token was extracted, set token to null (no legacy fallback needed)
+  
   const [status, setStatus] = useState('loading'); // 'loading' | 'success' | 'error' | 'needsRsvp'
   const [time, setTime] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -327,7 +344,17 @@ const EventCheckinAttend = () => {
     } catch (err) {
       if (err.message?.includes('log in')) {
         // Use URL parameters and state for returning to this page after login
-        const returnUrl = encodeURIComponent(`/events/${eventId}/attend?token=${token}`);
+        // Create data payload for the redirect URL
+        const payload = {
+          type: 'pointpulse',
+          version: '1.0',
+          context: 'event',
+          eventId: eventId,
+          token: token
+        };
+        const encodedData = encodeURIComponent(btoa(JSON.stringify(payload)));
+        const returnUrl = encodeURIComponent(`/events/${eventId}/attend?data=${encodedData}`);
+        
         navigate(`/login?returnUrl=${returnUrl}`, {
           state: { from: window.location.pathname + window.location.search },
         });

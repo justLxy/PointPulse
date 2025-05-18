@@ -80,26 +80,30 @@ const UniversalQRCode = ({
     };
     
     let scanUrl = "";
-    
-    // 根据不同场景设置不同的context和URL
+
+    // ---- 新的统一规范 ----
+    // 1. 统一使用  ?data=<base64url>  作为承载结构化信息的查询参数
+    // 2. data 内为 JSON.stringify(baseData) 的标准 Base64 编码，再通过 encodeURIComponent 进行 URL 安全转义
+    // --------------------------------
+
     if (eventId) {
       baseData.context = 'event';
       baseData.eventId = eventId;
-      scanUrl = `${baseUrl}/events/${eventId}/attend?utorid=${currentUser?.utorid || ''}`;
-    } 
-    else if (redemptionId) {
+      const encodedData = encodeURIComponent(btoa(JSON.stringify(baseData)));
+      scanUrl = `${baseUrl}/events/${eventId}/attend?data=${encodedData}`;
+    } else if (redemptionId) {
       baseData.context = 'redemption';
       baseData.redemptionId = redemptionId;
-      scanUrl = `${baseUrl}/transactions/process?redemptionId=${redemptionId}`;
-    }
-    else {
+      const encodedData = encodeURIComponent(btoa(JSON.stringify(baseData)));
+      scanUrl = `${baseUrl}/transactions/process?data=${encodedData}`;
+    } else {
       baseData.context = 'user';
-      scanUrl = `${baseUrl}/transfer?utorid=${currentUser?.utorid || ''}`;
+      const encodedData = encodeURIComponent(btoa(JSON.stringify(baseData)));
+      scanUrl = `${baseUrl}/transfer?data=${encodedData}`;
     }
-    
-    // 创建同时兼容手机扫描和应用内扫描的二维码内容
-    // 添加URL开头以便手机相机可以识别为链接，后面附加JSON数据供应用内扫描器使用
-    return `${scanUrl}\n\n${JSON.stringify(baseData)}`;
+
+    // 返回单一 URL（无需再附加裸 JSON），既可被系统解析，也方便手机浏览器直接访问
+    return scanUrl;
   };
   
   const downloadQRCode = () => {

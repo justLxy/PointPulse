@@ -448,56 +448,27 @@ const CreateTransaction = () => {
     
     // If QR data is provided, try to parse it
     if (qrData) {
-      // 检查是否包含URL和JSON的混合格式
-      if (qrData.includes('\n\n')) {
-        // 分离URL和JSON部分
-        const parts = qrData.split('\n\n');
-        if (parts.length === 2) {
-          try {
-            // 尝试解析JSON部分
-            const parsedData = JSON.parse(parts[1]);
-            if (parsedData.type === 'pointpulse') {
-              searchUtorid = parsedData.utorid;
-            }
-          } catch (parseError) {
-            console.error('JSON解析错误:', parseError);
-            // 解析失败，尝试使用URL部分
-            const url = parts[0].trim();
-            if (url.includes('utorid=')) {
-              try {
-                const urlObj = new URL(url);
-                const utoridParam = urlObj.searchParams.get('utorid');
-                if (utoridParam) {
-                  searchUtorid = utoridParam;
-                }
-              } catch (urlError) {
-                console.error('URL解析错误:', urlError);
-              }
-            }
-          }
-        }
-      } else {
-        // 尝试解析为普通JSON
       try {
-        const parsedData = JSON.parse(qrData);
-        if (parsedData.type === 'pointpulse') {
-          searchUtorid = parsedData.utorid;
-        }
-      } catch (parseError) {
-          // 不是JSON，检查是否是URL
-          if (qrData.trim().startsWith('http')) {
-            try {
-              const url = new URL(qrData.trim());
-              const utoridParam = url.searchParams.get('utorid');
-              if (utoridParam) {
-                searchUtorid = utoridParam;
-              }
-            } catch (urlError) {
-              console.error('URL解析错误:', urlError);
-              // 不是URL，假设直接是utorid
+        const url = new URL(qrData.trim());
+        const dataParam = url.searchParams.get('data');
+        if (dataParam) {
+          try {
+            const decodedJson = JSON.parse(atob(decodeURIComponent(dataParam)));
+            if (decodedJson && decodedJson.utorid) {
+              searchUtorid = decodedJson.utorid;
             }
+          } catch (decodeErr) {
+            console.warn('Base64 decode failed', decodeErr);
           }
         }
+      } catch (urlError) {
+        // 不是 URL - 尝试直接解码 dataParam
+        try {
+          const decodedJson = JSON.parse(atob(decodeURIComponent(qrData.trim())));
+          if (decodedJson && decodedJson.utorid) {
+            searchUtorid = decodedJson.utorid;
+          }
+        } catch {}
       }
     }
     

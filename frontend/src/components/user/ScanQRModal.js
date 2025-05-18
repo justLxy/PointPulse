@@ -323,65 +323,40 @@ const ScanQRModal = ({ isOpen, onClose }) => {
     
     console.log('Scanned content:', decodedText);
     
-    // Process the scanned data - simplified to only extract utorid
+    // Process the scanned data - only support new format with data parameter
     try {
       let recipientUtorid = '';
       
-      // Handle composite format: URL + JSON
-      if (decodedText.includes('\n\n')) {
-        // Separate URL and JSON parts
-        const parts = decodedText.split('\n\n');
-        if (parts.length === 2) {
-          const scanUrl = parts[0].trim(); // URL part
-          
-          // Handle URL part
-          if (scanUrl && scanUrl.startsWith('http')) {
+      // Check if it's a URL with data parameter
+      if (decodedText.trim().startsWith('http')) {
+        const url = new URL(decodedText.trim());
+        if (url.pathname.includes('/transfer')) {
+          const dataParam = url.searchParams.get('data');
+          if (dataParam) {
             try {
-              // Parse URL
-              const url = new URL(scanUrl);
-              
-              if (scanUrl.includes('/transfer')) {
-                recipientUtorid = url.searchParams.get('utorid') || '';
-              }
-            } catch (err) {
-              console.error('URL parsing error:', err);
+              const decodedJson = JSON.parse(atob(decodeURIComponent(dataParam)));
+              recipientUtorid = decodedJson?.utorid || '';
+            } catch (error) {
+              console.error('Failed to decode data parameter:', error);
+              throw new Error('Invalid QR code format. Please use a valid PointPulse QR code.');
             }
+          } else {
+            throw new Error('Invalid QR code format. Missing data parameter.');
           }
-          
-          // Try to parse JSON part as backup
-          if (!recipientUtorid) {
-            try {
-              const qrData = JSON.parse(parts[1]);
-              if (qrData && qrData.utorid) {
-                recipientUtorid = qrData.utorid;
-              } 
-            } catch (err) {
-              console.error('JSON parsing error:', err);
-            }
-          }
-        }
-      } else if (decodedText.trim().startsWith('http')) {
-        // Handle pure URL format
-        try {
-          const url = new URL(decodedText.trim());
-          
-          if (url.pathname.includes('/transfer')) {
-            recipientUtorid = url.searchParams.get('utorid') || '';
-          }
-        } catch (err) {
-          console.error('URL parsing error:', err);
+        } else {
+          throw new Error('Invalid QR code. Not a transfer URL.');
         }
       } else {
-        // Try to handle as pure JSON or plain text
+        // Try to parse as raw base64 data
         try {
-          const qrData = JSON.parse(decodedText);
-          
-          if (qrData && qrData.utorid) {
-            recipientUtorid = qrData.utorid;
+          const decodedJson = JSON.parse(atob(decodeURIComponent(decodedText.trim())));
+          recipientUtorid = decodedJson?.utorid || '';
+          if (!recipientUtorid) {
+            throw new Error('Missing user ID in QR code data.');
           }
-        } catch (err) {
-          // Plain text, might be regular UTORID
-          recipientUtorid = decodedText.trim();
+        } catch (error) {
+          console.error('Failed to decode direct data:', error);
+          throw new Error('Invalid QR code format. Please scan a valid user QR code.');
         }
       }
       
@@ -401,7 +376,7 @@ const ScanQRModal = ({ isOpen, onClose }) => {
     } catch (err) {
       setScanResult({
         status: 'error',
-        message: 'Unable to parse QR code data. Please ensure you are scanning a valid QR code.'
+        message: err.message || 'Unable to parse QR code data. Please ensure you are scanning a valid QR code.'
       });
     }
   };
@@ -435,16 +410,20 @@ const ScanQRModal = ({ isOpen, onClose }) => {
     
     // Always send the raw scanned utorid to maintain data integrity through redirects
     const recipientUtorid = scanResult.recipientUtorid;
-    
-    // Create a more robust target URL that will survive multiple encode/decode cycles
-    const target = `/transfer?utorid=${encodeURIComponent(recipientUtorid)}`;
+    // Build standardized data payload
+    const payload = {
+      type: 'pointpulse',
+      version: '1.0',
+      utorid: recipientUtorid,
+      context: 'user'
+    };
+    const encodedData = encodeURIComponent(btoa(JSON.stringify(payload)));
+    const target = `/transfer?data=${encodedData}`;
     
     if (isAuthenticated) {
       navigate(target, { replace: true });
     } else {
-      // Store the recipient utorid in sessionStorage to ensure it survives the redirect
-      sessionStorage.setItem('pendingTransferUtorid', recipientUtorid);
-      navigate(`/login?returnUrl=${encodeURIComponent('/transfer')}`, { replace: true });
+      navigate(`/login?returnUrl=${encodeURIComponent(target)}`, { replace: true });
     }
   };
   

@@ -277,7 +277,21 @@ const EventCheckinDisplay = () => {
     if (!tokenData) return '';
     const { token } = tokenData;
     const origin = window.location.origin;
-    return `${origin}/events/${eventId}/attend?token=${encodeURIComponent(token)}`;
+    
+    // Create data payload using the new format
+    const payload = {
+      type: 'pointpulse',
+      version: '1.0',
+      context: 'event',
+      eventId: eventId,
+      token: token
+    };
+    
+    // Encode the payload as base64
+    const encodedData = encodeURIComponent(btoa(JSON.stringify(payload)));
+    
+    // Return URL with data parameter
+    return `${origin}/events/${eventId}/attend?data=${encodedData}`;
   }, [tokenData, eventId]);
 
   const isLoading = isLoadingToken || isLoadingEvent;

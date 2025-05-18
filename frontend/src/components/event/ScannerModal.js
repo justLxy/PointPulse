@@ -278,100 +278,58 @@ const QrScanner = ({ eventId, onScanComplete }) => {
           }
           
           try {
-            // Parse the decoded text which could be the universal QR code JSON or legacy format
+            // Parse the decoded text as a URL with data parameter (new format only)
             let scannedUtorid = '';
             let scannedEventId = null;
             
-            // 检查是否是混合格式（URL + JSON）
-            if (decodedText.includes('\n\n')) {
-              console.log("Mixed format QR code detected in event check-in");
-              const parts = decodedText.split('\n\n');
-              
-              if (parts.length === 2) {
-                const url = parts[0].trim();
-                // 尝试从URL中提取utorid参数
-                if (url.includes('utorid=')) {
-                  try {
-                    const urlObj = new URL(url);
-                    const utoridParam = urlObj.searchParams.get('utorid');
-                    if (utoridParam) {
-                      scannedUtorid = utoridParam;
-                      console.log("Extracted utorid from URL part:", scannedUtorid);
-                    }
-                    
-                    // 尝试从URL路径中提取eventId
-                    if (url.includes('/events/')) {
-                      const match = url.match(/\/events\/(\d+)\/attend/);
-                      if (match && match[1]) {
-                        scannedEventId = match[1];
-                        console.log("Extracted eventId from URL part:", scannedEventId);
-                      }
-                    }
-                  } catch (urlError) {
-                    console.error("Error parsing URL part:", urlError);
-                  }
-                }
-                
-                // 尝试解析JSON部分作为备份或补充信息
-                try {
-                  const qrData = JSON.parse(parts[1]);
-                  if (qrData.type === 'pointpulse') {
-                    if (!scannedUtorid) {
-                      scannedUtorid = qrData.utorid;
-                      console.log("Using utorid from JSON part:", scannedUtorid);
-                    }
-                    
-                    if (qrData.context === 'event' && !scannedEventId) {
-                      scannedEventId = qrData.eventId?.toString();
-                      console.log("Using eventId from JSON part:", scannedEventId);
-                    }
-                  }
-                } catch (jsonError) {
-                  console.error("Error parsing JSON part:", jsonError);
-                }
-              }
-            } else if (decodedText.trim().startsWith('http')) {
-              // 直接是URL格式
-              console.log("URL format QR code detected");
+            console.log("Scanned QR code:", decodedText);
+            
+            // Check if it's a URL and extract data parameter
+            if (decodedText.trim().startsWith('http')) {
               try {
                 const url = new URL(decodedText.trim());
-                const utoridParam = url.searchParams.get('utorid');
-                if (utoridParam) {
-                  scannedUtorid = utoridParam;
-                  console.log("Extracted utorid from URL:", scannedUtorid);
-                }
                 
-                // 尝试从URL路径中提取eventId
-                if (decodedText.includes('/events/')) {
-                  const match = decodedText.match(/\/events\/(\d+)\/attend/);
-                  if (match && match[1]) {
-                    scannedEventId = match[1];
-                    console.log("Extracted eventId from URL:", scannedEventId);
+                // Extract data parameter (only support new format)
+                const dataParam = url.searchParams.get('data');
+                if (dataParam) {
+                  try {
+                    const decodedJson = JSON.parse(atob(decodeURIComponent(dataParam)));
+                    if (decodedJson && decodedJson.utorid) {
+                      scannedUtorid = decodedJson.utorid;
+                      console.log("Extracted utorid from data param:", scannedUtorid);
+                      
+                      if (decodedJson.context === 'event' && decodedJson.eventId) {
+                        scannedEventId = decodedJson.eventId.toString();
+                        console.log("Extracted eventId from data param:", scannedEventId);
+                      }
+                    }
+                  } catch (decodeErr) {
+                    console.warn('Base64 decode failed', decodeErr);
+                    throw new Error('Invalid QR code format. Please use a valid PointPulse QR code.');
                   }
+                } else {
+                  throw new Error('Invalid QR code format. Missing data parameter.');
                 }
               } catch (urlError) {
                 console.error("Error parsing URL:", urlError);
+                throw new Error('Invalid QR code URL format.');
               }
             } else {
-              // 尝试解析为JSON或原始格式
-            try {
-              // Try to parse as JSON (universal QR code format)
-              const qrData = JSON.parse(decodedText);
-              
-              // Check if this is a PointPulse QR code
-              if (qrData.type === 'pointpulse') {
-                scannedUtorid = qrData.utorid;
-                
-                // Check if this QR is for an event context
-                if (qrData.context === 'event') {
-                  scannedEventId = qrData.eventId?.toString();
+              // Not a URL - try to parse as raw base64 data
+              try {
+                const decodedJson = JSON.parse(atob(decodeURIComponent(decodedText.trim())));
+                if (decodedJson && decodedJson.utorid) {
+                  scannedUtorid = decodedJson.utorid;
+                  
+                  if (decodedJson.context === 'event' && decodedJson.eventId) {
+                    scannedEventId = decodedJson.eventId.toString();
+                  }
+                } else {
+                  throw new Error('Invalid QR code data. Missing required user information.');
                 }
-              }
-            } catch (parseError) {
-              // Not JSON, try legacy format "utorid|eventId"
-              const parts = decodedText.trim().split('|');
-              scannedUtorid = parts[0];
-              scannedEventId = parts.length > 1 ? parts[1] : null;
+              } catch (error) {
+                console.error("Error decoding base64 data:", error);
+                throw new Error('Invalid QR code format. Please use a valid PointPulse QR code.');
               }
             }
             

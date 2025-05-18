@@ -12,6 +12,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { Html5Qrcode } from 'html5-qrcode';
 import Modal from '../../components/common/Modal';
 import { toast } from 'react-hot-toast';
+import { useLocation } from 'react-router-dom';
 
 const PageTitle = styled.h1`
   font-size: ${theme.typography.fontSize['3xl']};
@@ -458,88 +459,90 @@ const ProcessRedemption = () => {
     if (qrData) {
       console.log("Processing QR data:", qrData);
       try {
-        let parsedData;
-        
-        // 检查是否包含URL和JSON的混合格式
-        if (qrData.includes('\n\n')) {
-          console.log("Detected mixed format QR code with URL and JSON");
-          // 分离URL和JSON部分
-          const parts = qrData.split('\n\n');
-          if (parts.length === 2) {
-            const url = parts[0].trim();
+        // Check if the QR data is a URL
+        if (qrData.trim().startsWith('http')) {
+          console.log("Detected URL format QR code");
+          try {
+            const url = new URL(qrData.trim());
             
-            // 尝试从URL中提取信息
-            if (url.includes('redemptionId=')) {
-              try {
-                const urlObj = new URL(url);
-                const redemptionIdParam = urlObj.searchParams.get('redemptionId');
-                if (redemptionIdParam) {
-                  searchRedemptionId = redemptionIdParam;
-                  console.log("Extracted redemption ID from URL:", searchRedemptionId);
+            // Handle transfer URLs directly
+            if (url.pathname === '/transfer') {
+              const dataParam = url.searchParams.get('data');
+              if (dataParam) {
+                try {
+                  const decodedJson = JSON.parse(atob(decodeURIComponent(dataParam)));
+                  if (decodedJson && decodedJson.utorid) {
+                    scannedUtorid = decodedJson.utorid;
+                    console.log("Extracted utorid from transfer URL:", scannedUtorid);
+                  }
+                } catch (decodeErr) {
+                  console.warn('Base64 decode failed on transfer URL', decodeErr);
                 }
-              } catch (urlError) {
-                console.error('URL解析错误:', urlError);
+              }
+            } 
+            // Handle redemption process URLs
+            else if (url.pathname === '/transactions/process') {
+              const dataParam = url.searchParams.get('data');
+              if (dataParam) {
+                try {
+                  const decodedJson = JSON.parse(atob(decodeURIComponent(dataParam)));
+                  if (decodedJson.context === 'redemption' && decodedJson.redemptionId) {
+                    searchRedemptionId = decodedJson.redemptionId;
+                    console.log("Extracted redemption ID from data param:", searchRedemptionId);
+                  }
+                } catch (decodeErr) {
+                  console.warn('Base64 decode failed', decodeErr);
+                  throw new Error('Invalid QR code format. Please use a valid PointPulse QR code.');
+                }
+              } else {
+                throw new Error('Invalid QR code format. Missing data parameter.');
               }
             }
-            
-            // 尝试解析JSON部分作为备份
-            try {
-              parsedData = JSON.parse(parts[1]);
-              console.log("Successfully parsed JSON part of QR data:", parsedData);
-            } catch (jsonError) {
-              console.error("Error parsing JSON part:", jsonError);
+            // For any other URL, try to extract data parameter
+            else {
+              const dataParam = url.searchParams.get('data');
+              if (dataParam) {
+                try {
+                  const decodedJson = JSON.parse(atob(decodeURIComponent(dataParam)));
+                  if (decodedJson.context === 'redemption' && decodedJson.redemptionId) {
+                    searchRedemptionId = decodedJson.redemptionId;
+                  } else if (decodedJson.context === 'user' && decodedJson.utorid) {
+                    scannedUtorid = decodedJson.utorid;
+                  }
+                } catch (decodeErr) {
+                  console.warn('Base64 decode failed', decodeErr);
+                }
+              }
             }
+          } catch (urlError) {
+            console.error('URL parsing error:', urlError);
           }
-        } else {
-          // 检查是否是URL格式
-          if (qrData.trim().startsWith('http')) {
-            console.log("Detected URL format QR code");
-            try {
-              const url = new URL(qrData.trim());
-              // 检查URL中是否包含redemptionId参数
-              const redemptionIdParam = url.searchParams.get('redemptionId');
-              if (redemptionIdParam) {
-                searchRedemptionId = redemptionIdParam;
-                console.log("Extracted redemption ID from URL:", searchRedemptionId);
+        } 
+        // If not a URL, try to parse as direct base64 data
+        else {
+          try {
+            const decodedJson = JSON.parse(atob(decodeURIComponent(qrData.trim())));
+            if (decodedJson.type === 'pointpulse') {
+              if (decodedJson.context === 'redemption') {
+                searchRedemptionId = decodedJson.redemptionId;
+              } else if (decodedJson.context === 'user') {
+                scannedUtorid = decodedJson.utorid;
               }
-            } catch (urlError) {
-              console.error('URL解析错误:', urlError);
             }
-          } else {
-            // 尝试解析为JSON
-        try {
-          parsedData = JSON.parse(qrData);
-              console.log("Successfully parsed QR data as JSON:", parsedData);
-        } catch (parseError) {
-          console.log("QR data is not JSON, treating as plain text:", qrData);
+          } catch (e) {
+            // Not base64 encoded - fallback to treating as plain text
+            if (!isNaN(parseInt(qrData))) {
+              searchRedemptionId = qrData;
+              console.log("Treating QR data as redemption ID:", searchRedemptionId);
+            } else {
+              scannedUtorid = qrData;
+              console.log("Treating QR data as utorid:", scannedUtorid);
             }
           }
         }
         
-        // 检查是否成功解析了JSON数据
-        if (parsedData && parsedData.type === 'pointpulse') {
-          console.log("Found pointpulse QR code with context:", parsedData.context);
-          
-          if (parsedData.context === 'redemption') {
-            // Direct redemption QR code
-            searchRedemptionId = parsedData.redemptionId;
-            console.log("Extracted redemption ID from JSON:", searchRedemptionId);
-          } else {
-            // Universal user QR code - extract utorid to find all user's redemptions
-            scannedUtorid = parsedData.utorid;
-            console.log("Extracted user utorid from JSON:", scannedUtorid);
-          }
-        } else if (!parsedData && !searchRedemptionId) {
-          // 如果通过URL和JSON都没有提取到信息，尝试将纯文本识别为ID或utorid
-          if (!isNaN(parseInt(qrData))) {
-            searchRedemptionId = qrData;
-            console.log("Treating QR data as redemption ID:", searchRedemptionId);
-          } else {
-            // If not a number, assume it's a utorid
-            scannedUtorid = qrData;
-            console.log("Treating QR data as utorid:", scannedUtorid);
-          }
-        } else if (!parsedData && !searchRedemptionId && !scannedUtorid) {
+        // If we couldn't extract anything meaningful, show error
+        if (!searchRedemptionId && !scannedUtorid) {
           console.log("Unknown QR format, no valid data extracted");
           setStatus('error');
           setResult({ message: 'Invalid QR code format. Please scan a valid redemption or user QR code.' });
@@ -556,28 +559,28 @@ const ProcessRedemption = () => {
       searchRedemptionId = redemptionId;
     }
     
-          // If we have a utorid, fetch all pending redemptions for that user
-      if (scannedUtorid) {
-        try {
-          // Set the user filter to show only this user's redemptions
-          setUserFilter(scannedUtorid);
-          
-          // Reset page to 1 when filtering by user
-          setPage(1);
-          
-          // Provide feedback that we're filtering by user
-          toast.success(`Showing pending redemptions for user ${scannedUtorid}`);
-          
-          // Reset search states
-          setStatus('idle');
-          setRedemptionId('');
-          return;
-        } catch (error) {
-          setStatus('error');
-          setResult({ message: error.message || `Failed to find redemptions for user ${scannedUtorid}` });
-          return;
-        }
+    // If we have a utorid, fetch all pending redemptions for that user
+    if (scannedUtorid) {
+      try {
+        // Set the user filter to show only this user's redemptions
+        setUserFilter(scannedUtorid);
+        
+        // Reset page to 1 when filtering by user
+        setPage(1);
+        
+        // Provide feedback that we're filtering by user
+        toast.success(`Showing pending redemptions for user ${scannedUtorid}`);
+        
+        // Reset search states
+        setStatus('idle');
+        setRedemptionId('');
+        return;
+      } catch (error) {
+        setStatus('error');
+        setResult({ message: error.message || `Failed to find redemptions for user ${scannedUtorid}` });
+        return;
       }
+    }
     
     // Continue with regular redemption ID lookup if we have one
     if (!searchRedemptionId || isNaN(parseInt(searchRedemptionId))) {
@@ -676,6 +679,21 @@ const ProcessRedemption = () => {
     return () => {
       stopScanner();
     };
+  }, []);
+
+  // Parse query param on initial load (for direct link via QR on smartphones)
+  const location = useLocation();
+
+  // Auto-handle direct link with ?data param (e.g., scanned via system camera)
+  useEffect(() => {
+    if (location && location.search) {
+      const params = new URLSearchParams(location.search);
+      if (params.get('data') || params.get('redemptionId')) {
+        // Pass full URL so existing parser can extract
+        handleSearch(window.location.href);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
