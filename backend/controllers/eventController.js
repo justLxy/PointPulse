@@ -1573,27 +1573,6 @@ const checkInByScan = async (req, res) => {
         });
 
         const alreadyCheckedIn = attendance.checkedInAt && attendance.checkedInAt.getTime() < Date.now() - 1000; // existing record
-        
-        // Send real-time notification via socket if the user is connected
-        // Get the socket.io instance and connected users map
-        const io = req.app.get('io');
-        const connectedUsers = req.app.get('connectedUsers');
-        
-        // If user is connected, send them a notification
-        const userSocketId = connectedUsers.get(attendee.id.toString());
-        if (userSocketId) {
-            io.to(userSocketId).emit('checkin-notification', {
-                success: true,
-                event: {
-                    id: event.id,
-                    name: event.name
-                },
-                isFirstCheckin: !alreadyCheckedIn,
-                checkedInAt: attendance.checkedInAt || new Date(),
-                message: alreadyCheckedIn ? 'You have already checked in to this event' : 'You have been checked in successfully'
-            });
-            console.log(`Sent check-in notification to user ${attendee.id} (socket ${userSocketId})`);
-        }
 
         return res.status(alreadyCheckedIn ? 200 : 201).json({
             message: alreadyCheckedIn ? 'Already checked in' : 'Check-in successful',
