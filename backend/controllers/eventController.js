@@ -1574,12 +1574,31 @@ const checkInByScan = async (req, res) => {
 
         const alreadyCheckedIn = attendance.checkedInAt && attendance.checkedInAt.getTime() < Date.now() - 1000; // existing record
 
-        return res.status(alreadyCheckedIn ? 200 : 201).json({
+        // Get the response payload
+        const responsePayload = {
             message: alreadyCheckedIn ? 'Already checked in' : 'Check-in successful',
             name: attendee.name,
             utorid: attendee.utorid,
             checkedInAt: attendance.checkedInAt,
-        });
+            eventName: event.name,
+            eventId: event.id
+        };
+
+        // Emit socket event if check-in was successful
+        if (!alreadyCheckedIn) {
+            // Get socket.io instance
+            const io = req.app.get('io');
+            if (io) {
+                // Emit to the user's room (using utorid as the room name)
+                io.to(attendee.utorid).emit('checkin-success', {
+                    ...responsePayload,
+                    scannedBy: requester.name || requester.utorid
+                });
+                console.log(`Emitted checkin-success event to user ${attendee.utorid}`);
+            }
+        }
+
+        return res.status(alreadyCheckedIn ? 200 : 201).json(responsePayload);
     } catch (error) {
         console.error('Error during manual scan check-in:', error);
         return res.status(500).json({ error: 'Failed to record attendance' });

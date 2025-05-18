@@ -10,6 +10,8 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const { expressjwt: jwt } = require("express-jwt");
+const http = require('http');
+const { Server } = require('socket.io');
 
 // Import routes
 const authRoutes = require("./routes/authRoutes");
@@ -74,8 +76,51 @@ app.use("/promotions", promotionRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
+// Create HTTP server
+const server = http.createServer(app);
+
+// Initialize Socket.IO
+const io = new Server(server, {
+    cors: {
+        origin: function (origin, callback) {
+            const allowedOrigins = [
+                FRONTEND_URL,
+                // Add other specific origins if needed
+            ];
+            if (!origin || allowedOrigins.indexOf(origin) !== -1 || origin.startsWith('https://pointpulse')) {
+                callback(null, true);
+            } else {
+                callback(new Error('Not allowed by CORS'));
+            }
+        },
+        methods: ['GET', 'POST'],
+        credentials: true
+    }
+});
+
+// Socket.IO connection handling
+io.on('connection', (socket) => {
+    console.log('User connected:', socket.id);
+    
+    // Handle user joining room based on UTORid
+    socket.on('join', (utorid) => {
+        if (utorid) {
+            console.log(`User ${utorid} joined their room`);
+            socket.join(utorid);
+        }
+    });
+    
+    // Handle disconnection
+    socket.on('disconnect', () => {
+        console.log('User disconnected:', socket.id);
+    });
+});
+
+// Add socket instance to app for access in routes
+app.set('io', io);
+
 // Start server
-const server = app.listen(port, () => {
+server.listen(port, () => {
     console.log(`Server running on port ${port}`);
 });
 
