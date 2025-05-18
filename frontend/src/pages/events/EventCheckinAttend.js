@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import styled from '@emotion/styled';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -279,20 +279,7 @@ const EventCheckinAttend = () => {
   const [errorMsg, setErrorMsg] = useState('');
   const [eventName, setEventName] = useState('');
 
-  // Handle RSVP action
-  const handleRsvp = async () => {
-    try {
-      setStatus('rsvping');
-      await EventService.rsvpToEvent(eventId);
-      // After successful RSVP, retry check-in with same token
-      processCheckin();
-    } catch (err) {
-      setStatus('error');
-      setErrorMsg(err.message || 'Failed to RSVP. Please try again.');
-    }
-  };
-
-  const processCheckin = async () => {
+  const processCheckin = useCallback(async () => {
     if (!token) {
       setStatus('error');
       setErrorMsg('Invalid or missing token.');
@@ -370,11 +357,24 @@ const EventCheckinAttend = () => {
       setStatus('error');
       setErrorMsg(err.message || 'Unknown error occurred');
     }
-  };
+  }, [token, eventId, navigate]);
+
+  // Handle RSVP action
+  const handleRsvp = useCallback(async () => {
+    try {
+      setStatus('rsvping');
+      await EventService.rsvpToEvent(eventId);
+      // After successful RSVP, retry check-in with same token
+      processCheckin();
+    } catch (err) {
+      setStatus('error');
+      setErrorMsg(err.message || 'Failed to RSVP. Please try again.');
+    }
+  }, [eventId, processCheckin]);
 
   useEffect(() => {
     processCheckin();
-  }, [token, eventId, navigate]);
+  }, [processCheckin]);
 
   return (
     <Container>

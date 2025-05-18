@@ -16,6 +16,7 @@ const TransferPage = () => {
   const { isAuthenticated, currentUser } = useAuth();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const [modalOpen, setModalOpen] = useState(true);
 
   const dataParam = searchParams.get('data') || '';
 
@@ -36,8 +37,6 @@ const TransferPage = () => {
   if (!dataParam || !utoridForModal) {
     return <Navigate to="/" replace />;
   }
-
-  const [modalOpen, setModalOpen] = useState(true);
 
   // If the user is not authenticated, redirect to login and come back after login.
   if (!isAuthenticated) {
