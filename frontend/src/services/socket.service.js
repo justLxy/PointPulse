@@ -64,23 +64,6 @@ const SocketService = {
         socket.on('checkin-success', (data) => {
           console.log('Received check-in confirmation:', data);
           
-          // Display a toast notification
-          toast.success(
-            <div>
-              <strong>Check-in Successful!</strong>
-              <div>You've been checked in to {data.eventName}</div>
-            </div>,
-            {
-              duration: 5000,
-              style: {
-                background: '#10B981',
-                color: '#FFFFFF',
-                borderRadius: '10px',
-              },
-              icon: '✅',
-            }
-          );
-          
           // Notify registered listeners
           if (listeners['checkin-success']) {
             listeners['checkin-success'].forEach(callback => {
