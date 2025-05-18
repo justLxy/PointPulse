@@ -433,11 +433,18 @@ const ScanQRModal = ({ isOpen, onClose }) => {
     // First close the modal
     onClose();
     
-    const target = `/transfer?utorid=${encodeURIComponent(scanResult.recipientUtorid)}`;
+    // Always send the raw scanned utorid to maintain data integrity through redirects
+    const recipientUtorid = scanResult.recipientUtorid;
+    
+    // Create a more robust target URL that will survive multiple encode/decode cycles
+    const target = `/transfer?utorid=${encodeURIComponent(recipientUtorid)}`;
+    
     if (isAuthenticated) {
       navigate(target, { replace: true });
     } else {
-      navigate(`/login?returnUrl=${encodeURIComponent(target)}`, { replace: true });
+      // Store the recipient utorid in sessionStorage to ensure it survives the redirect
+      sessionStorage.setItem('pendingTransferUtorid', recipientUtorid);
+      navigate(`/login?returnUrl=${encodeURIComponent('/transfer')}`, { replace: true });
     }
   };
   

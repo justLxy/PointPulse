@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, Navigate } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
 import { useAuth } from '../contexts/AuthContext';
@@ -17,8 +17,25 @@ const TransferPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
+  // First check URL for utorid parameter
   const rawUtoridQueryParam = searchParams.get('utorid') || '';
-  let utoridForModal = rawUtoridQueryParam; // Initialize with the full raw string
+  
+  // Initialize with the full raw string from URL or check sessionStorage for saved utorid
+  let utoridForModal = rawUtoridQueryParam;
+  
+  // Check sessionStorage for pending transfer (for post-login redirect case)
+  useEffect(() => {
+    const pendingUtorid = sessionStorage.getItem('pendingTransferUtorid');
+    
+    // If we have a pending transfer in sessionStorage and no utorid in URL, use the stored one
+    if (pendingUtorid && !rawUtoridQueryParam && isAuthenticated) {
+      // Clear storage after use
+      sessionStorage.removeItem('pendingTransferUtorid');
+      
+      // Navigate to the same page but with utorid parameter
+      navigate(`/transfer?utorid=${encodeURIComponent(pendingUtorid)}`, { replace: true });
+    }
+  }, [isAuthenticated, rawUtoridQueryParam, navigate]);
 
   if (rawUtoridQueryParam) {
     const jsonStartIndex = rawUtoridQueryParam.indexOf('{');
