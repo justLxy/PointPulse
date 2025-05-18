@@ -8,7 +8,6 @@ import EventService from '../../services/event.service';
 import Button from '../common/Button';
 import Modal from '../common/Modal';
 import { FaCheckCircle, FaTimesCircle, FaQrcode, FaExclamationTriangle } from 'react-icons/fa';
-import { useNotification } from '../../contexts/NotificationContext';
 
 const ScannerContainer = styled.div`
   display: flex;
@@ -470,7 +469,6 @@ const ScannerModal = ({ isOpen, onClose, eventId, onScanSuccess }) => {
   const [scanResult, setScanResult] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [scannerKey, setScannerKey] = useState(Date.now()); // Key to force remount
-  const { showSuccessNotification } = useNotification(); // Add notification hook
 
   // ===== NEW: Fetch event details to verify status =====
   const { data: eventData, isLoading: isLoadingEvent } = useQuery({
@@ -498,18 +496,9 @@ const ScannerModal = ({ isOpen, onClose, eventId, onScanSuccess }) => {
     setIsProcessing(false);
     setScanResult(result);
     
-    // If scan was successful, trigger callback to parent and show notification
-    if (result.status === 'success') {
-      if (onScanSuccess) {
-        onScanSuccess(result);
-      }
-      
-      // Show a notification that will be visible to the user who's being checked in
-      showSuccessNotification(
-        'Check-in Successful', 
-        `${result.name || 'User'} successfully checked in to the event`,
-        8000
-      );
+    // If scan was successful, trigger callback to parent
+    if (result.status === 'success' && onScanSuccess) {
+      onScanSuccess(result);
     }
   };
 

@@ -38,11 +38,9 @@ import {
   FaCoins,
   FaClock,
   FaLock,
-  FaMapMarkerAlt,
-  FaCheckCircle
+  FaMapMarkerAlt
 } from 'react-icons/fa';
 import LoadingSpinner from '../components/common/LoadingSpinner';
-import { useEventCheckin } from '../hooks/useEventCheckin';
 
 const DashboardContainer = styled.div`
   display: grid;
@@ -686,23 +684,6 @@ const TierCard = styled.div`
   }
 `;
 
-const CheckinStatusBadge = styled.div`
-  display: inline-flex;
-  align-items: center;
-  gap: ${theme.spacing.xs};
-  padding: ${theme.spacing.xs} ${theme.spacing.sm};
-  border-radius: ${theme.radius.full};
-  font-size: ${theme.typography.fontSize.sm};
-  font-weight: ${theme.typography.fontWeights.medium};
-  background-color: ${theme.colors.success.light};
-  color: ${theme.colors.success.dark};
-  margin-top: ${theme.spacing.xs};
-  
-  svg {
-    font-size: 1.1em;
-  }
-`;
-
 const formatDisplayDate = (dateString) => {
   if (!dateString) return 'N/A';
   
@@ -739,8 +720,6 @@ const Dashboard = () => {
   const { events, isLoading: isEventsLoading } = useEvents({ started: false, ended: false, limit: 4 });
   const [isRedeemModalOpen, setIsRedeemModalOpen] = useState(false);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
-  const [upcomingEventId, setUpcomingEventId] = useState(null);
-  const { isCheckedIn } = useEventCheckin(upcomingEventId || '');
   
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -885,37 +864,9 @@ const Dashboard = () => {
     return eventStartDate <= now && (!eventEndDate || eventEndDate >= now);
   };
   
-  // Add this useEffect to find the closest event the user is attending
-  useEffect(() => {
-    if (events?.length > 0) {
-      // Find the first upcoming event or ongoing event the user is attending
-      const now = new Date();
-      const closestEvent = events.find(event => {
-        const endTime = new Date(event.endTime);
-        return endTime > now && event.isAttending;
-      });
-      
-      if (closestEvent) {
-        setUpcomingEventId(closestEvent.id);
-      }
-    }
-  }, [events]);
-  
   if (isProfileLoading || isTransactionsLoading || isPromotionsLoading || isEventsLoading) {
     return <LoadingSpinner text="Loading dashboard information..." />;
   }
-  
-  // Add this to the JSX where you render upcoming events
-  const renderEventCheckinStatus = (event) => {
-    if (event.id === upcomingEventId && isCheckedIn) {
-      return (
-        <CheckinStatusBadge>
-          <FaCheckCircle /> Checked In
-        </CheckinStatusBadge>
-      );
-    }
-    return null;
-  };
   
   return (
     <div>
@@ -1248,7 +1199,6 @@ const Dashboard = () => {
                           )}
                         </p>
                       </EventInfo>
-                      {renderEventCheckinStatus(event)}
                     </EventPreview>
                   );
                 })

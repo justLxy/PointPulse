@@ -15,7 +15,6 @@ import theme from '../../styles/theme';
 import EventService from '../../services/event.service';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import Button from '../../components/common/Button';
-import { useEventCheckin } from '../../hooks/useEventCheckin';
 
 const Container = styled.div`
   max-width: 500px;
@@ -262,20 +261,6 @@ const EventCheckinAttend = () => {
   const [time, setTime] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [eventName, setEventName] = useState('');
-  
-  // Use the event check-in hook to poll for check-in status
-  const { isCheckedIn, checkedInTime, eventData } = useEventCheckin(eventId);
-
-  // If the component detects check-in through the hook, update the UI
-  useEffect(() => {
-    if (isCheckedIn && status !== 'success') {
-      setStatus('success');
-      setTime(new Date(checkedInTime).toLocaleTimeString());
-      if (eventData?.name) {
-        setEventName(eventData.name);
-      }
-    }
-  }, [isCheckedIn, checkedInTime, eventData, status]);
 
   // Handle RSVP action
   const handleRsvp = async () => {

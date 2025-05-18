@@ -15,7 +15,6 @@ import { Tooltip } from 'react-tooltip';
 import QRCode from '../../components/common/QRCode';
 import UniversalQRCode from '../../components/common/UniversalQRCode';
 import ScannerModal from '../../components/event/ScannerModal';
-import { useEventCheckin } from '../../hooks/useEventCheckin';
 
 import { 
   FaCalendarAlt, 
@@ -32,10 +31,7 @@ import {
   FaUserMinus,
   FaGlobe,
   FaTrashAlt,
-  FaQrcode,
-  FaCheckCircle,
-  FaTimesCircle,
-  FaCalendarCheck
+  FaQrcode
 } from 'react-icons/fa';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { toast } from 'react-hot-toast';
@@ -497,32 +493,6 @@ const StatItem = styled.div`
   }
 `;
 
-const AttendanceStatusBadge = styled.div`
-  display: inline-flex;
-  align-items: center;
-  gap: ${theme.spacing.xs};
-  padding: ${theme.spacing.sm} ${theme.spacing.md};
-  border-radius: ${theme.radius.md};
-  font-size: ${theme.typography.fontSize.md};
-  font-weight: ${theme.typography.fontWeights.medium};
-  margin-top: ${theme.spacing.md};
-  margin-bottom: ${theme.spacing.md};
-  
-  &.checked-in {
-    background-color: ${theme.colors.success.light};
-    color: ${theme.colors.success.dark};
-  }
-  
-  &.not-checked-in {
-    background-color: ${theme.colors.info.light};
-    color: ${theme.colors.info.dark};
-  }
-  
-  svg {
-    font-size: 1.2em;
-  }
-`;
-
 const EventDetail = () => {
   const { eventId } = useParams();
   const navigate = useNavigate();
@@ -602,9 +572,6 @@ const EventDetail = () => {
   });
   
   const { users } = useUsers(userSearchParams);
-  
-  // Add check-in status tracking
-  const { isCheckedIn, checkedInTime } = useEventCheckin(eventId);
   
   // Handle RSVP
   const handleRsvp = () => {
@@ -970,26 +937,6 @@ const EventDetail = () => {
   const eventStatus = getEventStatus(event.startTime, event.endTime);
   const attending = isUserAttending();
   
-  // Render attendance status for a user who has RSVP'd
-  const renderAttendanceStatus = () => {
-    if (isCheckedIn) {
-      return (
-        <AttendanceStatusBadge className="checked-in">
-          <FaCheckCircle />
-          You're checked in! {checkedInTime && `Checked in at ${new Date(checkedInTime).toLocaleTimeString()}`}
-        </AttendanceStatusBadge>
-      );
-    } else if (eventStatus === 'ongoing') {
-      return (
-        <AttendanceStatusBadge className="not-checked-in">
-          <FaCalendarAlt />
-          Waiting for check-in... Visit the venue to get checked in
-        </AttendanceStatusBadge>
-      );
-    }
-    return null;
-  };
-  
   return (
     <div>
       <PageHeader>
@@ -1047,9 +994,6 @@ const EventDetail = () => {
               </Button>
             )
           )}
-          
-          {/* Add attendance status badge here */}
-          {attending && renderAttendanceStatus()}
           
           {canEditEventDetails && (
             <>
