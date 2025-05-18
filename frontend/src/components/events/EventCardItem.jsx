@@ -13,7 +13,8 @@ import {
   FaMapMarkerAlt, 
   FaClock, 
   FaUsers, 
-  FaCoins
+  FaCoins,
+  FaCheckCircle
 } from 'react-icons/fa';
 
 const EventCard = styled(Card)`
@@ -129,7 +130,7 @@ const EventCardItem = ({
   handleViewDetails,
   isCreatingRsvp,
   isCancelingRsvp,
-  selectedEventIdForRsvp,
+  selectedEventIdForRsvp
 }) => {
   const { activeRole } = useAuth();
   const isManagerOrHigher = ['manager', 'superuser'].includes(activeRole);
@@ -139,6 +140,7 @@ const EventCardItem = ({
   const { month, day } = getEventCardDate(event.startTime);
   const eventStatus = getEventStatus(event.startTime, event.endTime);
   const isUserRsvpd = isRsvpd(event);
+  const isUserCheckedIn = event.checkedIn || false;
   
   // Calculate if the event is at full capacity
   const isFull = event.capacity && event.numGuests >= event.capacity;
@@ -156,7 +158,15 @@ const EventCardItem = ({
             <BadgeContainer>
               <ColoredBadge customColor={eventStatus.color}>{eventStatus.text}</ColoredBadge>
               
-              {isUserRsvpd && <Badge color="info">RSVP'd</Badge>}
+              {isUserRsvpd && (
+                isUserCheckedIn ? (
+                  <Badge color="success" style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                    <FaCheckCircle size={12} /> Checked In
+                  </Badge>
+                ) : (
+                  <Badge color="info">RSVP'd</Badge>
+                )
+              )}
               
               {event.isOrganizer && (
                 <Badge color="primary">Organizer</Badge>

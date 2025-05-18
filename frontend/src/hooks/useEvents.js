@@ -29,7 +29,10 @@ export const useEvents = (params = {}) => {
   } = useQuery({
     queryKey: ['events', apiParams],
     queryFn: () => EventService.getEvents(apiParams),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 1 * 60 * 1000, // 1 minute
+    refetchInterval: 10000, // Refetch every 10 seconds
+    refetchIntervalInBackground: false, // Don't refetch in background
+    refetchOnWindowFocus: true, // Refetch on window focus (default)
   });
   
   const useGetEvent = (id) => {

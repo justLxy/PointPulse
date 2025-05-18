@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import styled from '@emotion/styled';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useQueryClient } from '@tanstack/react-query';
 import { 
   FaCheckCircle, 
   FaTimesCircle, 
@@ -255,6 +256,7 @@ const EventCheckinAttend = () => {
   const { eventId } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   // Get token from data parameter first (new format)
   const dataParam = searchParams.get('data');
@@ -328,6 +330,11 @@ const EventCheckinAttend = () => {
       const res = await EventService.submitCheckin(eventId, { timestamp, signature });
       setStatus('success');
       setTime(res.checkedInAt ? new Date(res.checkedInAt).toLocaleTimeString() : new Date().toLocaleTimeString());
+      
+      // Update the event cache to reflect the check-in status
+      queryClient.invalidateQueries(['event', eventId]);
+      queryClient.invalidateQueries(['events']);
+      
     } catch (err) {
       if (err.message?.includes('log in')) {
         // Use URL parameters and state for returning to this page after login
@@ -357,7 +364,7 @@ const EventCheckinAttend = () => {
       setStatus('error');
       setErrorMsg(err.message || 'Unknown error occurred');
     }
-  }, [token, eventId, navigate]);
+  }, [token, eventId, navigate, queryClient]);
 
   // Handle RSVP action
   const handleRsvp = useCallback(async () => {

@@ -170,7 +170,6 @@ const EventList = ({
                 handleDeleteEventClick={handleDeleteEventClick}
                 handleRsvpClick={handleRsvpClick}
                 activeRole={activeRole}
-
               />
             </motion.div>
           ))}

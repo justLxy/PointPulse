@@ -299,6 +299,12 @@ const getEvents = async (filters = {}, isManager = false, page = 1, limit = 10, 
                     select: {
                         id: true
                     }
+                },
+                attendances: {
+                    select: {
+                        userId: true,
+                        checkedInAt: true
+                    }
                 }
             },
             orderBy: {
@@ -322,6 +328,16 @@ const getEvents = async (filters = {}, isManager = false, page = 1, limit = 10, 
 
         // Format events for response, including isAttending and isOrganizer flags
         const results = paginatedEvents.map(event => {
+            // Create a map of user IDs to check-in status
+            const attendedMap = userId ? new Map(
+                event.attendances
+                    .filter(a => a.userId === parseInt(userId))
+                    .map(a => [a.userId, a.checkedInAt])
+            ) : new Map();
+
+            const isUserAttending = userId ? event.guests.some(guest => guest.id === parseInt(userId)) : false;
+            const isUserCheckedIn = userId ? attendedMap.has(parseInt(userId)) : false;
+
             const formattedEvent = {
                 id: event.id,
                 name: event.name,
@@ -332,7 +348,8 @@ const getEvents = async (filters = {}, isManager = false, page = 1, limit = 10, 
                 numGuests: event.guests.length,
                 published: event.published,
                 isOrganizer: userId ? event.organizers.some(org => org.id === parseInt(userId)) : false,
-                isAttending: userId ? event.guests.some(guest => guest.id === parseInt(userId)) : false // Add isAttending
+                isAttending: isUserAttending,
+                checkedIn: isUserCheckedIn
             };
 
             // Add manager-specific fields
