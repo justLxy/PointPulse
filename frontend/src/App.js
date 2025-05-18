@@ -35,6 +35,9 @@ import EventDetail from './pages/events/EventDetail';
 import EventCheckinDisplay from './pages/events/EventCheckinDisplay';
 import EventCheckinAttend from './pages/events/EventCheckinAttend';
 
+// New pages for universal scanning and transfer
+import TransferPage from './pages/TransferPage';
+
 // Create a QueryClientProvider with logout reset capability
 const AppQueryClientProvider = ({ children }) => {
   const [queryClient] = useState(() => new QueryClient({
@@ -263,6 +266,16 @@ const App = () => {
               }
             />
             <Route path="/users/:id" element={<UserDetail />} />
+
+            {/* Transfer page (protected) */}
+            <Route
+              path="/transfer"
+              element={
+                <ProtectedRoute>
+                  <TransferPage />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Catch all - redirect to home */}
             <Route path="*" element={<Navigate to="/" replace />} />

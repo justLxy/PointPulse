@@ -1,6 +1,7 @@
 import styled from '@emotion/styled';
 import Header from './Header';
 import Footer from './Footer';
+import FloatingScanButton from '../common/FloatingScanButton';
 import theme from '../../styles/theme';
 
 const LayoutContainer = styled.div`
@@ -27,6 +28,7 @@ const Layout = ({ children }) => {
       <Header />
       <MainContent>{children}</MainContent>
       <Footer />
+      <FloatingScanButton />
     </LayoutContainer>
   );
 };

@@ -10,6 +10,7 @@ import { usePromotions } from '../hooks/usePromotions';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import QRCode from '../components/common/QRCode';
+import UniversalQRCode from '../components/common/UniversalQRCode';
 import RedemptionModal from '../components/user/RedemptionModal';
 import TransferModal from '../components/user/TransferModal';
 import theme from '../styles/theme';
@@ -810,7 +811,7 @@ const Dashboard = () => {
           ? nextLevel.min - actualPoints 
           : 0;
         
-        // 日志输出帮助调试
+        // Log outputs for debugging
         console.log('Level calculation:', { 
           actualPoints,
           currentLevel: current.name,
@@ -823,7 +824,7 @@ const Dashboard = () => {
         return {
           current,
           nextLevel,
-          progress, // 已经确保不超过100%
+          progress, // Ensure it doesn't exceed 100%
           pointsToNext,
           allLevels: levels,
           totalEarnedPoints: actualPoints
@@ -875,7 +876,7 @@ const Dashboard = () => {
         <PointsTitle>Your Points Balance</PointsTitle>
         <PointsAmount>{profile?.points || 0}</PointsAmount>
         
-        {/* 会员等级信息 */}
+        {/* Member tier information */}
         {(() => {
           const levelData = calculateLevel(profile?.points || 0);
           return (
@@ -1134,13 +1135,13 @@ const Dashboard = () => {
         <div>
           <Card>
             <Card.Header>
-              <Card.Title>QR Code</Card.Title>
+              <Card.Title>Your Universal QR Code</Card.Title>
             </Card.Header>
             <Card.Body>
-              <QRCode 
-                value={profile?.utorid || ''} 
+              <UniversalQRCode 
                 size={180}
                 level="H"
+                description="Use this QR code for transfers, purchases, redemptions and event check-ins."
               />
             </Card.Body>
           </Card>

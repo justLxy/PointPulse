@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import styled from '@emotion/styled';
 import { QRCodeCanvas } from 'qrcode.react';
+import UniversalQRCode from '../common/UniversalQRCode';
 import useUserTransactions from '../../hooks/useUserTransactions';
 import usePendingRedemptions from '../../hooks/usePendingRedemptions';
 import Modal from '../common/Modal';
@@ -341,11 +342,11 @@ const RedemptionModal = ({ isOpen, onClose, availablePoints = 0 }) => {
       <p>Show this QR code to a cashier to process your redemption</p>
       
       <QRCodeContainer>
-        <QRCodeCanvas 
-          value={redemptionId ? redemptionId.toString() : '0'} 
+        <UniversalQRCode 
+          redemptionId={redemptionId}
           size={200}
-          level="H"
-          renderAs="canvas"
+          label="Redemption QR Code"
+          description="Show this to the cashier to process your redemption"
         />
       </QRCodeContainer>
       

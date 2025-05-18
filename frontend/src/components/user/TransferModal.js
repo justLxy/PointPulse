@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styled from '@emotion/styled';
 import useUserTransactions from '../../hooks/useUserTransactions';
 import Modal from '../common/Modal';
@@ -175,12 +175,12 @@ const Avatar = styled.div`
   }
 `;
 
-const TransferModal = ({ isOpen, onClose, availablePoints = 0 }) => {
+const TransferModal = ({ isOpen, onClose, availablePoints = 0, prefillUtorid = '' }) => {
   const { currentUser } = useAuth();
   const [step, setStep] = useState(1);
   const [selectedAmount, setSelectedAmount] = useState(null);
   const [customAmount, setCustomAmount] = useState('');
-  const [receiverUtorid, setReceiverUtorid] = useState('');
+  const [receiverUtorid, setReceiverUtorid] = useState(prefillUtorid || '');
   const [remark, setRemark] = useState('');
   const [error, setError] = useState('');
   
@@ -193,7 +193,7 @@ const TransferModal = ({ isOpen, onClose, availablePoints = 0 }) => {
     setStep(1);
     setSelectedAmount(null);
     setCustomAmount('');
-    setReceiverUtorid('');
+    setReceiverUtorid(prefillUtorid || '');
     setRemark('');
     setError('');
   };
@@ -292,6 +292,13 @@ const TransferModal = ({ isOpen, onClose, availablePoints = 0 }) => {
       setError(err.message || 'An unexpected error occurred during the transfer.');
     }
   };
+  
+  // Update receiver UTORid if prefillUtorid prop changes while modal is open
+  useEffect(() => {
+    if (prefillUtorid) {
+      setReceiverUtorid(prefillUtorid);
+    }
+  }, [prefillUtorid]);
   
   const renderStep1 = () => (
     <>

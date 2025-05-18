@@ -21,6 +21,7 @@ import {
   FaEyeSlash
 } from 'react-icons/fa';
 import QRCode from '../../components/common/QRCode';
+import UniversalQRCode from '../../components/common/UniversalQRCode';
 
 const ProfileContainer = styled.div`
   display: grid;
@@ -857,13 +858,13 @@ const Profile = () => {
           
           <StyledCard>
             <Card.Header>
-              <Card.Title>Your User QR Code</Card.Title>
+              <Card.Title>Your Universal QR Code</Card.Title>
             </Card.Header>
             <Card.Body style={{ display: 'flex', justifyContent: 'center', padding: theme.spacing.lg }}>
-              <QRCode 
-                value={profile?.utorid || ''} 
+              <UniversalQRCode 
                 size={Math.min(180, window.innerWidth - 100)}
                 level="H"
+                description="Use this QR code for transfers, purchases, redemptions and event check-ins."
               />
             </Card.Body>
           </StyledCard>

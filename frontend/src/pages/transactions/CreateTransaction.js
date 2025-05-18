@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import styled from '@emotion/styled';
 import { useQueryClient } from '@tanstack/react-query';
 import Card from '../../components/common/Card';
@@ -7,12 +7,14 @@ import Button from '../../components/common/Button';
 import Select from '../../components/common/Select';
 import Badge from '../../components/common/Badge';
 import SuccessPage from '../../components/common/SuccessPage';
+import Modal from '../../components/common/Modal';
 import TransactionService from '../../services/transaction.service';
 import PromotionService from '../../services/promotion.service';
 import UserService from '../../services/user.service';
 import theme from '../../styles/theme';
 import { toast } from 'react-hot-toast';
-import { FaUser, FaDollarSign, FaTag, FaClipboard, FaSearch, FaCheckCircle, FaMoneyBillWave, FaReceipt, FaTimesCircle } from 'react-icons/fa';
+import { FaUser, FaDollarSign, FaTag, FaClipboard, FaSearch, FaCheckCircle, FaMoneyBillWave, FaReceipt, FaTimesCircle, FaQrcode } from 'react-icons/fa';
+import { Html5Qrcode } from 'html5-qrcode';
 import { API_URL } from '../../services/api';
 
 const PageTitle = styled.h1`
@@ -241,6 +243,51 @@ const ErrorMessage = styled.div`
   border-radius: ${theme.radius.sm};
 `;
 
+// QR Scanner related components
+const QrScanButton = styled(Button)`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  svg {
+    margin-right: ${theme.spacing.xs};
+  }
+`;
+
+const ScannerContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: ${theme.spacing.md};
+`;
+
+const ScannerWrapper = styled.div`
+  width: 100%;
+  max-width: 350px;
+  aspect-ratio: 1/1;
+  position: relative;
+  border-radius: ${theme.radius.md};
+  overflow: hidden;
+  box-shadow: ${theme.shadows.md};
+  
+  video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+`;
+
+const ScannerOverlay = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 2px dashed ${theme.colors.primary.light};
+  border-radius: ${theme.radius.md};
+  pointer-events: none;
+`;
+
 const CreateTransaction = () => {
   const [step, setStep] = useState(1);
   const [utorid, setUtorid] = useState('');
@@ -255,6 +302,10 @@ const CreateTransaction = () => {
   const [error, setError] = useState('');
   const [transaction, setTransaction] = useState(null);
   const [availablePromotions, setAvailablePromotions] = useState([]);
+  const [scannerModalOpen, setScannerModalOpen] = useState(false);
+  const [isScannerActive, setIsScannerActive] = useState(false);
+  const scannerRef = useRef(null);
+  const html5QrScannerRef = useRef(null);
   
   const queryClient = useQueryClient();
   
@@ -317,10 +368,137 @@ const CreateTransaction = () => {
     }
   }, [amount, user, automaticPromotions]);
   
-  const handleUserSearch = async () => {
-    if (!utorid.trim()) {
-      setError('Please enter a UTORid');
+  // Scanner setup and cleanup functions
+  const startScanner = async () => {
+    if (!scannerRef.current) return;
+    
+    try {
+      const html5QrScanner = new Html5Qrcode(scannerRef.current.id);
+      html5QrScannerRef.current = html5QrScanner;
+      
+      await html5QrScanner.start(
+        { facingMode: 'environment' },
+        {
+          fps: 10,
+          qrbox: 250
+        },
+        async (decodedText) => {
+          // Stop scanner once a code is detected
+          if (html5QrScannerRef.current) {
+            await html5QrScannerRef.current.stop();
+            setIsScannerActive(false);
+          }
+          
+          // Close the modal
+          setScannerModalOpen(false);
+          
+          // Process the scanned QR code
+          await handleUserSearch(decodedText);
+        },
+        () => {}
+      );
+      
+      setIsScannerActive(true);
+    } catch (error) {
+      console.error('Error starting scanner:', error);
+    }
+  };
+  
+  const stopScanner = async () => {
+    if (html5QrScannerRef.current) {
+      try {
+        await html5QrScannerRef.current.stop();
+      } catch (error) {
+        console.error('Error stopping scanner:', error);
+      }
+      html5QrScannerRef.current = null;
+    }
+    setIsScannerActive(false);
+  };
+  
+  // Open the scanner modal
+  const handleOpenScanner = () => {
+    setScannerModalOpen(true);
+    // Initialize scanner after a short delay to ensure the DOM element is ready
+    setTimeout(() => {
+      startScanner();
+    }, 300);
+  };
+  
+  // Close the scanner modal and clean up
+  const handleCloseScanner = () => {
+    stopScanner();
+    setScannerModalOpen(false);
+  };
+  
+  // Add a cleanup effect
+  useEffect(() => {
+    return () => {
+      stopScanner();
+    };
+  }, []);
+  
+  const handleUserSearch = async (qrData = null) => {
+    let searchUtorid = qrData || utorid.trim();
+    
+    if (!searchUtorid) {
+      setError('Please enter a UTORid or scan a QR code');
       return;
+    }
+    
+    // If QR data is provided, try to parse it
+    if (qrData) {
+      // 检查是否包含URL和JSON的混合格式
+      if (qrData.includes('\n\n')) {
+        // 分离URL和JSON部分
+        const parts = qrData.split('\n\n');
+        if (parts.length === 2) {
+          try {
+            // 尝试解析JSON部分
+            const parsedData = JSON.parse(parts[1]);
+            if (parsedData.type === 'pointpulse') {
+              searchUtorid = parsedData.utorid;
+            }
+          } catch (parseError) {
+            console.error('JSON解析错误:', parseError);
+            // 解析失败，尝试使用URL部分
+            const url = parts[0].trim();
+            if (url.includes('utorid=')) {
+              try {
+                const urlObj = new URL(url);
+                const utoridParam = urlObj.searchParams.get('utorid');
+                if (utoridParam) {
+                  searchUtorid = utoridParam;
+                }
+              } catch (urlError) {
+                console.error('URL解析错误:', urlError);
+              }
+            }
+          }
+        }
+      } else {
+        // 尝试解析为普通JSON
+      try {
+        const parsedData = JSON.parse(qrData);
+        if (parsedData.type === 'pointpulse') {
+          searchUtorid = parsedData.utorid;
+        }
+      } catch (parseError) {
+          // 不是JSON，检查是否是URL
+          if (qrData.trim().startsWith('http')) {
+            try {
+              const url = new URL(qrData.trim());
+              const utoridParam = url.searchParams.get('utorid');
+              if (utoridParam) {
+                searchUtorid = utoridParam;
+              }
+            } catch (urlError) {
+              console.error('URL解析错误:', urlError);
+              // 不是URL，假设直接是utorid
+            }
+          }
+        }
+      }
     }
     
     setError('');
@@ -328,7 +506,10 @@ const CreateTransaction = () => {
     
     try {
       // Try to lookup user directly using the cashier-specific endpoint
-      const userData = await UserService.lookupUserByUTORid(utorid);
+      const userData = await UserService.lookupUserByUTORid(searchUtorid);
+      
+      // Update the input field to show the found utorid
+      setUtorid(searchUtorid);
       setUser(userData);
       
       // Clear selected promotions when user changes
@@ -490,17 +671,52 @@ const CreateTransaction = () => {
                   leftIcon={<FaUser size={16} />}
                 />
               </SearchInput>
-              <Button 
-                onClick={handleUserSearch} 
-                loading={searchLoading}
-                size="medium"
-                style={{ height: '40px' }}
-              >
-                <FaSearch /> Search
-              </Button>
+              <div style={{ display: 'flex', gap: theme.spacing.sm }}>
+                <Button 
+                  onClick={() => handleUserSearch()} 
+                  loading={searchLoading}
+                  size="medium"
+                  style={{ height: '40px' }}
+                >
+                  <FaSearch /> Search
+                </Button>
+                <QrScanButton 
+                  variant="outlined"
+                  onClick={handleOpenScanner}
+                  size="medium"
+                  style={{ height: '40px' }}
+                >
+                  <FaQrcode /> Scan QR
+                </QrScanButton>
+              </div>
             </div>
             
             {error && <ErrorMessage>{error}</ErrorMessage>}
+            
+            {/* QR Scanner Modal */}
+            <Modal
+              isOpen={scannerModalOpen}
+              onClose={handleCloseScanner}
+              title="Scan Customer QR Code"
+              size="medium"
+            >
+              <ScannerContainer>
+                <p>Position the customer's QR code within the scanning frame</p>
+                
+                <ScannerWrapper>
+                  <div id="qr-scanner-element" ref={scannerRef} style={{ width: '100%', height: '100%' }} />
+                  <ScannerOverlay />
+                </ScannerWrapper>
+                
+                <Button 
+                  variant="outlined" 
+                  onClick={handleCloseScanner} 
+                  style={{ marginTop: theme.spacing.md }}
+                >
+                  Cancel
+                </Button>
+              </ScannerContainer>
+            </Modal>
             
             {user && (
               <UserSection>

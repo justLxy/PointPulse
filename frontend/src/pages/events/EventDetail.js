@@ -13,6 +13,7 @@ import theme from '../../styles/theme';
 import { API_URL } from '../../services/api';
 import { Tooltip } from 'react-tooltip';
 import QRCode from '../../components/common/QRCode';
+import UniversalQRCode from '../../components/common/UniversalQRCode';
 import ScannerModal from '../../components/event/ScannerModal';
 
 import { 
@@ -1397,13 +1398,14 @@ const EventDetail = () => {
                 )}
 
                {/* QR code for attendees */}
-               {isUserAttending() && currentUser && (
+               {isUserAttending() && currentUser && currentUser.utorid && (
                  <div style={{ marginTop: theme.spacing.lg }}>
-                   <QRCode 
-                     value={`${currentUser.utorid}|${eventId}`} 
-                     label="Your Check-in QR" 
+                   <UniversalQRCode
+                     context="user"
+                     utorid={currentUser.utorid}
+                     label="Your Universal QR Code"
                      size={180}
-                     showValue={false} 
+                     description="Present this QR code for check-in or other services"
                    />
                  </div>
                )}

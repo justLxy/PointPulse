@@ -322,6 +322,44 @@ const TransactionService = {
       throw new Error('Network error: Could not connect to server');
     }
   },
+  
+  // Get pending redemption transactions by utorid (Cashier+)
+  getPendingRedemptionsByUtorid: async (utorid) => {
+    try {
+      console.log(`Fetching redemptions for utorid: ${utorid}`);
+      // Use the standard pending-redemptions endpoint with proper utorid filter
+      const response = await api.get('/transactions/pending-redemptions', { 
+        params: { 
+          utorid: utorid,
+          type: 'redemption',  // Make sure we're looking for redemptions
+          limit: 100           // Get more results
+        } 
+      });
+      console.log('User redemption data:', response.data);
+      return response.data.results;
+    } catch (error) {
+      console.error('Error fetching user redemptions:', error);
+      if (error.response) {
+        const { status, data } = error.response;
+        
+        if (status === 403) {
+          throw new Error('You do not have permission to view pending redemptions');
+        }
+        
+        if (status === 404) {
+          throw new Error(`No pending redemptions found for user ${utorid}`);
+        }
+        
+        if (status === 400) {
+          throw new Error(data.error || 'Invalid user identifier');
+        }
+        
+        throw new Error(data.error || 'Failed to fetch user\'s pending redemptions');
+      }
+      
+      throw new Error('Network error: Could not connect to server');
+    }
+  },
 };
 
 export default TransactionService; 

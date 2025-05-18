@@ -1,14 +1,17 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import styled from '@emotion/styled';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTransactions } from '../../hooks/useTransactions';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import theme from '../../styles/theme';
-import { FaSearch, FaCheck, FaExclamationCircle, FaSpinner } from 'react-icons/fa';
+import { FaSearch, FaCheck, FaExclamationCircle, FaSpinner, FaQrcode } from 'react-icons/fa';
 import TransactionService from '../../services/transaction.service';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { Html5Qrcode } from 'html5-qrcode';
+import Modal from '../../components/common/Modal';
+import { toast } from 'react-hot-toast';
 
 const PageTitle = styled.h1`
   font-size: ${theme.typography.fontSize['3xl']};
@@ -249,6 +252,51 @@ const PageInfo = styled.div`
   font-size: ${theme.typography.fontSize.sm};
 `;
 
+// Add new styled components for scanner
+const QrScanButton = styled(Button)`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  svg {
+    margin-right: ${theme.spacing.xs};
+  }
+`;
+
+const ScannerContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: ${theme.spacing.md};
+`;
+
+const ScannerWrapper = styled.div`
+  width: 100%;
+  max-width: 350px;
+  aspect-ratio: 1/1;
+  position: relative;
+  border-radius: ${theme.radius.md};
+  overflow: hidden;
+  box-shadow: ${theme.shadows.md};
+  
+  video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+`;
+
+const ScannerOverlay = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 2px dashed ${theme.colors.primary.light};
+  border-radius: ${theme.radius.md};
+  pointer-events: none;
+`;
+
 const ProcessRedemption = () => {
   const [redemptionId, setRedemptionId] = useState('');
   const [result, setResult] = useState(null);
@@ -257,18 +305,66 @@ const ProcessRedemption = () => {
   const [processingIds, setProcessingIds] = useState([]); // Track which redemptions are being processed
   const [page, setPage] = useState(1); // Current page number
   const [limit, setLimit] = useState(9); // Change limit from 10 to 9
+  const [scannerModalOpen, setScannerModalOpen] = useState(false);
+  const [isScannerActive, setIsScannerActive] = useState(false);
+  const scannerRef = useRef(null);
+  const html5QrScannerRef = useRef(null);
   
+  const queryClient = useQueryClient();
   const { processRedemption, isProcessing: isMutationLoading } = useTransactions(); // Rename isProcessing from hook to avoid clash
   
+  // State to track if we're filtering by a specific user
+  const [userFilter, setUserFilter] = useState(null);
+  
   // ADD: Use react-query to fetch pending redemptions
-  const queryKey = ['pendingRedemptions', page, limit];
+  const queryKey = ['pendingRedemptions', page, limit, userFilter];
   const { 
     data: pendingData, 
     isLoading: isLoadingPending, // Use isLoading from useQuery
     error: pendingError // Use error from useQuery
   } = useQuery({
     queryKey: queryKey,
-    queryFn: () => TransactionService.getPendingRedemptions({ page, limit }),
+    queryFn: () => {
+      // If we have a user filter, fetch only that user's redemptions
+      if (userFilter) {
+        console.log(`Query function using user filter: ${userFilter}`);
+        return TransactionService.getPendingRedemptionsByUtorid(userFilter)
+          .then(results => {
+            console.log(`Got ${results ? results.length : 0} results for user ${userFilter}`);
+            
+            // Check if results is empty or undefined
+            if (!results || results.length === 0) {
+              toast.error(`No pending redemptions found for user ${userFilter}`);
+              // Set userFilter back to null after a short delay
+              setTimeout(() => setUserFilter(null), 2000);
+            }
+            
+            // Filter results to ensure we only show redemptions for this user
+            const filteredResults = results ? results.filter(r => 
+              r.utorid === userFilter || 
+              r.userId === userFilter ||
+              r.user?.utorid === userFilter
+            ) : [];
+            
+            console.log(`After additional filtering: ${filteredResults.length} results`);
+            
+            return {
+              results: filteredResults,
+              count: filteredResults.length
+            };
+          })
+          .catch(error => {
+            console.error("Error fetching user redemptions:", error);
+            toast.error(error.message || `Failed to find redemptions for user ${userFilter}`);
+            // Set userFilter back to null after an error
+            setTimeout(() => setUserFilter(null), 2000);
+            // Return empty results to prevent the query from failing
+            return { results: [], count: 0 };
+          });
+      }
+      // Otherwise fetch all pending redemptions with pagination
+      return TransactionService.getPendingRedemptions({ page, limit });
+    },
     staleTime: 1 * 60 * 1000, // Data considered fresh for 1 minute
   });
 
@@ -283,16 +379,216 @@ const ProcessRedemption = () => {
   const startIndex = totalCount > 0 ? (page - 1) * limit + 1 : 0;
   const endIndex = Math.min(page * limit, totalCount);
   
-  const handleSearch = async () => {
-    if (!redemptionId || isNaN(parseInt(redemptionId))) {
+  // Scanner setup and cleanup functions
+  const startScanner = async () => {
+    if (!scannerRef.current) return;
+    
+    try {
+      const html5QrScanner = new Html5Qrcode(scannerRef.current.id);
+      html5QrScannerRef.current = html5QrScanner;
+      
+      await html5QrScanner.start(
+        { facingMode: 'environment' },
+        {
+          fps: 10,
+          qrbox: 250
+        },
+        async (decodedText) => {
+          // Log what we've scanned for debugging
+          console.log("QR code scanned:", decodedText);
+          
+          // Stop scanner once a code is detected
+          if (html5QrScannerRef.current) {
+            await html5QrScannerRef.current.stop();
+            setIsScannerActive(false);
+          }
+          
+          // Close the modal
+          setScannerModalOpen(false);
+          
+          // Process the scanned QR code
+          // Trim whitespace that might be introduced during scanning
+          await handleSearch(decodedText.trim());
+        },
+        (errorMessage) => {
+          // This is a non-critical error, usually just means no QR found yet
+          console.log("QR scanning in progress...");
+        }
+      );
+      
+      setIsScannerActive(true);
+    } catch (error) {
+      console.error('Error starting scanner:', error);
+      toast.error('Could not start camera. Please make sure you have granted camera permissions.');
+    }
+  };
+  
+  const stopScanner = async () => {
+    if (html5QrScannerRef.current) {
+      try {
+        await html5QrScannerRef.current.stop();
+      } catch (error) {
+        console.error('Error stopping scanner:', error);
+      }
+      html5QrScannerRef.current = null;
+    }
+    setIsScannerActive(false);
+  };
+  
+  // Open the scanner modal
+  const handleOpenScanner = () => {
+    setScannerModalOpen(true);
+    // Initialize scanner after a short delay to ensure the DOM element is ready
+    setTimeout(() => {
+      startScanner();
+    }, 300);
+  };
+  
+  // Close the scanner modal and clean up
+  const handleCloseScanner = () => {
+    stopScanner();
+    setScannerModalOpen(false);
+  };
+
+  const handleSearch = async (qrData = null) => {
+    let searchRedemptionId;
+    let scannedUtorid;
+    
+    // If QR data is provided, try to extract redemption ID or utorid from it
+    if (qrData) {
+      console.log("Processing QR data:", qrData);
+      try {
+        let parsedData;
+        
+        // 检查是否包含URL和JSON的混合格式
+        if (qrData.includes('\n\n')) {
+          console.log("Detected mixed format QR code with URL and JSON");
+          // 分离URL和JSON部分
+          const parts = qrData.split('\n\n');
+          if (parts.length === 2) {
+            const url = parts[0].trim();
+            
+            // 尝试从URL中提取信息
+            if (url.includes('redemptionId=')) {
+              try {
+                const urlObj = new URL(url);
+                const redemptionIdParam = urlObj.searchParams.get('redemptionId');
+                if (redemptionIdParam) {
+                  searchRedemptionId = redemptionIdParam;
+                  console.log("Extracted redemption ID from URL:", searchRedemptionId);
+                }
+              } catch (urlError) {
+                console.error('URL解析错误:', urlError);
+              }
+            }
+            
+            // 尝试解析JSON部分作为备份
+            try {
+              parsedData = JSON.parse(parts[1]);
+              console.log("Successfully parsed JSON part of QR data:", parsedData);
+            } catch (jsonError) {
+              console.error("Error parsing JSON part:", jsonError);
+            }
+          }
+        } else {
+          // 检查是否是URL格式
+          if (qrData.trim().startsWith('http')) {
+            console.log("Detected URL format QR code");
+            try {
+              const url = new URL(qrData.trim());
+              // 检查URL中是否包含redemptionId参数
+              const redemptionIdParam = url.searchParams.get('redemptionId');
+              if (redemptionIdParam) {
+                searchRedemptionId = redemptionIdParam;
+                console.log("Extracted redemption ID from URL:", searchRedemptionId);
+              }
+            } catch (urlError) {
+              console.error('URL解析错误:', urlError);
+            }
+          } else {
+            // 尝试解析为JSON
+        try {
+          parsedData = JSON.parse(qrData);
+              console.log("Successfully parsed QR data as JSON:", parsedData);
+        } catch (parseError) {
+          console.log("QR data is not JSON, treating as plain text:", qrData);
+            }
+          }
+        }
+        
+        // 检查是否成功解析了JSON数据
+        if (parsedData && parsedData.type === 'pointpulse') {
+          console.log("Found pointpulse QR code with context:", parsedData.context);
+          
+          if (parsedData.context === 'redemption') {
+            // Direct redemption QR code
+            searchRedemptionId = parsedData.redemptionId;
+            console.log("Extracted redemption ID from JSON:", searchRedemptionId);
+          } else {
+            // Universal user QR code - extract utorid to find all user's redemptions
+            scannedUtorid = parsedData.utorid;
+            console.log("Extracted user utorid from JSON:", scannedUtorid);
+          }
+        } else if (!parsedData && !searchRedemptionId) {
+          // 如果通过URL和JSON都没有提取到信息，尝试将纯文本识别为ID或utorid
+          if (!isNaN(parseInt(qrData))) {
+            searchRedemptionId = qrData;
+            console.log("Treating QR data as redemption ID:", searchRedemptionId);
+          } else {
+            // If not a number, assume it's a utorid
+            scannedUtorid = qrData;
+            console.log("Treating QR data as utorid:", scannedUtorid);
+          }
+        } else if (!parsedData && !searchRedemptionId && !scannedUtorid) {
+          console.log("Unknown QR format, no valid data extracted");
+          setStatus('error');
+          setResult({ message: 'Invalid QR code format. Please scan a valid redemption or user QR code.' });
+          return;
+        }
+      } catch (e) {
+        console.error("Error processing QR data:", e);
+        setStatus('error');
+        setResult({ message: 'Error processing QR code: ' + e.message });
+        return;
+      }
+    } else {
+      // Use the manually entered redemption ID
+      searchRedemptionId = redemptionId;
+    }
+    
+          // If we have a utorid, fetch all pending redemptions for that user
+      if (scannedUtorid) {
+        try {
+          // Set the user filter to show only this user's redemptions
+          setUserFilter(scannedUtorid);
+          
+          // Reset page to 1 when filtering by user
+          setPage(1);
+          
+          // Provide feedback that we're filtering by user
+          toast.success(`Showing pending redemptions for user ${scannedUtorid}`);
+          
+          // Reset search states
+          setStatus('idle');
+          setRedemptionId('');
+          return;
+        } catch (error) {
+          setStatus('error');
+          setResult({ message: error.message || `Failed to find redemptions for user ${scannedUtorid}` });
+          return;
+        }
+      }
+    
+    // Continue with regular redemption ID lookup if we have one
+    if (!searchRedemptionId || isNaN(parseInt(searchRedemptionId))) {
       setStatus('error');
       setResult({ message: 'Please enter a valid redemption ID' });
       return;
     }
     
     try {
-      // Use the new cashier-specific lookup endpoint
-      const data = await TransactionService.lookupRedemption(parseInt(redemptionId));
+      // Use the cashier-specific lookup endpoint
+      const data = await TransactionService.lookupRedemption(parseInt(searchRedemptionId));
       
       if (!data) {
         setStatus('error');
@@ -300,6 +596,8 @@ const ProcessRedemption = () => {
         return;
       }
       
+      // Update the input field to show the found redemption ID
+      setRedemptionId(searchRedemptionId.toString());
       setStatus('found');
       setResult(data);
       setProcessingError(null); // Clear previous errors when a new one is found
@@ -373,6 +671,13 @@ const ProcessRedemption = () => {
     return date.toLocaleString();
   };
   
+  // Add a cleanup effect
+  useEffect(() => {
+    return () => {
+      stopScanner();
+    };
+  }, []);
+
   return (
     <div>
       <PageTitle>Process Redemption</PageTitle>
@@ -434,11 +739,19 @@ const ProcessRedemption = () => {
                     leftIcon={<FaSearch />}
                   />
                 </ManualInput>
-                <Button
-                  onClick={handleSearch}
-                >
-                  Find Redemption
-                </Button>
+                <div style={{ display: 'flex', gap: theme.spacing.md }}>
+                  <Button
+                    onClick={() => handleSearch()}
+                  >
+                    Find Redemption
+                  </Button>
+                  <QrScanButton 
+                    variant="outlined"
+                    onClick={handleOpenScanner}
+                  >
+                    <FaQrcode /> Scan QR
+                  </QrScanButton>
+                </div>
               </SearchContainer>
               
               {status === 'found' && result && (
@@ -492,7 +805,31 @@ const ProcessRedemption = () => {
       {/* New section for pending redemptions */}
       <PendingRedemptionsSection>
         <PendingRedemptionsHeader>
-          <PendingRedemptionsTitle>Pending Redemption Requests</PendingRedemptionsTitle>
+          <PendingRedemptionsTitle>
+            {userFilter ? (
+              <>
+                Showing <span style={{ color: theme.colors.primary.main }}>only</span> redemptions for: 
+                <span style={{
+                  margin: `0 ${theme.spacing.xs}`,
+                  fontWeight: theme.typography.fontWeights.semiBold,
+                  color: theme.colors.primary.main
+                }}>
+                  {userFilter}
+                </span>
+              </>
+            ) : 'All Pending Redemption Requests'}
+          </PendingRedemptionsTitle>
+          
+          {userFilter && (
+            <Button 
+              variant="outlined" 
+              size="small" 
+              onClick={() => setUserFilter(null)}
+              style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.xs }}
+            >
+              <span>×</span> Clear Filter
+            </Button>
+          )}
         </PendingRedemptionsHeader>
         
         {/* Display processing error specifically for the list */}
@@ -507,9 +844,21 @@ const ProcessRedemption = () => {
         ) : pendingRedemptions.length > 0 ? (
           <RedemptionsList>
             {pendingRedemptions.map((redemption) => {
-              console.log(`Rendering redemption card #${redemption.id}`);
+              // Log more details about the redemption for debugging
+              console.log(`Rendering redemption card #${redemption.id} for user: ${redemption.utorid}`);
+              
+              // Mark cards that match the current user filter
+              const isHighlighted = userFilter && (
+                redemption.utorid === userFilter || 
+                redemption.userId === userFilter ||
+                redemption.user?.utorid === userFilter
+              );
+              
               return (
-                <RedemptionCard key={`redemption-${redemption.id}`} isProcessing={processingIds.includes(redemption.id)}>
+                <RedemptionCard 
+                  key={`redemption-${redemption.id}`} 
+                  isProcessing={processingIds.includes(redemption.id)}
+                >
                   <RedemptionHeader>
                     <h3>Redemption #{redemption.id}</h3>
                     <RedemptionAmount>-{redemption.redeemed || (redemption.amount ? Math.abs(redemption.amount) : 0)} pts</RedemptionAmount>
@@ -518,7 +867,12 @@ const ProcessRedemption = () => {
                   <RedemptionInfo>
                     <p>
                       <span>User:</span>
-                      <span>{redemption.utorid}</span>
+                      <span style={isHighlighted ? {
+                        fontWeight: theme.typography.fontWeights.bold,
+                        color: theme.colors.primary.main
+                      } : {}}>
+                        {redemption.utorid}
+                      </span>
                     </p>
                     {redemption.createdAt && ( // Conditionally render the date
                       <p>
@@ -580,6 +934,31 @@ const ProcessRedemption = () => {
           </PageControls>
         )}
       </PendingRedemptionsSection>
+      
+      {/* QR Scanner Modal */}
+      <Modal
+        isOpen={scannerModalOpen}
+        onClose={handleCloseScanner}
+        title="Scan Redemption QR Code"
+        size="medium"
+      >
+        <ScannerContainer>
+          <p>Position the customer's QR code within the scanning frame</p>
+          
+          <ScannerWrapper>
+            <div id="qr-scanner-element" ref={scannerRef} style={{ width: '100%', height: '100%' }} />
+            <ScannerOverlay />
+          </ScannerWrapper>
+          
+          <Button 
+            variant="outlined" 
+            onClick={handleCloseScanner} 
+            style={{ marginTop: theme.spacing.md }}
+          >
+            Cancel
+          </Button>
+        </ScannerContainer>
+      </Modal>
     </div>
   );
 };
