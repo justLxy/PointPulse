@@ -10,8 +10,6 @@ import EventService from '../../services/event.service';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import theme from '../../styles/theme';
 import Button from '../../components/common/Button';
-import { useSocket } from '../../contexts/SocketContext';
-import toast from 'react-hot-toast';
 
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(10px); }
@@ -22,6 +20,12 @@ const pulse = keyframes`
   0% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.4); }
   70% { box-shadow: 0 0 0 10px rgba(52, 152, 219, 0); }
   100% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0); }
+`;
+
+const shake = keyframes`
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
 `;
 
 const Container = styled.div`
@@ -221,41 +225,13 @@ const BackButton = styled(Button)`
   }
 `;
 
+const RefreshButton = styled(Button)`
+  margin-top: ${theme.spacing.lg};
+`;
+
 const EventCheckinDisplay = () => {
   const { eventId } = useParams();
   const [timer, setTimer] = useState(30);
-  const { socket } = useSocket();
-
-  // Join the admin room for this event when component mounts
-  useEffect(() => {
-    if (socket && eventId) {
-      // Join event-admin room to receive notifications when users check in
-      socket.emit('join-event', `event-admin-${eventId}`);
-      
-      // Listen for user check-in events
-      socket.on('user-checked-in', (data) => {
-        // Show a toast notification when a user checks in
-        toast.success(
-          `${data.name} (${data.utorid}) has checked in`,
-          {
-            position: 'bottom-right',
-            duration: 5000,
-            style: {
-              background: theme.colors.success.light,
-              color: '#fff',
-              fontWeight: 'bold',
-            },
-            icon: '✅',
-          }
-        );
-      });
-      
-      // Clean up listener when component unmounts
-      return () => {
-        socket.off('user-checked-in');
-      };
-    }
-  }, [socket, eventId]);
 
   // Fetch the QR code token
   const {

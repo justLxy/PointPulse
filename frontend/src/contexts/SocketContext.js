@@ -1,162 +1,71 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import io from 'socket.io-client';
 import { useAuth } from './AuthContext';
-import toast from 'react-hot-toast';
-import { motion } from 'framer-motion';
-import { FaCheckCircle } from 'react-icons/fa';
-import styled from '@emotion/styled';
-import theme from '../styles/theme';
-import { useNavigate } from 'react-router-dom';
-
-// Get API URL from environment or use default
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 // Create context
 const SocketContext = createContext(null);
 
-// Custom styled notification for check-in success
-const NotificationContainer = styled(motion.div)`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: linear-gradient(135deg, ${theme.colors.success.light}, ${theme.colors.success.main});
-  color: white;
-  padding: 16px;
-  border-radius: 12px;
-  box-shadow: 0 8px 16px rgba(46, 204, 113, 0.2);
-  max-width: 320px;
-  position: relative;
-  overflow: hidden;
-  
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 60%);
-    z-index: 0;
-  }
-`;
-
-const IconWrapper = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  flex-shrink: 0;
-  z-index: 1;
-`;
-
-const NotificationContent = styled.div`
-  flex: 1;
-  z-index: 1;
-  
-  h4 {
-    font-weight: ${theme.typography.fontWeights.bold};
-    font-size: ${theme.typography.fontSize.md};
-    margin: 0 0 4px;
-  }
-  
-  p {
-    font-size: ${theme.typography.fontSize.sm};
-    margin: 0;
-    opacity: 0.9;
-  }
-`;
-
-// Custom notification for check-in success
-export const CheckInSuccessNotification = ({ eventName }) => {
-  const navigate = useNavigate();
-  
-  return (
-    <NotificationContainer
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      onClick={() => navigate('/events')}
-      whileHover={{ scale: 1.03 }}
-      style={{ cursor: 'pointer' }}
-    >
-      <IconWrapper>
-        <FaCheckCircle size={20} />
-      </IconWrapper>
-      <NotificationContent>
-        <h4>Check-in Successful!</h4>
-        <p>You've successfully checked in to {eventName}</p>
-      </NotificationContent>
-    </NotificationContainer>
-  );
-};
+// Backend API URL (should match the one defined in api.js)
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
+  const [connected, setConnected] = useState(false);
   const { user, isAuthenticated } = useAuth();
 
+  // Initialize or update socket connection when authentication state changes
   useEffect(() => {
-    // Only connect to socket if user is authenticated
-    if (!isAuthenticated || !user) return;
+    let socketInstance;
 
-    // Create socket connection
-    const socketInstance = io(API_URL, {
-      withCredentials: true,
-    });
-
-    socketInstance.on('connect', () => {
-      console.log('Socket connected');
-      
-      // Join user-specific room for private notifications
-      socketInstance.emit('join-event', `user-${user.id}`);
-    });
-
-    // Listen for check-in success notifications
-    socketInstance.on('check-in-success', (data) => {
-      console.log('Check-in success notification received:', data);
-      
-      // Show notification using react-hot-toast with custom component
-      toast.custom((t) => (
-        <CheckInSuccessNotification 
-          eventName={data.eventName}
-          t={t}
-        />
-      ), {
-        duration: 5000,
-        position: 'top-center',
+    if (isAuthenticated && user?.id) {
+      // Initialize socket
+      socketInstance = io(API_URL, {
+        transports: ['websocket'],
+        autoConnect: true,
       });
-    });
 
-    socketInstance.on('disconnect', () => {
-      console.log('Socket disconnected');
-    });
+      // Set up event listeners
+      socketInstance.on('connect', () => {
+        console.log('Socket connected');
+        setConnected(true);
+        
+        // Authenticate socket with user id
+        socketInstance.emit('authenticate', { userId: user.id });
+      });
 
-    socketInstance.on('error', (error) => {
-      console.error('Socket error:', error);
-    });
+      socketInstance.on('disconnect', () => {
+        console.log('Socket disconnected');
+        setConnected(false);
+      });
 
-    // Save socket instance to state
-    setSocket(socketInstance);
+      socketInstance.on('connect_error', (error) => {
+        console.error('Socket connection error:', error);
+        setConnected(false);
+      });
 
-    // Cleanup on unmount
-    return () => {
-      if (socketInstance) {
-        socketInstance.disconnect();
-      }
-    };
-  }, [isAuthenticated, user]);
+      setSocket(socketInstance);
 
-  // Provide socket instance to components
-  return (
-    <SocketContext.Provider value={{ socket }}>
-      {children}
-    </SocketContext.Provider>
-  );
+      // Cleanup when component unmounts or auth state changes
+      return () => {
+        if (socketInstance) {
+          console.log('Disconnecting socket');
+          socketInstance.disconnect();
+          setSocket(null);
+          setConnected(false);
+        }
+      };
+    }
+  }, [isAuthenticated, user?.id]);
+
+  const value = {
+    socket,
+    connected,
+  };
+
+  return <SocketContext.Provider value={value}>{children}</SocketContext.Provider>;
 };
 
-// Custom hook to use socket
+// Custom hook to use socket context
 export const useSocket = () => {
   const context = useContext(SocketContext);
   if (!context) {

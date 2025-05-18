@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import styled from '@emotion/styled';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -15,8 +15,6 @@ import theme from '../../styles/theme';
 import EventService from '../../services/event.service';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import Button from '../../components/common/Button';
-import { useAuth } from '../../contexts/AuthContext';
-import { useSocket } from '../../contexts/SocketContext';
 
 const Container = styled.div`
   max-width: 500px;
@@ -257,22 +255,12 @@ const EventCheckinAttend = () => {
   const { eventId } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { socket } = useSocket();
 
   const token = searchParams.get('token');
   const [status, setStatus] = useState('loading'); // 'loading' | 'success' | 'error' | 'needsRsvp'
   const [time, setTime] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [eventName, setEventName] = useState('');
-
-  // Join socket room for this user when component mounts
-  useEffect(() => {
-    if (socket && user) {
-      // Join user-specific room for private notifications
-      socket.emit('join-event', `user-${user.id}`);
-    }
-  }, [socket, user]);
 
   // Handle RSVP action
   const handleRsvp = async () => {
@@ -287,8 +275,7 @@ const EventCheckinAttend = () => {
     }
   };
 
-  // Use useCallback to memoize the processCheckin function
-  const processCheckin = useCallback(async () => {
+  const processCheckin = async () => {
     if (!token) {
       setStatus('error');
       setErrorMsg('Invalid or missing token.');
@@ -356,11 +343,11 @@ const EventCheckinAttend = () => {
       setStatus('error');
       setErrorMsg(err.message || 'Unknown error occurred');
     }
-  }, [token, eventId, navigate]);
+  };
 
   useEffect(() => {
     processCheckin();
-  }, [processCheckin]);
+  }, [token, eventId, navigate]);
 
   return (
     <Container>

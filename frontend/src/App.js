@@ -8,6 +8,7 @@ import GlobalStyles from './styles/GlobalStyles';
 import Layout from './components/layout/Layout';
 import theme from './styles/theme';
 import LoadingSpinner from './components/common/LoadingSpinner';
+import CheckinNotification from './components/common/CheckinNotification';
 import { useState, useEffect } from 'react';
 
 // Import authentication pages
@@ -106,8 +107,8 @@ const App = () => {
   return (
     <Router>
       <AuthProvider>
-        <AppQueryClientProvider>
-          <SocketProvider>
+        <SocketProvider>
+          <AppQueryClientProvider>
             <GlobalStyles />
             <Toaster
               position="top-right"
@@ -122,6 +123,7 @@ const App = () => {
                 },
               }}
             />
+            <CheckinNotification />
             <Routes>
               {/* Public Routes */}
               <Route path="/login" element={<Login />} />
@@ -282,8 +284,8 @@ const App = () => {
               {/* Catch all - redirect to home */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
-          </SocketProvider>
-        </AppQueryClientProvider>
+          </AppQueryClientProvider>
+        </SocketProvider>
       </AuthProvider>
     </Router>
   );
