@@ -10,6 +10,8 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const { expressjwt: jwt } = require("express-jwt");
+const { createServer } = require("http");
+const { Server } = require("socket.io");
 
 // Import routes
 const authRoutes = require("./routes/authRoutes");
@@ -26,6 +28,45 @@ const { JWT_SECRET } = require("./utils/jwtConfig");
 
 // Create Express app
 const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+    cors: {
+        origin: function(origin, callback) {
+            const allowedOrigins = [
+                FRONTEND_URL,
+                // Add other specific origins if needed
+            ];
+            if (!origin || allowedOrigins.indexOf(origin) !== -1 || origin.startsWith('https://pointpulse')) {
+                callback(null, true);
+            } else {
+                callback(new Error('Not allowed by CORS'));
+            }
+        },
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+        credentials: true
+    }
+});
+
+// Make io accessible globally
+app.set('io', io);
+
+// Socket.io connection setup
+io.on('connection', (socket) => {
+    console.log('A user connected', socket.id);
+    
+    // Store user ID in socket when they authenticate
+    socket.on('authenticate', (userData) => {
+        if (userData && userData.id) {
+            console.log(`User ${userData.id} authenticated with socket ${socket.id}`);
+            socket.userId = userData.id;
+            socket.join(`user:${userData.id}`);
+        }
+    });
+    
+    socket.on('disconnect', () => {
+        console.log('User disconnected', socket.id);
+    });
+});
 
 // Middlewares
 app.use(cors({
@@ -75,11 +116,11 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 // Start server
-const server = app.listen(port, () => {
+httpServer.listen(port, () => {
     console.log(`Server running on port ${port}`);
 });
 
-server.on('error', (err) => {
+httpServer.on('error', (err) => {
     console.error(`cannot start server: ${err.message}`);
     process.exit(1);
 });

@@ -4,9 +4,10 @@ import { useMemo, useState, useEffect } from 'react';
 import styled from '@emotion/styled';
 import { keyframes } from '@emotion/react';
 import { QRCodeCanvas } from 'qrcode.react';
-import { motion } from 'framer-motion';
-import { FaTimesCircle, FaSync, FaClock, FaCalendarAlt, FaExclamationTriangle, FaArrowLeft } from 'react-icons/fa';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FaTimesCircle, FaSync, FaClock, FaCalendarAlt, FaExclamationTriangle, FaArrowLeft, FaCheckCircle } from 'react-icons/fa';
 import EventService from '../../services/event.service';
+import { useSocket } from '../../contexts/SocketContext';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import theme from '../../styles/theme';
 import Button from '../../components/common/Button';
@@ -26,6 +27,11 @@ const shake = keyframes`
   0%, 100% { transform: translateX(0); }
   10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
   20%, 40%, 60%, 80% { transform: translateX(5px); }
+`;
+
+const scaleIn = keyframes`
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 `;
 
 const Container = styled.div`
@@ -229,9 +235,119 @@ const RefreshButton = styled(Button)`
   margin-top: ${theme.spacing.lg};
 `;
 
+// Add styled components for the check-in notification
+const NotificationOverlay = styled(motion.div)`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+`;
+
+const NotificationCard = styled(motion.div)`
+  background-color: white;
+  border-radius: ${theme.radius.lg};
+  max-width: 90%;
+  width: 400px;
+  padding: ${theme.spacing.xl};
+  text-align: center;
+  box-shadow: ${theme.shadows.lg};
+  position: relative;
+  overflow: hidden;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 6px;
+    background: linear-gradient(90deg, ${theme.colors.success.light}, ${theme.colors.success.dark});
+  }
+`;
+
+const SuccessIconLarge = styled(FaCheckCircle)`
+  color: ${theme.colors.success.main};
+  font-size: 72px;
+  margin-bottom: ${theme.spacing.md};
+`;
+
+const NotificationTitle = styled.h2`
+  font-size: ${theme.typography.fontSize['2xl']};
+  color: ${theme.colors.success.main};
+  margin-bottom: ${theme.spacing.md};
+  font-weight: ${theme.typography.fontWeights.bold};
+`;
+
+const NotificationText = styled.p`
+  font-size: ${theme.typography.fontSize.lg};
+  color: ${theme.colors.text.secondary};
+  margin-bottom: ${theme.spacing.lg};
+  line-height: 1.6;
+  
+  strong {
+    color: ${theme.colors.text.primary};
+    font-weight: ${theme.typography.fontWeights.semiBold};
+  }
+`;
+
+const NotificationTime = styled.div`
+  background-color: ${theme.colors.primary.dark};
+  color: white;
+  padding: ${theme.spacing.sm} ${theme.spacing.md};
+  border-radius: ${theme.radius.md};
+  display: inline-flex;
+  align-items: center;
+  gap: ${theme.spacing.sm};
+  margin-bottom: ${theme.spacing.lg};
+  font-weight: ${theme.typography.fontWeights.medium};
+`;
+
+const NotificationButton = styled(Button)`
+  background-color: ${theme.colors.success.main};
+  color: white;
+  font-weight: ${theme.typography.fontWeights.semiBold};
+  padding: ${theme.spacing.sm} ${theme.spacing.xl};
+  
+  &:hover {
+    background-color: ${theme.colors.success.dark};
+  }
+`;
+
 const EventCheckinDisplay = () => {
   const { eventId } = useParams();
   const [timer, setTimer] = useState(30);
+  const [checkinNotification, setCheckinNotification] = useState(null);
+  const { socket } = useSocket();
+
+  // Listen for socket events
+  useEffect(() => {
+    if (!socket) return;
+    
+    const handleCheckin = (data) => {
+      console.log('Received check-in notification:', data);
+      if (data.eventId === parseInt(eventId) && data.status === 'success') {
+        setCheckinNotification(data);
+      }
+    };
+    
+    socket.on('event-checkin', handleCheckin);
+    
+    return () => {
+      socket.off('event-checkin', handleCheckin);
+    };
+  }, [socket, eventId]);
+
+  // Close notification
+  const closeNotification = () => {
+    setCheckinNotification(null);
+  };
 
   // Fetch the QR code token
   const {
@@ -462,6 +578,38 @@ const EventCheckinDisplay = () => {
           </Button>
         </TimerContainer>
       </QRContainer>
+      
+      {/* Check-in Notification Overlay */}
+      <AnimatePresence>
+        {checkinNotification && (
+          <NotificationOverlay
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <NotificationCard
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            >
+              <SuccessIconLarge />
+              <NotificationTitle>
+                Check-in Successful!
+              </NotificationTitle>
+              <NotificationText>
+                You have been checked in to <strong>{checkinNotification.eventName}</strong> by {checkinNotification.checkedInBy}.
+              </NotificationText>
+              <NotificationTime>
+                <FaCalendarAlt /> {new Date(checkinNotification.checkedInAt).toLocaleTimeString()}
+              </NotificationTime>
+              <NotificationButton onClick={closeNotification}>
+                Got it!
+              </NotificationButton>
+            </NotificationCard>
+          </NotificationOverlay>
+        )}
+      </AnimatePresence>
     </Container>
   );
 };

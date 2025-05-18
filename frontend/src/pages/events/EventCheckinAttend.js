@@ -13,6 +13,7 @@ import {
 } from 'react-icons/fa';
 import theme from '../../styles/theme';
 import EventService from '../../services/event.service';
+import { useSocket } from '../../contexts/SocketContext';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import Button from '../../components/common/Button';
 
@@ -255,12 +256,34 @@ const EventCheckinAttend = () => {
   const { eventId } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { socket } = useSocket();
 
   const token = searchParams.get('token');
   const [status, setStatus] = useState('loading'); // 'loading' | 'success' | 'error' | 'needsRsvp'
   const [time, setTime] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [eventName, setEventName] = useState('');
+
+  // Listen for socket events
+  useEffect(() => {
+    if (!socket) return;
+    
+    const handleCheckin = (data) => {
+      console.log('Received check-in notification:', data);
+      // If we get a socket notification for this event, update the UI
+      if (data.eventId === parseInt(eventId) && data.status === 'success') {
+        setStatus('success');
+        setTime(new Date(data.checkedInAt).toLocaleTimeString());
+        setEventName(data.eventName);
+      }
+    };
+    
+    socket.on('event-checkin', handleCheckin);
+    
+    return () => {
+      socket.off('event-checkin', handleCheckin);
+    };
+  }, [socket, eventId]);
 
   // Handle RSVP action
   const handleRsvp = async () => {

@@ -1574,6 +1574,20 @@ const checkInByScan = async (req, res) => {
 
         const alreadyCheckedIn = attendance.checkedInAt && attendance.checkedInAt.getTime() < Date.now() - 1000; // existing record
 
+        // Get the io instance
+        const io = req.app.get('io');
+        if (io) {
+            // Emit event to the user's private room
+            io.to(`user:${attendee.id}`).emit('event-checkin', {
+                status: 'success',
+                message: alreadyCheckedIn ? 'Already checked in' : 'Check-in successful',
+                eventId,
+                eventName: event.name,
+                checkedInAt: attendance.checkedInAt || new Date(),
+                checkedInBy: requester.utorid
+            });
+        }
+
         return res.status(alreadyCheckedIn ? 200 : 201).json({
             message: alreadyCheckedIn ? 'Already checked in' : 'Check-in successful',
             name: attendee.name,

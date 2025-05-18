@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import styled from '@emotion/styled';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { SocketProvider } from './contexts/SocketContext';
 import GlobalStyles from './styles/GlobalStyles';
 import Layout from './components/layout/Layout';
 import theme from './styles/theme';
@@ -105,182 +106,184 @@ const App = () => {
   return (
     <Router>
       <AuthProvider>
-        <AppQueryClientProvider>
-          <GlobalStyles />
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              duration: 3000,
-              style: {
-                borderRadius: '8px',
-                background: '#fff',
-                padding: '16px',
-                color: '#333',
-                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08)',
-              },
-            }}
-          />
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/password-reset" element={<PasswordReset />} />
-            <Route path="/account-activation" element={<AccountActivation />} />
-            
-            {/* Protected Routes */}
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
+        <SocketProvider>
+          <AppQueryClientProvider>
+            <GlobalStyles />
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                duration: 3000,
+                style: {
+                  borderRadius: '8px',
+                  background: '#fff',
+                  padding: '16px',
+                  color: '#333',
+                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08)',
+                },
+              }}
+            />
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/password-reset" element={<PasswordReset />} />
+              <Route path="/account-activation" element={<AccountActivation />} />
+              
+              {/* Protected Routes */}
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Dashboard />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Profile />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/user-transactions"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <UserTransactions />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/promotions"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Promotions />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/events"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Events />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/events/:eventId"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <EventDetail />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/events/:eventId/checkin-display"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <EventCheckinDisplay />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/events/:eventId/attend"
+                element={
                   <Layout>
-                    <Dashboard />
+                    <EventCheckinAttend />
                   </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Profile />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/user-transactions"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <UserTransactions />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/promotions"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Promotions />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/events"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Events />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/events/:eventId"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <EventDetail />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/events/:eventId/checkin-display"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <EventCheckinDisplay />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/events/:eventId/attend"
-              element={
-                <Layout>
-                  <EventCheckinAttend />
-                </Layout>
-              }
-            />
-            <Route
-              path="/users"
-              element={
-                <ProtectedRoute allowedRoles={['manager', 'superuser']}>
-                  <Layout>
-                    <Users />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/transactions/create"
-              element={
-                <ProtectedRoute allowedRoles={['cashier', 'manager', 'superuser']}>
-                  <Layout>
-                    <CreateTransaction />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/transactions/process"
-              element={
-                <ProtectedRoute allowedRoles={['cashier', 'manager', 'superuser']}>
-                  <Layout>
-                    <ProcessRedemption />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/transactions/adjustment"
-              element={
-                <ProtectedRoute allowedRoles={['manager', 'superuser']}>
-                  <Layout>
-                    <CreateAdjustment />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/transactions"
-              element={
-                <ProtectedRoute allowedRoles={['manager', 'superuser']}>
-                  <Layout>
-                    <Transactions />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/users/create"
-              element={
-                <ProtectedRoute allowedRoles={['cashier', 'manager', 'superuser']}>
-                  <Layout>
-                    <CreateUser />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route path="/users/:id" element={<UserDetail />} />
+                }
+              />
+              <Route
+                path="/users"
+                element={
+                  <ProtectedRoute allowedRoles={['manager', 'superuser']}>
+                    <Layout>
+                      <Users />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/transactions/create"
+                element={
+                  <ProtectedRoute allowedRoles={['cashier', 'manager', 'superuser']}>
+                    <Layout>
+                      <CreateTransaction />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/transactions/process"
+                element={
+                  <ProtectedRoute allowedRoles={['cashier', 'manager', 'superuser']}>
+                    <Layout>
+                      <ProcessRedemption />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/transactions/adjustment"
+                element={
+                  <ProtectedRoute allowedRoles={['manager', 'superuser']}>
+                    <Layout>
+                      <CreateAdjustment />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/transactions"
+                element={
+                  <ProtectedRoute allowedRoles={['manager', 'superuser']}>
+                    <Layout>
+                      <Transactions />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/users/create"
+                element={
+                  <ProtectedRoute allowedRoles={['cashier', 'manager', 'superuser']}>
+                    <Layout>
+                      <CreateUser />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/users/:id" element={<UserDetail />} />
 
-            {/* Transfer page (protected) */}
-            <Route
-              path="/transfer"
-              element={
-                <ProtectedRoute>
-                  <TransferPage />
-                </ProtectedRoute>
-              }
-            />
+              {/* Transfer page (protected) */}
+              <Route
+                path="/transfer"
+                element={
+                  <ProtectedRoute>
+                    <TransferPage />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Catch all - redirect to home */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </AppQueryClientProvider>
+              {/* Catch all - redirect to home */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </AppQueryClientProvider>
+        </SocketProvider>
       </AuthProvider>
     </Router>
   );
