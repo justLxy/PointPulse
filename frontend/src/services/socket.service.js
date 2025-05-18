@@ -1,6 +1,5 @@
 import { io } from 'socket.io-client';
 import { API_URL } from './api';
-import { toast } from 'react-hot-toast';
 
 let socket = null;
 let isConnected = false;
