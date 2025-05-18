@@ -740,7 +740,7 @@ const Dashboard = () => {
   const [isRedeemModalOpen, setIsRedeemModalOpen] = useState(false);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [upcomingEventId, setUpcomingEventId] = useState(null);
-  const { isCheckedIn } = upcomingEventId ? useEventCheckin(upcomingEventId) : { isCheckedIn: false };
+  const { isCheckedIn } = useEventCheckin(upcomingEventId || '');
   
   const formatDate = (dateString) => {
     const date = new Date(dateString);
