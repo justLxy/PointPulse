@@ -1586,6 +1586,71 @@ const checkInByScan = async (req, res) => {
     }
 };
 
+/**
+ * GET /events/:eventId/attendance
+ * Check attendance status for the current user
+ */
+const getAttendanceStatus = async (req, res) => {
+    try {
+        console.log('===== GET ATTENDANCE STATUS REQUEST =====');
+        const eventId = parseInt(req.params.eventId);
+        if (isNaN(eventId) || eventId <= 0) {
+            console.log('Invalid event ID:', req.params.eventId);
+            console.log('===== GET ATTENDANCE STATUS REQUEST END (400) =====\n\n');
+            return res.status(400).json({ error: 'Invalid event ID' });
+        }
+
+        const userId = req.auth.id;
+        console.log(`Checking attendance status for event ID ${eventId} and user ID ${userId}`);
+
+        // Check if the event exists
+        const event = await prisma.event.findUnique({
+            where: { id: eventId },
+            include: {
+                guests: {
+                    where: { id: userId },
+                    select: { id: true }
+                }
+            }
+        });
+
+        if (!event) {
+            console.log('Event not found');
+            console.log('===== GET ATTENDANCE STATUS REQUEST END (404) =====\n\n');
+            return res.status(404).json({ error: 'Event not found' });
+        }
+
+        // Check if the user is a guest of this event
+        if (event.guests.length === 0) {
+            console.log('User is not a guest of this event');
+            console.log('===== GET ATTENDANCE STATUS REQUEST END (404) =====\n\n');
+            return res.status(404).json({ error: 'User is not a guest of this event' });
+        }
+
+        // Check if the user has checked in
+        const attendance = await prisma.eventAttendance.findUnique({
+            where: { 
+                eventId_userId: { 
+                    eventId, 
+                    userId 
+                } 
+            }
+        });
+
+        console.log('Attendance record:', attendance);
+        console.log('===== GET ATTENDANCE STATUS REQUEST END (200) =====\n\n');
+        
+        return res.status(200).json({
+            checkedIn: !!attendance,
+            checkedInAt: attendance ? attendance.checkedInAt : null
+        });
+    } catch (error) {
+        console.error('Error checking attendance status:', error);
+        console.log('===== GET ATTENDANCE STATUS REQUEST END (500) =====\n\n');
+        res.status(500).json({ error: 'Failed to check attendance status' });
+    }
+};
+
 module.exports = {
     createEvent,
     getEvents,
@@ -1603,4 +1668,5 @@ module.exports = {
     getCheckinToken,
     checkInWithToken,
     checkInByScan,
+    getAttendanceStatus,
 };

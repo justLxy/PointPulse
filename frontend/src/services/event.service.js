@@ -613,6 +613,21 @@ const EventService = {
       throw new Error('Network error: Could not connect to server');
     }
   },
+
+  // Get attendance status for current user for an event
+  getAttendanceStatus: async (eventId) => {
+    try {
+      const response = await api.get(`/events/${eventId}/attendance`);
+      return response.data;
+    } catch (error) {
+      if (error.response) {
+        const { status, data } = error.response;
+        if (status === 404) throw new Error('Event not found or you are not registered');
+        throw new Error(data.error || 'Failed to get attendance status');
+      }
+      throw new Error('Network error: Could not connect to server');
+    }
+  },
 };
 
 export default EventService; 

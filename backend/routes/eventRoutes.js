@@ -53,4 +53,7 @@ router.post('/:eventId/checkin', requireRole('regular'), eventController.checkIn
 // Add manual QR scan check-in route – managers or organizers can record attendance by scanning a guest QR code
 router.post('/:eventId/checkin/scan', requireRole('regular'), eventController.checkInByScan);
 
+// Check attendance status for current user
+router.get('/:eventId/attendance', requireRole('regular'), eventController.getAttendanceStatus);
+
 module.exports = router;
