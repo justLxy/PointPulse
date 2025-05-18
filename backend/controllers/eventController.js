@@ -1450,6 +1450,34 @@ const checkInWithToken = async (req, res) => {
                     update: {}, // 如果记录已存在，不做任何更新
                     create: { eventId, userId }, // 如果记录不存在，创建新记录
                 });
+                
+                // Get user info to include in the notification
+                const user = await prisma.user.findUnique({
+                    where: { id: userId },
+                    select: { id: true, name: true, utorid: true }
+                });
+                
+                // Emit socket event for successful check-in
+                if (req.io) {
+                    // Emit to the user's personal room
+                    req.io.to(`user-${userId}`).emit('check-in-success', {
+                        eventId,
+                        eventName: event.name,
+                        message: 'Check-in successful',
+                        timestamp: new Date().toISOString()
+                    });
+                    
+                    // Also emit to admins/organizers in the event room
+                    req.io.to(`event-admin-${eventId}`).emit('user-checked-in', {
+                        userId,
+                        name: user.name,
+                        utorid: user.utorid,
+                        eventId,
+                        eventName: event.name,
+                        timestamp: new Date().toISOString()
+                    });
+                }
+                
                 return res.status(201).json({ 
                     message: 'Successfully checked in',
                     checkedInAt: new Date().toISOString()
@@ -1573,18 +1601,25 @@ const checkInByScan = async (req, res) => {
         });
 
         const alreadyCheckedIn = attendance.checkedInAt && attendance.checkedInAt.getTime() < Date.now() - 1000; // existing record
-
-        // Get the io instance
-        const io = req.app.get('io');
-        if (io) {
-            // Emit event to the user's private room
-            io.to(`user:${attendee.id}`).emit('event-checkin', {
-                status: 'success',
-                message: alreadyCheckedIn ? 'Already checked in' : 'Check-in successful',
+        
+        // Only emit socket events if this is a new check-in (not already checked in)
+        if (!alreadyCheckedIn && req.io) {
+            // Emit to the attendee's personal room for real-time notification on their device
+            req.io.to(`user-${attendee.id}`).emit('check-in-success', {
                 eventId,
                 eventName: event.name,
-                checkedInAt: attendance.checkedInAt || new Date(),
-                checkedInBy: requester.utorid
+                message: 'Check-in successful',
+                timestamp: new Date().toISOString()
+            });
+            
+            // Also emit to admins/organizers in the event room
+            req.io.to(`event-admin-${eventId}`).emit('user-checked-in', {
+                userId: attendee.id,
+                name: attendee.name,
+                utorid: attendee.utorid,
+                eventId,
+                eventName: event.name,
+                timestamp: new Date().toISOString()
             });
         }
 

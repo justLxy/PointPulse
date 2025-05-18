@@ -106,8 +106,8 @@ const App = () => {
   return (
     <Router>
       <AuthProvider>
-        <SocketProvider>
-          <AppQueryClientProvider>
+        <AppQueryClientProvider>
+          <SocketProvider>
             <GlobalStyles />
             <Toaster
               position="top-right"
@@ -282,8 +282,8 @@ const App = () => {
               {/* Catch all - redirect to home */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
-          </AppQueryClientProvider>
-        </SocketProvider>
+          </SocketProvider>
+        </AppQueryClientProvider>
       </AuthProvider>
     </Router>
   );

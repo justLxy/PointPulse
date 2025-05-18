@@ -10,7 +10,7 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const { expressjwt: jwt } = require("express-jwt");
-const { createServer } = require("http");
+const http = require("http");
 const { Server } = require("socket.io");
 
 // Import routes
@@ -28,43 +28,30 @@ const { JWT_SECRET } = require("./utils/jwtConfig");
 
 // Create Express app
 const app = express();
-const httpServer = createServer(app);
-const io = new Server(httpServer, {
+
+// Create HTTP server
+const server = http.createServer(app);
+
+// Initialize Socket.io
+const io = new Server(server, {
     cors: {
-        origin: function(origin, callback) {
-            const allowedOrigins = [
-                FRONTEND_URL,
-                // Add other specific origins if needed
-            ];
-            if (!origin || allowedOrigins.indexOf(origin) !== -1 || origin.startsWith('https://pointpulse')) {
-                callback(null, true);
-            } else {
-                callback(new Error('Not allowed by CORS'));
-            }
-        },
+        origin: FRONTEND_URL,
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
         credentials: true
     }
 });
 
-// Make io accessible globally
-app.set('io', io);
-
-// Socket.io connection setup
+// Socket.io connection handling
 io.on('connection', (socket) => {
-    console.log('A user connected', socket.id);
+    console.log('A user connected');
     
-    // Store user ID in socket when they authenticate
-    socket.on('authenticate', (userData) => {
-        if (userData && userData.id) {
-            console.log(`User ${userData.id} authenticated with socket ${socket.id}`);
-            socket.userId = userData.id;
-            socket.join(`user:${userData.id}`);
-        }
+    socket.on('join-event', (eventId) => {
+        console.log(`User joined event room: ${eventId}`);
+        socket.join(`event-${eventId}`);
     });
     
     socket.on('disconnect', () => {
-        console.log('User disconnected', socket.id);
+        console.log('User disconnected');
     });
 });
 
@@ -105,6 +92,12 @@ app.use(
     })
 );
 
+// Make io available to controllers
+app.use((req, res, next) => {
+    req.io = io;
+    next();
+});
+
 // App routes (JWT required)
 app.use("/users", userRoutes);
 app.use("/transactions", transactionRoutes);
@@ -116,11 +109,11 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 // Start server
-httpServer.listen(port, () => {
+server.listen(port, () => {
     console.log(`Server running on port ${port}`);
 });
 
-httpServer.on('error', (err) => {
+server.on('error', (err) => {
     console.error(`cannot start server: ${err.message}`);
     process.exit(1);
 });

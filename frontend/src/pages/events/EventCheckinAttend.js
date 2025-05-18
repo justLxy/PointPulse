@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import styled from '@emotion/styled';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,9 +13,10 @@ import {
 } from 'react-icons/fa';
 import theme from '../../styles/theme';
 import EventService from '../../services/event.service';
-import { useSocket } from '../../contexts/SocketContext';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import Button from '../../components/common/Button';
+import { useAuth } from '../../contexts/AuthContext';
+import { useSocket } from '../../contexts/SocketContext';
 
 const Container = styled.div`
   max-width: 500px;
@@ -256,6 +257,7 @@ const EventCheckinAttend = () => {
   const { eventId } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { socket } = useSocket();
 
   const token = searchParams.get('token');
@@ -264,26 +266,13 @@ const EventCheckinAttend = () => {
   const [errorMsg, setErrorMsg] = useState('');
   const [eventName, setEventName] = useState('');
 
-  // Listen for socket events
+  // Join socket room for this user when component mounts
   useEffect(() => {
-    if (!socket) return;
-    
-    const handleCheckin = (data) => {
-      console.log('Received check-in notification:', data);
-      // If we get a socket notification for this event, update the UI
-      if (data.eventId === parseInt(eventId) && data.status === 'success') {
-        setStatus('success');
-        setTime(new Date(data.checkedInAt).toLocaleTimeString());
-        setEventName(data.eventName);
-      }
-    };
-    
-    socket.on('event-checkin', handleCheckin);
-    
-    return () => {
-      socket.off('event-checkin', handleCheckin);
-    };
-  }, [socket, eventId]);
+    if (socket && user) {
+      // Join user-specific room for private notifications
+      socket.emit('join-event', `user-${user.id}`);
+    }
+  }, [socket, user]);
 
   // Handle RSVP action
   const handleRsvp = async () => {
@@ -298,7 +287,8 @@ const EventCheckinAttend = () => {
     }
   };
 
-  const processCheckin = async () => {
+  // Use useCallback to memoize the processCheckin function
+  const processCheckin = useCallback(async () => {
     if (!token) {
       setStatus('error');
       setErrorMsg('Invalid or missing token.');
@@ -366,11 +356,11 @@ const EventCheckinAttend = () => {
       setStatus('error');
       setErrorMsg(err.message || 'Unknown error occurred');
     }
-  };
+  }, [token, eventId, navigate]);
 
   useEffect(() => {
     processCheckin();
-  }, [token, eventId, navigate]);
+  }, [processCheckin]);
 
   return (
     <Container>
