@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styled from '@emotion/styled';
 import { QRCodeCanvas } from 'qrcode.react';
 import useUserTransactions from '../../hooks/useUserTransactions';
+import usePendingRedemptions from '../../hooks/usePendingRedemptions';
 import Modal from '../common/Modal';
 import Button from '../common/Button';
 import Input from '../common/Input';
@@ -133,6 +134,17 @@ const RedemptionModal = ({ isOpen, onClose, availablePoints = 0 }) => {
   const [redemptionId, setRedemptionId] = useState(null);
   
   const { createRedemption, isCreatingRedemption } = useUserTransactions();
+  const { pendingTotal, refetch: refetchPending } = usePendingRedemptions();
+  
+  // Refetch pending redemptions data whenever the modal is opened
+  useEffect(() => {
+    if (isOpen) {
+      refetchPending();
+    }
+  }, [isOpen, refetchPending]);
+  
+  // Calculate the real available points after pending redemptions
+  const actualAvailablePoints = availablePoints - pendingTotal;
   
   // Predefined amounts for quick selection
   const presetAmounts = [100, 200, 500, 1000, 2000, 5000];
@@ -182,8 +194,8 @@ const RedemptionModal = ({ isOpen, onClose, availablePoints = 0 }) => {
       return false;
     }
     
-    if (amount > availablePoints) {
-      setError('You do not have enough points');
+    if (amount > actualAvailablePoints) {
+      setError(`You don't have enough available points. You have ${availablePoints} total points with ${pendingTotal} pending in other redemption requests.`);
       return false;
     }
     
@@ -204,19 +216,16 @@ const RedemptionModal = ({ isOpen, onClose, availablePoints = 0 }) => {
       
       const amount = getRedemptionAmount();
       
-      // Set loading state to show loading button
-      // isCreatingRedemption is provided by the useUserTransactions hook
-
-      // Close the modal immediately
-      handleClose();
-      
-      // Create redemption request in the background
+      // Create redemption request and wait for it to complete before closing modal
       try {
         await createRedemption({
           amount,
           remark,
         });
-        // The useUserTransactions hook may have already shown a success notification
+        
+        // Close modal after successfully creating the redemption
+        handleClose();
+        
       } catch (apiError) {
         // Show error notification if API request fails
         toast.error(apiError.message || 'Failed to process redemption request');
@@ -231,9 +240,24 @@ const RedemptionModal = ({ isOpen, onClose, availablePoints = 0 }) => {
     <>
       <RedemptionInstructions>
         Select the amount of points you'd like to redeem. Each point is worth $0.01 in discount.
+        {pendingTotal > 0 && (
+          <strong> You have {pendingTotal} points pending in other redemption requests.</strong>
+        )}
       </RedemptionInstructions>
       
       {error && <ErrorMessage>{error}</ErrorMessage>}
+
+      <div style={{ marginBottom: theme.spacing.md }}>
+        <strong>Total Points:</strong> {availablePoints}
+        {pendingTotal > 0 && (
+          <>
+            <br />
+            <strong>Pending Redemptions:</strong> {pendingTotal}
+            <br />
+            <strong>Available for Redemption:</strong> {actualAvailablePoints}
+          </>
+        )}
+      </div>
       
       <RedemptionOptions>
         {presetAmounts.map((amount) => (
@@ -241,7 +265,7 @@ const RedemptionModal = ({ isOpen, onClose, availablePoints = 0 }) => {
             key={amount}
             active={selectedAmount === amount}
             onClick={() => handleSelectAmount(amount)}
-            disabled={amount > availablePoints}
+            disabled={amount > actualAvailablePoints}
           >
             <span>{amount}</span>
             <span>Points (${(amount / 100).toFixed(2)})</span>
@@ -251,22 +275,23 @@ const RedemptionModal = ({ isOpen, onClose, availablePoints = 0 }) => {
       
       <CustomOption>
         <Input
-          label="Custom amount"
+          label="Custom Amount"
           value={customAmount}
           onChange={handleCustomAmountChange}
-          placeholder="Enter points amount"
-          helperText={`Maximum: ${availablePoints} points (${(availablePoints / 100).toFixed(2)}$)`}
-          error={customAmount && (parseInt(customAmount) > availablePoints) ? 'Exceeds available points' : ''}
+          placeholder="Enter a custom amount"
+          type="number"
+          min="1"
+          max={actualAvailablePoints}
         />
       </CustomOption>
       
-      <Button 
-        fullWidth 
-        onClick={handleProceed} 
-        disabled={!getRedemptionAmount() || getRedemptionAmount() > availablePoints}
+      <Button
+        onClick={handleProceed}
+        disabled={!getRedemptionAmount() || getRedemptionAmount() > actualAvailablePoints}
         style={{ marginTop: theme.spacing.lg }}
+        fullWidth
       >
-        Proceed
+        Continue
       </Button>
     </>
   );

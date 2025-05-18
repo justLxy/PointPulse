@@ -1076,6 +1076,23 @@ const getPendingRedemptions = async (req, res) => {
     }
 };
 
+/**
+ * Get current user's pending redemptions total
+ */
+const getCurrentUserPendingRedemptionsTotal = async (req, res) => {
+    try {
+        const userId = req.auth.id;
+        
+        // Use the service function to get pending redemptions total
+        const pendingTotal = await transactionService.getUserPendingRedemptionsTotal(userId);
+        
+        return res.status(200).json({ pendingTotal });
+    } catch (error) {
+        console.error('Error getting pending redemptions total:', error);
+        res.status(500).json({ error: 'Failed to retrieve pending redemptions total' });
+    }
+};
+
 module.exports = {
     createTransaction,
     getTransactions,
@@ -1086,5 +1103,6 @@ module.exports = {
     getUserTransactions,
     createTransfer,
     lookupRedemptionTransaction,
-    getPendingRedemptions
+    getPendingRedemptions,
+    getCurrentUserPendingRedemptionsTotal
 };

@@ -28,6 +28,9 @@ router.post('/me/transactions', requireRole('regular'), transactionController.cr
 // Get current user's transactions
 router.get('/me/transactions', requireRole('regular'), transactionController.getUserTransactions);
 
+// Get current user's pending redemptions total
+router.get('/me/pending-redemptions', requireRole('regular'), transactionController.getCurrentUserPendingRedemptionsTotal);
+
 // Get a specific user
 router.get('/:userId', requireRole('cashier'), userController.getUser);
 

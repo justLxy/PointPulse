@@ -1217,8 +1217,8 @@ const EventDetail = () => {
                           // Add proper null checks for avatarUrl
                           let avatarPath, baseSrc, src;
                           if (guest.avatarUrl) {
-                            const version = localStorage.getItem('avatarVersion');
-                            const isAbsolute = /^(?:[a-z]+:)?\/\//i.test(guest.avatarUrl);
+                          const version = localStorage.getItem('avatarVersion');
+                          const isAbsolute = /^(?:[a-z]+:)?\/\//i.test(guest.avatarUrl);
                             avatarPath = guest.avatarUrl.startsWith('/') ? guest.avatarUrl : `/${guest.avatarUrl}`;
                             baseSrc = isAbsolute ? guest.avatarUrl : `${API_URL}${avatarPath}`;
                             src = version ? `${baseSrc}?v=${version}` : baseSrc;

@@ -23,6 +23,8 @@ export const useUserTransactions = (params = {}) => {
       queryClient.invalidateQueries({ queryKey: ['userTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['userProfile'] });
       queryClient.invalidateQueries({ queryKey: ['pendingRedemptions'] });
+      queryClient.invalidateQueries({ queryKey: ['pendingRedemptionsTotal'] });
+      queryClient.refetchQueries({ queryKey: ['pendingRedemptionsTotal'] });
     },
     onError: (error) => {
       toast.error(error.message || 'Failed to create redemption request');

@@ -439,6 +439,20 @@ const UserService = {
       throw new Error('Network error: Could not connect to server');
     }
   },
+
+  // Get user's pending redemptions total
+  getPendingRedemptionsTotal: async () => {
+    try {
+      const response = await api.get('/users/me/pending-redemptions');
+      return response.data.pendingTotal;
+    } catch (error) {
+      if (error.response) {
+        const { status, data } = error.response;
+        throw new Error(data.error || 'Failed to get pending redemptions total');
+      }
+      throw error;
+    }
+  },
 };
 
 export default UserService; 

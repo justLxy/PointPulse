@@ -394,9 +394,15 @@ const createRedemption = async (data, userId) => {
         throw new Error('User is not verified');
     }
     
-    // Check if user has enough points
-    if (user.points < amount) {
-        throw new Error('Insufficient points');
+    // Get the total amount of pending redemptions
+    const pendingRedemptionsTotal = await getUserPendingRedemptionsTotal(userId);
+    
+    // Calculate the available balance after considering pending redemptions
+    const availableBalance = user.points - pendingRedemptionsTotal;
+    
+    // Check if user has enough available points (considering pending redemptions)
+    if (availableBalance < amount) {
+        throw new Error(`Insufficient points. You have ${user.points} points, but ${pendingRedemptionsTotal} are pending redemption. Available: ${availableBalance}`);
     }
 
     // Create the redemption transaction
@@ -1142,6 +1148,26 @@ const getUserTransactions = async (userId, filters = {}, page = 1, limit = 10) =
     return { count, results };
 };
 
+/**
+ * Get the total amount of pending redemptions for a user
+ */
+const getUserPendingRedemptionsTotal = async (userId) => {
+    // Find all unprocessed redemption transactions for this user
+    const pendingRedemptions = await prisma.transaction.findMany({
+        where: {
+            userId: userId,
+            type: 'redemption',
+            processedBy: null // Unprocessed redemptions
+        },
+        select: {
+            redeemed: true
+        }
+    });
+    
+    // Calculate the total amount of pending redemptions
+    return pendingRedemptions.reduce((total, tx) => total + (tx.redeemed || 0), 0);
+};
+
 module.exports = {
     createPurchase,
     createAdjustment,
@@ -1151,5 +1177,6 @@ module.exports = {
     getTransactions,
     getTransaction,
     updateTransactionSuspicious,
-    getUserTransactions
+    getUserTransactions,
+    getUserPendingRedemptionsTotal
 };
