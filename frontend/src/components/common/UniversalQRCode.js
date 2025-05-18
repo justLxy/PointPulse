@@ -59,7 +59,7 @@ const UniversalQRCode = ({
   level = 'H', 
   renderAs = 'canvas', 
   includeMargin = true,
-  label = "Your PointPulse QR Code",
+  label = "",
   description,
   eventId = null,
   redemptionId = null
