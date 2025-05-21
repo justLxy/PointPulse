@@ -15,6 +15,7 @@ import { Tooltip } from 'react-tooltip';
 import QRCode from '../../components/common/QRCode';
 import UniversalQRCode from '../../components/common/UniversalQRCode';
 import ScannerModal from '../../components/event/ScannerModal';
+import api from '../../services/api';
 
 import { 
   FaCalendarAlt, 
@@ -925,6 +926,26 @@ const EventDetail = () => {
   
   const [manualCheckinModalOpen, setManualCheckinModalOpen] = useState(false);
   const [manualCheckinUtorid, setManualCheckinUtorid] = useState('');
+  
+  const handleManualCheckin = async () => {
+    if (!manualCheckinUtorid || manualCheckinUtorid.length !== 8) {
+      toast.error("Please enter a valid 8-character UTORid");
+      return;
+    }
+
+    try {
+      const response = await api.post(`/events/${eventId}/checkin/manual`, {
+        utorid: manualCheckinUtorid
+      });
+
+      toast.success('Successfully checked in');
+      setManualCheckinModalOpen(false);
+      setManualCheckinUtorid('');
+      refetch();
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Failed to check in');
+    }
+  };
   
   if (isLoading) {
     return <LoadingSpinner text="Loading event details..." />;
@@ -1940,35 +1961,7 @@ const EventDetail = () => {
               Cancel
             </Button>
             <Button
-              onClick={async () => {
-                if (!manualCheckinUtorid || manualCheckinUtorid.length !== 8) {
-                  toast.error("Please enter a valid 8-character UTORid");
-                  return;
-                }
-
-                try {
-                  const response = await fetch(`${API_URL}/events/${eventId}/checkin/manual`, {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    },
-                    body: JSON.stringify({ utorid: manualCheckinUtorid })
-                  });
-
-                  if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error || 'Failed to check in');
-                  }
-
-                  toast.success('Successfully checked in');
-                  setManualCheckinModalOpen(false);
-                  setManualCheckinUtorid('');
-                  refetch();
-                } catch (error) {
-                  toast.error(error.message || 'Failed to check in');
-                }
-              }}
+              onClick={handleManualCheckin}
               disabled={!manualCheckinUtorid}
             >
               Check In
