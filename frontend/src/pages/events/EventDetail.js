@@ -15,6 +15,7 @@ import { Tooltip } from 'react-tooltip';
 import QRCode from '../../components/common/QRCode';
 import UniversalQRCode from '../../components/common/UniversalQRCode';
 import ScannerModal from '../../components/event/ScannerModal';
+import ManualCheckinModal from '../../components/event/ManualCheckinModal';
 
 import { 
   FaCalendarAlt, 
@@ -31,7 +32,8 @@ import {
   FaUserMinus,
   FaGlobe,
   FaTrashAlt,
-  FaQrcode
+  FaQrcode,
+  FaKeyboard
 } from 'react-icons/fa';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { toast } from 'react-hot-toast';
@@ -886,8 +888,11 @@ const EventDetail = () => {
     );
   };
   
-  // Modal state for QR scanning
+  // Scanner modal state
   const [scanModalOpen, setScanModalOpen] = useState(false);
+  
+  // Manual check-in modal state
+  const [manualCheckinModalOpen, setManualCheckinModalOpen] = useState(false);
   
   // Add an effect to check the rsvp state parameter from location
   useEffect(() => {
@@ -919,6 +924,24 @@ const EventDetail = () => {
   // Handle successful scan
   const handleScanSuccess = () => {
     // Immediately trigger a refresh when scan is successful
+    refetch();
+  };
+  
+  // Handle opening manual check-in modal
+  const handleManualCheckinOpen = () => {
+    setManualCheckinModalOpen(true);
+  };
+  
+  // Handle closing manual check-in modal
+  const handleManualCheckinClose = () => {
+    setManualCheckinModalOpen(false);
+    // Refresh guest list after manual check-in
+    setRefreshAfterScan(true);
+  };
+  
+  // Handle successful manual check-in
+  const handleManualCheckinSuccess = () => {
+    // Immediately trigger a refresh when check-in is successful
     refetch();
   };
   
@@ -1034,6 +1057,13 @@ const EventDetail = () => {
               {(isCurrentUserOrganizerForEvent || isManager) && (
                 <Button onClick={() => setScanModalOpen(true)}>
                   <FaQrcode /> Scan Guest QR
+                </Button>
+              )}
+
+              {/* Add manual check-in button */}
+              {(isCurrentUserOrganizerForEvent || isManager) && (
+                <Button onClick={handleManualCheckinOpen}>
+                  <FaKeyboard /> Manual Check-in
                 </Button>
               )}
             </>
@@ -1879,6 +1909,14 @@ const EventDetail = () => {
         onClose={handleScanModalClose}
         eventId={eventId}
         onScanSuccess={handleScanSuccess}
+      />
+
+      {/* Manual check-in modal for organizers/managers */}
+      <ManualCheckinModal
+        isOpen={manualCheckinModalOpen}
+        onClose={handleManualCheckinClose}
+        eventId={eventId}
+        onCheckinSuccess={handleManualCheckinSuccess}
       />
     </div>
   );
