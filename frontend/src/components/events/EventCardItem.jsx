@@ -108,10 +108,8 @@ const ColoredBadge = styled(Badge)`
   color: white;
   font-weight: ${theme.typography.fontWeights.medium};
   
-  /* Ensure good contrast with text */
-  ${props => props.customColor === '#f4d03f' && `
-    color: #333; /* Darker text for yellow background */
-  `}
+  /* All badges should have white text */
+  color: white;
 `;
 
 const EventCardItem = ({ 
