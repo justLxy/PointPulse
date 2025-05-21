@@ -1093,6 +1093,87 @@ const getCurrentUserPendingRedemptionsTotal = async (req, res) => {
     }
 };
 
+/**
+ * Get redemptions by utorid（cashier+）
+ */
+const getRedemptionsByUtorid = async (req, res) => {
+    try {
+        const { utorid } = req.params;
+        const { status } = req.query; // 'pending' 或 'all'
+
+         
+        if (!checkRole(req.auth, 'cashier')) {
+            return res.status(403).json({ error: 'Unauthorized to view redemptions' });
+        }
+
+       
+        const user = await prisma.user.findUnique({
+            where: { utorid },
+            select: { id: true }
+        });
+
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        
+        const where = {
+            userId: user.id,
+            type: 'redemption'
+        };
+
+        
+        if (status === 'pending') {
+            where.processedBy = null;
+        }
+
+        
+        const transactions = await prisma.transaction.findMany({
+            where,
+            include: {
+                user: {
+                    select: {
+                        utorid: true,
+                        name: true
+                    }
+                },
+                processor: {
+                    select: {
+                        utorid: true,
+                        name: true
+                    }
+                }
+            },
+            orderBy: {
+                createdAt: 'desc'
+            }
+        });
+
+       
+        const formattedTransactions = transactions.map(tx => ({
+            id: tx.id,
+            utorid: tx.user.utorid,
+            userName: tx.user.name,
+            type: tx.type,
+            amount: tx.amount,
+            redeemed: tx.redeemed,
+            status: tx.processedBy ? 'processed' : 'pending',
+            processedBy: tx.processor?.utorid,
+            processedByName: tx.processor?.name,
+            createdAt: tx.createdAt,
+            remark: tx.remark
+        }));
+
+        return res.json({
+            results: formattedTransactions,
+            count: transactions.length
+        });
+    } catch (error) {
+        console.error('Error getting redemptions by utorid:', error);
+        res.status(500).json({ error: 'Failed to get redemptions' });
+    }
+};
+
 module.exports = {
     createTransaction,
     getTransactions,
@@ -1104,5 +1185,6 @@ module.exports = {
     createTransfer,
     lookupRedemptionTransaction,
     getPendingRedemptions,
-    getCurrentUserPendingRedemptionsTotal
+    getCurrentUserPendingRedemptionsTotal,
+    getRedemptionsByUtorid
 };

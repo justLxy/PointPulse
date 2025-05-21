@@ -9,7 +9,7 @@ import axios from 'axios';
 // API URL configuration - can be changed when deploying
 // export const API_URL = 'http://localhost:8000';
 // export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
-export const API_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:8000";
+const API_URL = (process.env.REACT_APP_API_URL || 'http://localhost:5000').replace(/\/$/, '');
 
 // Create an axios instance with a base URL
 const api = axios.create({

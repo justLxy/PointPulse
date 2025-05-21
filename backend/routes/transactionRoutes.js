@@ -26,4 +26,7 @@ router.patch('/:transactionId/suspicious', requireRole('manager'), transactionCo
 // Process a redemption transaction (cashier or higher)
 router.patch('/:transactionId/processed', requireRole('cashier'), transactionController.processRedemption);
 
+// Get redemptions by utorid (cashier+)
+router.get('/redemptions/by-utorid/:utorid', requireRole('cashier'), transactionController.getRedemptionsByUtorid);
+
 module.exports = router;

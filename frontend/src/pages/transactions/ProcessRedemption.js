@@ -298,8 +298,16 @@ const ScannerOverlay = styled.div`
   pointer-events: none;
 `;
 
+// Add new styled components for search type toggle
+const SearchTypeToggle = styled.div`
+  display: flex;
+  gap: ${theme.spacing.xs};
+  margin-left: ${theme.spacing.sm};
+`;
+
 const ProcessRedemption = () => {
   const [redemptionId, setRedemptionId] = useState('');
+  const [searchType, setSearchType] = useState('id'); // 'id' 或 'utorid'
   const [result, setResult] = useState(null);
   const [status, setStatus] = useState('idle'); // 'idle', 'success', 'error', 'found'
   const [processingError, setProcessingError] = useState(null); // Separate error state for processing
@@ -310,76 +318,28 @@ const ProcessRedemption = () => {
   const [isScannerActive, setIsScannerActive] = useState(false);
   const scannerRef = useRef(null);
   const html5QrScannerRef = useRef(null);
-  
   const queryClient = useQueryClient();
-  const { processRedemption, isProcessing: isMutationLoading } = useTransactions(); // Rename isProcessing from hook to avoid clash
-  
-  // State to track if we're filtering by a specific user
+  const { processRedemption, isProcessing: isMutationLoading } = useTransactions();
   const [userFilter, setUserFilter] = useState(null);
-  
-  // ADD: Use react-query to fetch pending redemptions
-  const queryKey = ['pendingRedemptions', page, limit, userFilter];
-  const { 
-    data: pendingData, 
-    isLoading: isLoadingPending, // Use isLoading from useQuery
-    error: pendingError // Use error from useQuery
+  const [utoridResults, setUtoridResults] = useState([]);
+
+  // useQuery 始终查全部 pending，不受 userFilter 影响
+  const queryKey = ['pendingRedemptions', page, limit];
+  const {
+    data: pendingData,
+    isLoading: isLoadingPending,
+    error: pendingError
   } = useQuery({
     queryKey: queryKey,
-    queryFn: () => {
-      // If we have a user filter, fetch only that user's redemptions
-      if (userFilter) {
-        console.log(`Query function using user filter: ${userFilter}`);
-        return TransactionService.getPendingRedemptionsByUtorid(userFilter)
-          .then(results => {
-            console.log(`Got ${results ? results.length : 0} results for user ${userFilter}`);
-            
-            // Check if results is empty or undefined
-            if (!results || results.length === 0) {
-              toast.error(`No pending redemptions found for user ${userFilter}`);
-              // Set userFilter back to null after a short delay
-              setTimeout(() => setUserFilter(null), 2000);
-            }
-            
-            // Filter results to ensure we only show redemptions for this user
-            const filteredResults = results ? results.filter(r => 
-              r.utorid === userFilter || 
-              r.userId === userFilter ||
-              r.user?.utorid === userFilter
-            ) : [];
-            
-            console.log(`After additional filtering: ${filteredResults.length} results`);
-            
-            return {
-              results: filteredResults,
-              count: filteredResults.length
-            };
-          })
-          .catch(error => {
-            console.error("Error fetching user redemptions:", error);
-            toast.error(error.message || `Failed to find redemptions for user ${userFilter}`);
-            // Set userFilter back to null after an error
-            setTimeout(() => setUserFilter(null), 2000);
-            // Return empty results to prevent the query from failing
-            return { results: [], count: 0 };
-          });
-      }
-      // Otherwise fetch all pending redemptions with pagination
-      return TransactionService.getPendingRedemptions({ page, limit });
-    },
-    staleTime: 1 * 60 * 1000, // Data considered fresh for 1 minute
+    queryFn: () => TransactionService.getPendingRedemptions({ page, limit }),
+    staleTime: 1 * 60 * 1000,
   });
-
-  // ADD: Derive state from useQuery result
   const pendingRedemptions = pendingData?.results || [];
   const totalCount = pendingData?.count || 0;
-  
-  // Calculate total pages based on data from useQuery
   const totalPages = Math.ceil(totalCount / limit);
-  
-  // Calculate current display range
   const startIndex = totalCount > 0 ? (page - 1) * limit + 1 : 0;
   const endIndex = Math.min(page * limit, totalCount);
-  
+
   // Scanner setup and cleanup functions
   const startScanner = async () => {
     if (!scannerRef.current) return;
@@ -555,34 +515,28 @@ const ProcessRedemption = () => {
         return;
       }
     } else {
-      // Use the manually entered redemption ID
-      searchRedemptionId = redemptionId;
+      if (searchType === 'utorid') {
+        scannedUtorid = redemptionId;
+      } else {
+        searchRedemptionId = redemptionId;
+      }
     }
     
-    // If we have a utorid, fetch all pending redemptions for that user
     if (scannedUtorid) {
       try {
-        // Set the user filter to show only this user's redemptions
-        setUserFilter(scannedUtorid);
-        
-        // Reset page to 1 when filtering by user
-        setPage(1);
-        
-        // Provide feedback that we're filtering by user
-        toast.success(`Showing pending redemptions for user ${scannedUtorid}`);
-        
-        // Reset search states
-        setStatus('idle');
+        const results = await TransactionService.getPendingRedemptionsByUtorid(scannedUtorid);
+        setUtoridResults(results || []);
+        setStatus('found');
         setRedemptionId('');
         return;
       } catch (error) {
         setStatus('error');
         setResult({ message: error.message || `Failed to find redemptions for user ${scannedUtorid}` });
+        setUtoridResults([]);
         return;
       }
     }
     
-    // Continue with regular redemption ID lookup if we have one
     if (!searchRedemptionId || isNaN(parseInt(searchRedemptionId))) {
       setStatus('error');
       setResult({ message: 'Please enter a valid redemption ID' });
@@ -590,23 +544,21 @@ const ProcessRedemption = () => {
     }
     
     try {
-      // Use the cashier-specific lookup endpoint
       const data = await TransactionService.lookupRedemption(parseInt(searchRedemptionId));
-      
       if (!data) {
         setStatus('error');
         setResult({ message: 'Redemption not found' });
         return;
       }
-      
-      // Update the input field to show the found redemption ID
       setRedemptionId(searchRedemptionId.toString());
       setStatus('found');
       setResult(data);
-      setProcessingError(null); // Clear previous errors when a new one is found
+      setProcessingError(null);
+      setUtoridResults([]);
     } catch (error) {
       setStatus('error');
       setResult({ message: error.message || 'Failed to find redemption request' });
+      setUtoridResults([]);
     }
   };
   
@@ -665,7 +617,8 @@ const ProcessRedemption = () => {
     setRedemptionId('');
     setResult(null);
     setStatus('idle');
-    setProcessingError(null); // Clear processing errors on reset
+    setProcessingError(null);
+    setUtoridResults([]);
   };
   
   const formatDate = (dateString) => {
@@ -700,7 +653,7 @@ const ProcessRedemption = () => {
     <div>
       <PageTitle>Process Redemption</PageTitle>
       <PageDescription>
-        Enter a redemption ID to process a customer's redemption request.
+        Enter a redemption ID or UTORid to process a customer's redemption request.
         The redemption ID should be provided by the customer via a QR code or verbally.
         Below you can also see all pending redemption requests that need to be processed.
       </PageDescription>
@@ -741,10 +694,10 @@ const ProcessRedemption = () => {
         </ErrorResult>
       )}
       
-      {(status === 'idle' || status === 'found') && (
+      {(status === 'idle' || status === 'found' || (searchType === 'utorid' && utoridResults.length > 0)) && (
         <Card>
           <Card.Header>
-            <Card.Title>Process Redemption by ID</Card.Title>
+            <Card.Title>Process Redemption</Card.Title>
           </Card.Header>
           <Card.Body>
             <ScanContainer>
@@ -753,15 +706,31 @@ const ProcessRedemption = () => {
                   <Input
                     value={redemptionId}
                     onChange={(e) => setRedemptionId(e.target.value)}
-                    placeholder="Enter Redemption ID"
+                    placeholder={searchType === 'id' ? "Enter Redemption ID" : "Enter UTORid"}
                     leftIcon={<FaSearch />}
                   />
+                  <SearchTypeToggle>
+                    <Button
+                      variant={searchType === 'id' ? 'contained' : 'outlined'}
+                      onClick={() => setSearchType('id')}
+                      size="small"
+                    >
+                      ID
+                    </Button>
+                    <Button
+                      variant={searchType === 'utorid' ? 'contained' : 'outlined'}
+                      onClick={() => setSearchType('utorid')}
+                      size="small"
+                    >
+                      UTORid
+                    </Button>
+                  </SearchTypeToggle>
                 </ManualInput>
                 <div style={{ display: 'flex', gap: theme.spacing.md }}>
                   <Button
                     onClick={() => handleSearch()}
                   >
-                    Find Redemption
+                    Find {searchType === 'id' ? 'Redemption' : 'User'}
                   </Button>
                   <QrScanButton 
                     variant="outlined"
@@ -771,8 +740,59 @@ const ProcessRedemption = () => {
                   </QrScanButton>
                 </div>
               </SearchContainer>
-              
-              {status === 'found' && result && (
+              {/* utorid 查询时显示该用户所有 pending redemption 卡片，若无则显示提示 */}
+              {searchType === 'utorid' && (
+                utoridResults.length > 0 ? (
+                  <ResultContainer>
+                    {utoridResults.map((redemption) => (
+                      <RedemptionDetails key={redemption.id}>
+                        <DetailRow>
+                          <strong>Redemption ID</strong>
+                          <span>#{redemption.id}</span>
+                        </DetailRow>
+                        <DetailRow>
+                          <strong>User</strong>
+                          <span>{redemption.utorid}</span>
+                        </DetailRow>
+                        <DetailRow>
+                          <strong>Points to Redeem</strong>
+                          <span>{Math.abs(redemption.amount)}</span>
+                        </DetailRow>
+                        <DetailRow>
+                          <strong>Date Requested</strong>
+                          <span>{formatDate(redemption.createdAt)}</span>
+                        </DetailRow>
+                        {redemption.remark && (
+                          <DetailRow>
+                            <strong>Remark</strong>
+                            <span>{redemption.remark}</span>
+                          </DetailRow>
+                        )}
+                        <ActionButtons>
+                          <Button
+                            variant="outlined"
+                            onClick={handleReset}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            onClick={() => handleProcessRedemption(redemption.id)}
+                            loading={processingIds.includes(redemption.id)}
+                          >
+                            Process Redemption
+                          </Button>
+                        </ActionButtons>
+                      </RedemptionDetails>
+                    ))}
+                  </ResultContainer>
+                ) : status === 'found' && (
+                  <ErrorResult>
+                    <p>Sorry, we couldn't find any pending redemption requests for this user.</p>
+                  </ErrorResult>
+                )
+              )}
+              {/* id 查询时显示单条卡片 */}
+              {status === 'found' && result && searchType === 'id' && (
                 <ResultContainer>
                   <RedemptionDetails>
                     <DetailRow>
@@ -797,22 +817,21 @@ const ProcessRedemption = () => {
                         <span>{result.remark}</span>
                       </DetailRow>
                     )}
+                    <ActionButtons>
+                      <Button
+                        variant="outlined"
+                        onClick={handleReset}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={() => handleProcessRedemption()}
+                        loading={isMutationLoading}
+                      >
+                        Process Redemption
+                      </Button>
+                    </ActionButtons>
                   </RedemptionDetails>
-                  
-                  <ActionButtons>
-                    <Button
-                      variant="outlined"
-                      onClick={handleReset}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={() => handleProcessRedemption()}
-                      loading={isMutationLoading}
-                    >
-                      Process Redemption
-                    </Button>
-                  </ActionButtons>
                 </ResultContainer>
               )}
             </ScanContainer>

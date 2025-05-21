@@ -326,16 +326,9 @@ const TransactionService = {
   // Get pending redemption transactions by utorid (Cashier+)
   getPendingRedemptionsByUtorid: async (utorid) => {
     try {
-      console.log(`Fetching redemptions for utorid: ${utorid}`);
-      // Use the standard pending-redemptions endpoint with proper utorid filter
-      const response = await api.get('/transactions/pending-redemptions', { 
-        params: { 
-          utorid: utorid,
-          type: 'redemption',  // Make sure we're looking for redemptions
-          limit: 100           // Get more results
-        } 
+      const response = await api.get(`/transactions/redemptions/by-utorid/${utorid}`, {
+        params: { status: 'pending' }
       });
-      console.log('User redemption data:', response.data);
       return response.data.results;
     } catch (error) {
       console.error('Error fetching user redemptions:', error);
@@ -360,6 +353,8 @@ const TransactionService = {
       throw new Error('Network error: Could not connect to server');
     }
   },
+
+ 
 };
 
 export default TransactionService; 
