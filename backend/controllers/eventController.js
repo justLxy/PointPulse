@@ -123,7 +123,7 @@ const getEvents = async (req, res) => {
             console.log('Added manager-specific filter - published:', req.query.published);
         }
 
-        // 添加对组织者的支持，让组织者也能看到他们负责的未发布活动
+        
         const includeMyOrganizedEvents = req.query.includeMyOrganizedEvents === 'true';
         console.log('Include my organized events:', includeMyOrganizedEvents);
         
@@ -224,22 +224,22 @@ const getEvent = async (req, res) => {
             organizerCount: event.organizers.length
         }, null, 2));
 
-        // 判断用户是否是组织者
+        
         const isOrganizer = event.organizers.some(org => org.id === userId);
         console.log('Is user an organizer:', isOrganizer);
 
-        // 获取includeAsOrganizer参数
+        // 
         const includeAsOrganizer = req.query.includeAsOrganizer === 'true';
         console.log('Include as organizer:', includeAsOrganizer);
 
-        // 如果事件未发布，非管理员和非组织者且不是特别请求组织者视图的用户不能查看
+        // 
         if (!isManager && !event.published && !isOrganizer) {
             if (!includeAsOrganizer) {
                 console.log('Event is not published and user is not authorized to view it');
                 console.log('===== GET EVENT REQUEST END (403) =====\n\n');
                 return res.status(403).json({ error: 'This event is not published yet. Only managers and organizers can view unpublished events.' });
             } else {
-                // 如果用户请求包含组织者视图，但实际上不是组织者
+                // 
                 console.log('User requested organizer view but is not an organizer');
                 console.log('===== GET EVENT REQUEST END (404) =====\n\n');
                 return res.status(404).json({ error: 'Event not found' });
@@ -309,7 +309,7 @@ const updateEvent = async (req, res) => {
             return res.status(400).json({ error: 'No fields provided for update' });
         }
 
-        // 先检查事件是否存在
+        // 
         console.log('Checking if event exists');
         const event = await prisma.event.findUnique({
             where: { id: eventId },
@@ -335,14 +335,14 @@ const updateEvent = async (req, res) => {
             guestCount: event.guests.length
         }, null, 2));
 
-        // 检查事件是否已结束
+        // 
         const now = new Date();
         console.log('Current time:', now);
         console.log('Event end time:', event.endTime);
         console.log('Has event ended?', event.endTime <= now);
         
         if (event.endTime <= now) {
-            // 如果事件已结束，不允许更新任何字段
+            // 
             console.log('Event has ended, cannot update');
             console.log('===== UPDATE EVENT REQUEST END (400) =====\n\n');
             return res.status(400).json({ error: 'Cannot update an event that has ended' });
@@ -1605,6 +1605,110 @@ const checkInByScan = async (req, res) => {
     }
 };
 
+/**
+ * Manual check-in for organizers and managers
+ */
+const checkInManually = async (req, res) => {
+    console.log('\n\n===== MANUAL CHECK-IN REQUEST START =====');
+    console.log('Time:', new Date().toISOString());
+    console.log('URL:', req.originalUrl);
+    console.log('Method:', req.method);
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+    console.log('Auth user:', JSON.stringify(req.auth, null, 2));
+    
+    try {
+        const eventId = parseInt(req.params.eventId);
+        const { utorid } = req.body;
+        
+        if (!utorid) {
+            console.log('No UTORid provided');
+            console.log('===== MANUAL CHECK-IN REQUEST END (400) =====\n\n');
+            return res.status(400).json({ error: 'UTORid is required' });
+        }
+
+        // First check if the user exists
+        const user = await prisma.user.findUnique({
+            where: { utorid }
+        });
+
+        if (!user) {
+            console.log('User not found');
+            console.log('===== MANUAL CHECK-IN REQUEST END (404) =====\n\n');
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Check if the event exists
+        const event = await prisma.event.findUnique({
+            where: { id: eventId },
+            include: {
+                organizers: true,
+                guests: true
+            }
+        });
+
+        if (!event) {
+            console.log('Event not found');
+            console.log('===== MANUAL CHECK-IN REQUEST END (404) =====\n\n');
+            return res.status(404).json({ error: 'Event not found' });
+        }
+
+        // Check if user is an organizer or manager
+        const isOrganizer = event.organizers.some(org => org.id === req.auth.id);
+        const isManager = checkRole(req.auth, 'manager');
+
+        if (!isOrganizer && !isManager) {
+            console.log('User is not authorized to perform manual check-in');
+            console.log('===== MANUAL CHECK-IN REQUEST END (403) =====\n\n');
+            return res.status(403).json({ error: 'Only organizers and managers can perform manual check-in' });
+        }
+
+        // Check if the guest exists in the event
+        const guest = event.guests.find(g => g.id === user.id);
+        if (!guest) {
+            console.log('Guest not found in event');
+            console.log('===== MANUAL CHECK-IN REQUEST END (404) =====\n\n');
+            return res.status(404).json({ error: 'Guest not found in this event' });
+        }
+
+        // Check if already checked in
+        const existingAttendance = await prisma.eventAttendance.findUnique({
+            where: { eventId_userId: { eventId, userId: user.id } }
+        });
+
+        if (existingAttendance) {
+            console.log('Guest already checked in');
+            console.log('===== MANUAL CHECK-IN REQUEST END (400) =====\n\n');
+            return res.status(400).json({ error: 'Guest is already checked in' });
+        }
+
+        // Create attendance record
+        const attendance = await prisma.eventAttendance.create({
+            data: {
+                eventId,
+                userId: user.id,
+                checkedInAt: new Date()
+            }
+        });
+
+        console.log('Manual check-in successful');
+        console.log('===== MANUAL CHECK-IN REQUEST END (200) =====\n\n');
+        return res.status(200).json({ 
+            message: 'Check-in successful',
+            guest: {
+                id: user.id,
+                name: user.name,
+                utorid: user.utorid,
+                checkedInAt: attendance.checkedInAt
+            }
+        });
+    } catch (error) {
+        console.error('Error during manual check-in:', error);
+        console.log('Error stack:', error.stack);
+        console.log('===== MANUAL CHECK-IN REQUEST END (500) =====\n\n');
+        return res.status(500).json({ error: 'Failed to perform check-in' });
+    }
+};
+
 module.exports = {
     createEvent,
     getEvents,
@@ -1622,4 +1726,5 @@ module.exports = {
     getCheckinToken,
     checkInWithToken,
     checkInByScan,
+    checkInManually
 };

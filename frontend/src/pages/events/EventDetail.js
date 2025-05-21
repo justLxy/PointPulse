@@ -15,6 +15,7 @@ import { Tooltip } from 'react-tooltip';
 import QRCode from '../../components/common/QRCode';
 import UniversalQRCode from '../../components/common/UniversalQRCode';
 import ScannerModal from '../../components/event/ScannerModal';
+import api from '../../services/api';
 
 import { 
   FaCalendarAlt, 
@@ -31,7 +32,8 @@ import {
   FaUserMinus,
   FaGlobe,
   FaTrashAlt,
-  FaQrcode
+  FaQrcode,
+  FaUserCheck
 } from 'react-icons/fa';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { toast } from 'react-hot-toast';
@@ -922,6 +924,29 @@ const EventDetail = () => {
     refetch();
   };
   
+  const [manualCheckinModalOpen, setManualCheckinModalOpen] = useState(false);
+  const [manualCheckinUtorid, setManualCheckinUtorid] = useState('');
+  
+  const handleManualCheckin = async () => {
+    if (!manualCheckinUtorid || manualCheckinUtorid.length !== 8) {
+      toast.error("Please enter a valid 8-character UTORid");
+      return;
+    }
+
+    try {
+      const response = await api.post(`/events/${eventId}/checkin/manual`, {
+        utorid: manualCheckinUtorid
+      });
+
+      toast.success('Successfully checked in');
+      setManualCheckinModalOpen(false);
+      setManualCheckinUtorid('');
+      refetch();
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Failed to check in');
+    }
+  };
+  
   if (isLoading) {
     return <LoadingSpinner text="Loading event details..." />;
   }
@@ -995,47 +1020,70 @@ const EventDetail = () => {
             )
           )}
           
+          {isCurrentUserOrganizerForEvent && (
+            <>
+              <Button
+                variant="outlined"
+                onClick={() => navigate(`/events/${event.id}/checkin-display`)}
+              >
+                <FaQrcode /> Check-In QR
+              </Button>
+            </>
+          )}
+          
           {canEditEventDetails && (
             <>
-              <Button 
-                variant="outlined"
-                onClick={handleEditEvent}
-              >
-                <FaEdit /> Edit Event
-              </Button>
-              
-              {isManager && (
-                <Button 
-                  variant="outlined" 
-                  color="error"
-                  onClick={handleDeleteEventClick}
-                >
-                  <FaTrash /> Delete Event
-                </Button>
-              )}
-              
-              {isManager && !event.published && (
-                <Button 
-                  onClick={handlePublishEvent}
-                >
-                  <FaGlobe /> Publish Event
-                </Button>
-              )}
-
-              {(isCurrentUserOrganizerForEvent || isManager) && (
+              {/* First row of buttons */}
+              <div style={{ display: 'flex', gap: theme.spacing.sm }}>
                 <Button
                   variant="outlined"
-                  onClick={() => navigate(`/events/${event.id}/checkin-display`)}
+                  onClick={handleEditEvent}
                 >
-                  <FaQrcode /> Check-In QR
+                  <FaEdit /> Edit Event
                 </Button>
-              )}
+                
+                {isManager && (
+                  <Button 
+                    variant="outlined" 
+                    color="error"
+                    onClick={handleDeleteEventClick}
+                  >
+                    <FaTrash /> Delete Event
+                  </Button>
+                )}
+                
+                {isManager && !event.published && (
+                  <Button 
+                    onClick={handlePublishEvent}
+                  >
+                    <FaGlobe /> Publish Event
+                  </Button>
+                )}
 
-              {(isCurrentUserOrganizerForEvent || isManager) && (
-                <Button onClick={() => setScanModalOpen(true)}>
-                  <FaQrcode /> Scan Guest QR
-                </Button>
-              )}
+                {(isCurrentUserOrganizerForEvent || isManager) && (
+                  <Button
+                    variant="outlined"
+                    onClick={() => navigate(`/events/${event.id}/checkin-display`)}
+                  >
+                    <FaQrcode /> Check-In QR
+                  </Button>
+                )}
+              </div>
+
+              {/* Second row of buttons */}
+              <div style={{ display: 'flex', gap: theme.spacing.sm, marginTop: theme.spacing.sm }}>
+                {(isCurrentUserOrganizerForEvent || isManager) && (
+                  <Button onClick={() => setScanModalOpen(true)}>
+                    <FaQrcode /> Scan Guest QR
+                  </Button>
+                )}
+
+                {(isCurrentUserOrganizerForEvent || isManager) && (
+                  <Button onClick={() => setManualCheckinModalOpen(true)}>
+                    <FaUserCheck /> Check-in Manually
+                  </Button>
+                )}
+              </div>
             </>
           )}
         </PageActionsContainer>
@@ -1880,6 +1928,47 @@ const EventDetail = () => {
         eventId={eventId}
         onScanSuccess={handleScanSuccess}
       />
+
+      {/* Manual Check-in Modal */}
+      <Modal
+        isOpen={manualCheckinModalOpen}
+        onClose={() => {
+          setManualCheckinModalOpen(false);
+          setManualCheckinUtorid('');
+        }}
+        title="Manual Check-in"
+        size="small"
+      >
+        <ModalContent>
+          <ModalForm>
+            <Input
+              label="UTORid"
+              value={manualCheckinUtorid}
+              onChange={(e) => setManualCheckinUtorid(e.target.value.trim())}
+              placeholder="Enter UTORid (8 characters)"
+              required
+            />
+          </ModalForm>
+          
+          <ModalActions>
+            <Button
+              variant="outlined"
+              onClick={() => {
+                setManualCheckinModalOpen(false);
+                setManualCheckinUtorid('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleManualCheckin}
+              disabled={!manualCheckinUtorid}
+            >
+              Check In
+            </Button>
+          </ModalActions>
+        </ModalContent>
+      </Modal>
     </div>
   );
 };
