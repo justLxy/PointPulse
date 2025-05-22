@@ -452,10 +452,10 @@ const ProcessRedemption = () => {
   };
 
   const handleSearch = async (qrData = null) => {
+    let input = qrData || redemptionId.trim(); 
     let searchRedemptionId;
     let scannedUtorid;
   
-    
     if (qrData) {
       console.log("Processing QR data:", qrData);
       try {
@@ -498,12 +498,9 @@ const ProcessRedemption = () => {
         return;
       }
     } else {
-     
       const input = redemptionId.trim();
       if (!input) {
-        setStatus('error');
-        setResult({ message: 'Please enter a redemption ID or UTORid' });
-        return;
+        return; // 如果输入为空，直接返回，不显示错误
       }
   
       if (!isNaN(parseInt(input))) {
@@ -513,7 +510,6 @@ const ProcessRedemption = () => {
       }
     }
   
-   
     if (scannedUtorid) {
       setUserFilter(scannedUtorid);
       setPage(1);
@@ -523,9 +519,7 @@ const ProcessRedemption = () => {
     }
   
     if (!searchRedemptionId || isNaN(parseInt(searchRedemptionId))) {
-      setStatus('error');
-      setResult({ message: 'Please enter a valid redemption ID' });
-      return;
+      return; // 如果输入格式不正确，直接返回，不显示错误
     }
     
     try {
@@ -537,16 +531,12 @@ const ProcessRedemption = () => {
         return;
       }
     
-     
       setStatus('idle');
       setResult(null);
       setProcessingError(null);
-    
-      
       setUserFilter(null);
       setPage(1);
     
-      
       queryClient.setQueryData(['pendingRedemptions', 1, limit, null], {
         results: [data],
         count: 1
@@ -555,7 +545,6 @@ const ProcessRedemption = () => {
       setStatus('error');
       setResult({ message: error.message || 'Failed to find redemption request' });
     }
-    
   };
   
   
@@ -634,6 +623,22 @@ const ProcessRedemption = () => {
       stopScanner();
     };
   }, []);
+  useEffect(() => {
+    const trimmed = redemptionId.trim();
+    if (!trimmed) return;
+  
+    const delay = 1250; 
+    const timer = setTimeout(() => {
+     
+      if (/^\d+$/.test(trimmed) || /^[a-zA-Z0-9]+$/.test(trimmed)) {
+        handleSearch(trimmed);
+      }
+    }, delay);
+  
+    return () => {
+      clearTimeout(timer); 
+    };
+  }, [redemptionId]);
 
   // Parse query param on initial load (for direct link via QR on smartphones)
   const location = useLocation();
@@ -707,26 +712,17 @@ const ProcessRedemption = () => {
                   <Input
                     value={redemptionId}
                     onChange={(e) => setRedemptionId(e.target.value)}
-                    placeholder="Enter Redemption ID"
+                    placeholder="Enter Redemption ID or UTOrid"
                     leftIcon={<FaSearch />}
                   />
                 </ManualInput>
-                <div style={{ display: 'flex', gap: theme.spacing.md }}>
-                  <Button
-                    onClick={() => handleSearch()}
-                  >
-                    Find Redemption
-                  </Button>
-                  <QrScanButton 
-                    variant="outlined"
-                    onClick={handleOpenScanner}
-                  >
-                    <FaQrcode /> Scan QR
-                  </QrScanButton>
-                </div>
+                <QrScanButton 
+                  variant="outlined"
+                  onClick={handleOpenScanner}
+                >
+                  <FaQrcode /> Scan QR
+                </QrScanButton>
               </SearchContainer>
-              
-            
             </ScanContainer>
           </Card.Body>
         </Card>
