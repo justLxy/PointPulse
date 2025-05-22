@@ -452,163 +452,102 @@ const ProcessRedemption = () => {
   };
 
   const handleSearch = async (qrData = null) => {
+    let input = qrData || redemptionId.trim(); 
     let searchRedemptionId;
     let scannedUtorid;
-    
-    // If QR data is provided, try to extract redemption ID or utorid from it
+  
     if (qrData) {
       console.log("Processing QR data:", qrData);
       try {
-        // Check if the QR data is a URL
         if (qrData.trim().startsWith('http')) {
-          console.log("Detected URL format QR code");
-          try {
-            const url = new URL(qrData.trim());
-            
-            // Handle transfer URLs directly
-            if (url.pathname === '/transfer') {
-              const dataParam = url.searchParams.get('data');
-              if (dataParam) {
-                try {
-                  const decodedJson = JSON.parse(atob(decodeURIComponent(dataParam)));
-                  if (decodedJson && decodedJson.utorid) {
-                    scannedUtorid = decodedJson.utorid;
-                    console.log("Extracted utorid from transfer URL:", scannedUtorid);
-                  }
-                } catch (decodeErr) {
-                  console.warn('Base64 decode failed on transfer URL', decodeErr);
-                }
-              }
-            } 
-            // Handle redemption process URLs
-            else if (url.pathname === '/transactions/process') {
-              const dataParam = url.searchParams.get('data');
-              if (dataParam) {
-                try {
-                  const decodedJson = JSON.parse(atob(decodeURIComponent(dataParam)));
-                  if (decodedJson.context === 'redemption' && decodedJson.redemptionId) {
-                    searchRedemptionId = decodedJson.redemptionId;
-                    console.log("Extracted redemption ID from data param:", searchRedemptionId);
-                  }
-                } catch (decodeErr) {
-                  console.warn('Base64 decode failed', decodeErr);
-                  throw new Error('Invalid QR code format. Please use a valid PointPulse QR code.');
-                }
-              } else {
-                throw new Error('Invalid QR code format. Missing data parameter.');
-              }
-            }
-            // For any other URL, try to extract data parameter
-            else {
-              const dataParam = url.searchParams.get('data');
-              if (dataParam) {
-                try {
-                  const decodedJson = JSON.parse(atob(decodeURIComponent(dataParam)));
-                  if (decodedJson.context === 'redemption' && decodedJson.redemptionId) {
-                    searchRedemptionId = decodedJson.redemptionId;
-                  } else if (decodedJson.context === 'user' && decodedJson.utorid) {
-                    scannedUtorid = decodedJson.utorid;
-                  }
-                } catch (decodeErr) {
-                  console.warn('Base64 decode failed', decodeErr);
-                }
-              }
-            }
-          } catch (urlError) {
-            console.error('URL parsing error:', urlError);
-          }
-        } 
-        // If not a URL, try to parse as direct base64 data
-        else {
-          try {
-            const decodedJson = JSON.parse(atob(decodeURIComponent(qrData.trim())));
-            if (decodedJson.type === 'pointpulse') {
-              if (decodedJson.context === 'redemption') {
-                searchRedemptionId = decodedJson.redemptionId;
-              } else if (decodedJson.context === 'user') {
-                scannedUtorid = decodedJson.utorid;
-              }
-            }
-          } catch (e) {
-            // Not base64 encoded - fallback to treating as plain text
-            if (!isNaN(parseInt(qrData))) {
-              searchRedemptionId = qrData;
-              console.log("Treating QR data as redemption ID:", searchRedemptionId);
-            } else {
-              scannedUtorid = qrData;
-              console.log("Treating QR data as utorid:", scannedUtorid);
+          const url = new URL(qrData.trim());
+          const dataParam = url.searchParams.get('data');
+  
+          if (dataParam) {
+            const decodedJson = JSON.parse(atob(decodeURIComponent(dataParam)));
+            if (decodedJson.context === 'redemption' && decodedJson.redemptionId) {
+              searchRedemptionId = decodedJson.redemptionId;
+              console.log("Extracted redemption ID from QR:", searchRedemptionId);
+            } else if (decodedJson.context === 'user' && decodedJson.utorid) {
+              scannedUtorid = decodedJson.utorid;
+              console.log("Extracted utorid from QR:", scannedUtorid);
             }
           }
-        }
-        
-        // If we couldn't extract anything meaningful, show error
-        if (!searchRedemptionId && !scannedUtorid) {
-          console.log("Unknown QR format, no valid data extracted");
-          setStatus('error');
-          setResult({ message: 'Invalid QR code format. Please scan a valid redemption or user QR code.' });
-          return;
+        } else {
+          const decodedJson = JSON.parse(atob(decodeURIComponent(qrData.trim())));
+          if (decodedJson.type === 'pointpulse') {
+            if (decodedJson.context === 'redemption') {
+              searchRedemptionId = decodedJson.redemptionId;
+            } else if (decodedJson.context === 'user') {
+              scannedUtorid = decodedJson.utorid;
+            }
+          }
         }
       } catch (e) {
-        console.error("Error processing QR data:", e);
+        // fallback: treat as plain string
+        if (!isNaN(parseInt(qrData))) {
+          searchRedemptionId = qrData;
+        } else {
+          scannedUtorid = qrData;
+        }
+      }
+  
+      if (!searchRedemptionId && !scannedUtorid) {
         setStatus('error');
-        setResult({ message: 'Error processing QR code: ' + e.message });
+        setResult({ message: 'Invalid QR code format. Please scan a valid redemption or user QR code.' });
         return;
       }
     } else {
-      // Use the manually entered redemption ID
-      searchRedemptionId = redemptionId;
-    }
-    
-    // If we have a utorid, fetch all pending redemptions for that user
-    if (scannedUtorid) {
-      try {
-        // Set the user filter to show only this user's redemptions
-        setUserFilter(scannedUtorid);
-        
-        // Reset page to 1 when filtering by user
-        setPage(1);
-        
-        // Provide feedback that we're filtering by user
-        toast.success(`Showing pending redemptions for user ${scannedUtorid}`);
-        
-        // Reset search states
-        setStatus('idle');
-        setRedemptionId('');
-        return;
-      } catch (error) {
-        setStatus('error');
-        setResult({ message: error.message || `Failed to find redemptions for user ${scannedUtorid}` });
-        return;
+      const input = redemptionId.trim();
+      if (!input) {
+        return; // 如果输入为空，直接返回，不显示错误
+      }
+  
+      if (!isNaN(parseInt(input))) {
+        searchRedemptionId = input;
+      } else {
+        scannedUtorid = input;
       }
     }
-    
-    // Continue with regular redemption ID lookup if we have one
-    if (!searchRedemptionId || isNaN(parseInt(searchRedemptionId))) {
-      setStatus('error');
-      setResult({ message: 'Please enter a valid redemption ID' });
+  
+    if (scannedUtorid) {
+      setUserFilter(scannedUtorid);
+      setPage(1);
+      setStatus('idle');
+      setRedemptionId('');
       return;
+    }
+  
+    if (!searchRedemptionId || isNaN(parseInt(searchRedemptionId))) {
+      return; // 如果输入格式不正确，直接返回，不显示错误
     }
     
     try {
-      // Use the cashier-specific lookup endpoint
       const data = await TransactionService.lookupRedemption(parseInt(searchRedemptionId));
-      
+    
       if (!data) {
         setStatus('error');
         setResult({ message: 'Redemption not found' });
         return;
       }
-      
-      // Update the input field to show the found redemption ID
-      setRedemptionId(searchRedemptionId.toString());
-      setStatus('found');
-      setResult(data);
-      setProcessingError(null); // Clear previous errors when a new one is found
+    
+      setStatus('idle');
+      setResult(null);
+      setProcessingError(null);
+      setUserFilter(null);
+      setPage(1);
+    
+      queryClient.setQueryData(['pendingRedemptions', 1, limit, null], {
+        results: [data],
+        count: 1
+      });
     } catch (error) {
       setStatus('error');
       setResult({ message: error.message || 'Failed to find redemption request' });
     }
   };
+  
+  
   
   const handleProcessRedemption = async (id = null) => {
     const transactionId = id || parseInt(redemptionId);
@@ -663,9 +602,13 @@ const ProcessRedemption = () => {
   
   const handleReset = () => {
     setRedemptionId('');
+    setUserFilter(null); 
     setResult(null);
     setStatus('idle');
-    setProcessingError(null); // Clear processing errors on reset
+    setPage(1);
+    setProcessingError(null);
+   
+    queryClient.refetchQueries(['pendingRedemptions', 1, limit, null]);
   };
   
   const formatDate = (dateString) => {
@@ -680,6 +623,22 @@ const ProcessRedemption = () => {
       stopScanner();
     };
   }, []);
+  useEffect(() => {
+    const trimmed = redemptionId.trim();
+    if (!trimmed) return;
+  
+    const delay = 1250; 
+    const timer = setTimeout(() => {
+     
+      if (/^\d+$/.test(trimmed) || /^[a-zA-Z0-9]+$/.test(trimmed)) {
+        handleSearch(trimmed);
+      }
+    }, delay);
+  
+    return () => {
+      clearTimeout(timer); 
+    };
+  }, [redemptionId]);
 
   // Parse query param on initial load (for direct link via QR on smartphones)
   const location = useLocation();
@@ -700,7 +659,7 @@ const ProcessRedemption = () => {
     <div>
       <PageTitle>Process Redemption</PageTitle>
       <PageDescription>
-        Enter a redemption ID to process a customer's redemption request.
+        Enter a redemption ID or UTORid to process a customer's redemption request.
         The redemption ID should be provided by the customer via a QR code or verbally.
         Below you can also see all pending redemption requests that need to be processed.
       </PageDescription>
@@ -744,7 +703,7 @@ const ProcessRedemption = () => {
       {(status === 'idle' || status === 'found') && (
         <Card>
           <Card.Header>
-            <Card.Title>Process Redemption by ID</Card.Title>
+            <Card.Title>Process Redemption by ID and Utorid</Card.Title>
           </Card.Header>
           <Card.Body>
             <ScanContainer>
@@ -753,68 +712,17 @@ const ProcessRedemption = () => {
                   <Input
                     value={redemptionId}
                     onChange={(e) => setRedemptionId(e.target.value)}
-                    placeholder="Enter Redemption ID"
+                    placeholder="Enter Redemption ID or UTOrid"
                     leftIcon={<FaSearch />}
                   />
                 </ManualInput>
-                <div style={{ display: 'flex', gap: theme.spacing.md }}>
-                  <Button
-                    onClick={() => handleSearch()}
-                  >
-                    Find Redemption
-                  </Button>
-                  <QrScanButton 
-                    variant="outlined"
-                    onClick={handleOpenScanner}
-                  >
-                    <FaQrcode /> Scan QR
-                  </QrScanButton>
-                </div>
+                <QrScanButton 
+                  variant="outlined"
+                  onClick={handleOpenScanner}
+                >
+                  <FaQrcode /> Scan QR
+                </QrScanButton>
               </SearchContainer>
-              
-              {status === 'found' && result && (
-                <ResultContainer>
-                  <RedemptionDetails>
-                    <DetailRow>
-                      <strong>Redemption ID</strong>
-                      <span>#{result.id}</span>
-                    </DetailRow>
-                    <DetailRow>
-                      <strong>User</strong>
-                      <span>{result.utorid}</span>
-                    </DetailRow>
-                    <DetailRow>
-                      <strong>Points to Redeem</strong>
-                      <span>{Math.abs(result.amount)}</span>
-                    </DetailRow>
-                    <DetailRow>
-                      <strong>Date Requested</strong>
-                      <span>{formatDate(result.createdAt)}</span>
-                    </DetailRow>
-                    {result.remark && (
-                      <DetailRow>
-                        <strong>Remark</strong>
-                        <span>{result.remark}</span>
-                      </DetailRow>
-                    )}
-                  </RedemptionDetails>
-                  
-                  <ActionButtons>
-                    <Button
-                      variant="outlined"
-                      onClick={handleReset}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={() => handleProcessRedemption()}
-                      loading={isMutationLoading}
-                    >
-                      Process Redemption
-                    </Button>
-                  </ActionButtons>
-                </ResultContainer>
-              )}
             </ScanContainer>
           </Card.Body>
         </Card>
@@ -835,19 +743,31 @@ const ProcessRedemption = () => {
                   {userFilter}
                 </span>
               </>
+            ) : redemptionId ? (
+              <>
+                Showing <span style={{ color: theme.colors.primary.main }}>only</span> redemption ID: 
+                <span style={{
+                  margin: `0 ${theme.spacing.xs}`,
+                  fontWeight: theme.typography.fontWeights.semiBold,
+                  color: theme.colors.primary.main
+                }}>
+                  {redemptionId}
+                </span>
+              </>
             ) : 'All Pending Redemption Requests'}
           </PendingRedemptionsTitle>
           
-          {userFilter && (
+          {(userFilter || redemptionId) && (
             <Button 
               variant="outlined" 
               size="small" 
-              onClick={() => setUserFilter(null)}
+              onClick={handleReset}
               style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.xs }}
             >
               <span>×</span> Clear Filter
             </Button>
           )}
+
         </PendingRedemptionsHeader>
         
         {/* Display processing error specifically for the list */}
