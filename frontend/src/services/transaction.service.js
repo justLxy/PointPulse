@@ -398,7 +398,7 @@ const TransactionService = {
     }
   },
 
-  // 添加新的方法用于通过utorid查询pending redemption
+  // for redemption search by utorid
   searchPendingByUserUtorid: async (utorid) => {
     try {
       console.log('Searching pending redemptions for utorid:', utorid);
@@ -414,7 +414,7 @@ const TransactionService = {
         return [];
       }
 
-      // 过滤出未处理的redemption
+      
       const pendingRedemptions = response.data.results.filter(
         redemption => !redemption.processedBy
       );
@@ -425,16 +425,16 @@ const TransactionService = {
       console.error('Error searching pending redemptions by utorid:', error);
       if (error.response) {
         if (error.response.status === 403) {
-          throw new Error('您没有权限查看用户的兑换记录');
+          throw new Error('You do not have permission to view user\'s redemption records');
         }
         if (error.response.status === 404) {
-          throw new Error('未找到该用户的兑换记录');
+          throw new Error('No redemption records found for the user');
         }
         if (error.response.status === 400) {
-          throw new Error('无效的用户标识');
+          throw new Error('Invalid user identifier');
         }
       }
-      throw new Error('查询用户兑换记录失败');
+      throw new Error('Failed to fetch user\'s redemption records');
     }
   },
 };
