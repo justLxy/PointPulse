@@ -264,7 +264,7 @@ const Events = () => {
     const end = endTime ? new Date(endTime) : null;
     
     if (start > now) {
-      return { text: 'Upcoming', color: '#f4d03f' }; // Yellow for upcoming
+      return { text: 'Upcoming', color: '#F39C12' }; // Amber for upcoming
     }
     if (end && end < now) {
       return { text: 'Past', color: '#e74c3c' }; // Red for past

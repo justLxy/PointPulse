@@ -47,13 +47,10 @@ router.post('/:eventId/transactions', requireRole('regular'), eventController.cr
 // Generate a dynamic check-in token (manager or organizer)
 router.get('/:eventId/checkin-token', requireRole('regular'), eventController.getCheckinToken);
 
-// Add manual check-in route for organizers and managers
-router.post('/:eventId/checkin/manual', requireRole('regular'), eventController.checkInManually);
+// For attendees to check in using a token
+router.post('/:eventId/checkin', requireRole('regular'), eventController.checkInWithToken);
 
 // Add manual QR scan check-in route – managers or organizers can record attendance by scanning a guest QR code
 router.post('/:eventId/checkin/scan', requireRole('regular'), eventController.checkInByScan);
-
-// For attendees to check in using a token
-router.post('/:eventId/checkin', requireRole('regular'), eventController.checkInWithToken);
 
 module.exports = router;

@@ -15,7 +15,7 @@ import { Tooltip } from 'react-tooltip';
 import QRCode from '../../components/common/QRCode';
 import UniversalQRCode from '../../components/common/UniversalQRCode';
 import ScannerModal from '../../components/event/ScannerModal';
-import api from '../../services/api';
+import ManualCheckinModal from '../../components/event/ManualCheckinModal';
 
 import { 
   FaCalendarAlt, 
@@ -33,7 +33,8 @@ import {
   FaGlobe,
   FaTrashAlt,
   FaQrcode,
-  FaUserCheck
+  FaKeyboard,
+  FaChevronDown
 } from 'react-icons/fa';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { toast } from 'react-hot-toast';
@@ -112,7 +113,7 @@ const EventBadge = styled.span`
 const PageActionsContainer = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: ${theme.spacing.sm};
+  gap: ${theme.spacing.md};
   justify-content: flex-end;
 
   @media (max-width: 768px) {
@@ -125,6 +126,121 @@ const PageActionsContainer = styled.div`
   }
 `;
 
+// Add new styled components for button organization
+const ButtonGroup = styled.div`
+  display: flex;
+  gap: ${theme.spacing.md};
+  position: relative;
+  
+  /* Create a subtle connected appearance for buttons in a group */
+  button {
+    position: relative;
+    z-index: 1;
+    
+    /* Subtle shadow effect on hover */
+    &:hover {
+      box-shadow: ${theme.shadows.sm};
+      z-index: 2;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    width: 100%;
+    
+    & > button {
+      flex: 1;
+    }
+  }
+`;
+
+const ActionButtonsContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: ${theme.spacing.md};
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    width: 100%;
+  }
+`;
+
+// Dropdown menu for grouping related actions
+const DropdownContainer = styled.div`
+  position: relative;
+  display: inline-block;
+`;
+
+const DropdownButton = styled(Button)`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 120px;
+  background-color: ${props => props.isOpen ? `${theme.colors.background.hover}` : undefined};
+  
+  svg:last-child {
+    margin-left: ${theme.spacing.xs};
+    margin-right: 0; // Reset the right margin for the chevron icon
+    transition: transform 0.2s ease;
+    transform: ${props => props.isOpen ? 'rotate(180deg)' : 'rotate(0)'};
+    opacity: 0.7;
+    font-size: 0.7em;
+  }
+`;
+
+const DropdownMenu = styled.div`
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: ${theme.spacing.xs};
+  background-color: ${theme.colors.background.paper};
+  border-radius: ${theme.radius.md};
+  box-shadow: ${theme.shadows.md};
+  min-width: 180px;
+  z-index: ${theme.zIndex.dropdown};
+  overflow: hidden;
+  transition: transform ${theme.transitions.quick}, opacity ${theme.transitions.quick};
+  transform-origin: top right;
+  transform: ${props => props.isOpen ? 'scale(1)' : 'scale(0.95)'};
+  opacity: ${props => props.isOpen ? 1 : 0};
+  pointer-events: ${props => props.isOpen ? 'auto' : 'none'};
+`;
+
+const DropdownItem = styled.button`
+  display: flex;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  padding: ${theme.spacing.sm} ${theme.spacing.md};
+  border: none;
+  background: none;
+  color: ${theme.colors.text.primary};
+  font-size: ${theme.typography.fontSize.sm};
+  cursor: pointer;
+  transition: all ${theme.transitions.quick};
+  border-radius: ${theme.radius.sm};
+  margin: 0 ${theme.spacing.xs};
+  
+  svg {
+    margin-right: ${theme.spacing.sm};
+    color: ${props => props.color === 'error' 
+      ? theme.colors.error.main 
+      : theme.colors.text.secondary};
+    font-size: 1.1em;
+  }
+  
+  &:hover {
+    background-color: ${theme.colors.background.hover};
+    transform: translateX(2px);
+  }
+  
+  &:active {
+    transform: translateX(2px) scale(0.98);
+  }
+  
+  &.danger {
+    color: ${theme.colors.error.main};
+  }
+`;
 
 const ContentGrid = styled.div`
   display: grid;
@@ -305,16 +421,17 @@ const SummaryItem = styled.div`
 `;
 
 
-// Create simpler style for Upcoming tags
+// Create simpler style for status tags
 const UpcomingBadge = styled.span`
   display: inline-flex;
   align-items: center;
   padding: ${theme.spacing.xs} ${theme.spacing.md};
-  background-color: #FFD54F;
-  color: #000000;
+  background-color: #F39C12;
+  color: #FFFFFF;
   border-radius: ${theme.radius.full};
   font-size: ${theme.typography.fontSize.sm};
   font-weight: ${theme.typography.fontWeights.medium};
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 `;
 
 // New audience seating style component
@@ -429,8 +546,8 @@ const EmptyAudienceSeat = styled.div`
   }
 `;
 
-// Define styled components for the action buttons
-const ActionButton = styled(Button)`
+// Define the ActionButtonForAttendee component to be used elsewhere
+const AttendeeActionButton = styled(Button)`
   background-color: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(5px);
   border: 0.5px solid rgba(0, 0, 0, 0.1);
@@ -447,6 +564,33 @@ const ActionButton = styled(Button)`
     transform: translateY(-1px);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
+`;
+
+// Create a base action button with standardized sizing and styling
+const ActionButton = styled(Button)`
+  min-width: 100px; // Set minimum width for consistency
+  height: 40px; // Standardized height
+  padding: ${theme.spacing.sm} ${theme.spacing.md};
+  
+  /* Consistent icon styling */
+  svg {
+    font-size: 0.9em;
+    margin-right: ${theme.spacing.xs};
+  }
+  
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: ${theme.shadows.sm};
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+`;
+
+// Set RSVP button to match
+const RsvpButton = styled(ActionButton)`
+  min-width: 120px;
 `;
 
 // Add a status badge styled component for check-in
@@ -493,6 +637,13 @@ const StatItem = styled.div`
     font-size: ${theme.typography.fontSize.sm};
     color: ${theme.colors.text.secondary};
   }
+`;
+
+// Add a styled separator for dropdown menu
+const DropdownSeparator = styled.div`
+  height: 1px;
+  background-color: ${theme.colors.border.light};
+  margin: ${theme.spacing.xs} 0;
 `;
 
 const EventDetail = () => {
@@ -629,7 +780,7 @@ const EventDetail = () => {
     const end = endTime ? new Date(endTime) : null;
     
     if (start > now) {
-      return { text: 'Upcoming', color: '#f4d03f' }; // Yellow
+      return { text: 'Upcoming', color: '#F39C12' }; // Darker orange/amber
     }
     if (end && end < now) {
       return { text: 'Past', color: '#e74c3c' }; // Red
@@ -888,8 +1039,11 @@ const EventDetail = () => {
     );
   };
   
-  // Modal state for QR scanning
+  // Scanner modal state
   const [scanModalOpen, setScanModalOpen] = useState(false);
+  
+  // Manual check-in modal state
+  const [manualCheckinModalOpen, setManualCheckinModalOpen] = useState(false);
   
   // Add an effect to check the rsvp state parameter from location
   useEffect(() => {
@@ -924,28 +1078,49 @@ const EventDetail = () => {
     refetch();
   };
   
-  const [manualCheckinModalOpen, setManualCheckinModalOpen] = useState(false);
-  const [manualCheckinUtorid, setManualCheckinUtorid] = useState('');
-  
-  const handleManualCheckin = async () => {
-    if (!manualCheckinUtorid || manualCheckinUtorid.length !== 8) {
-      toast.error("Please enter a valid 8-character UTORid");
+  // Handle opening manual check-in modal
+  const handleManualCheckinOpen = () => {
+    // Only allow check-in for ongoing events
+    if (eventStatus.text !== 'Ongoing') {
+      toast.error("Check-in is only available during ongoing events");
       return;
     }
-
-    try {
-      const response = await api.post(`/events/${eventId}/checkin/manual`, {
-        utorid: manualCheckinUtorid
-      });
-
-      toast.success('Successfully checked in');
-      setManualCheckinModalOpen(false);
-      setManualCheckinUtorid('');
-      refetch();
-    } catch (error) {
-      toast.error(error.response?.data?.error || 'Failed to check in');
-    }
+    setManualCheckinModalOpen(true);
   };
+  
+  // Handle closing manual check-in modal
+  const handleManualCheckinClose = () => {
+    setManualCheckinModalOpen(false);
+    // Refresh guest list after manual check-in
+    setRefreshAfterScan(true);
+  };
+  
+  // Handle successful manual check-in
+  const handleManualCheckinSuccess = () => {
+    // Immediately trigger a refresh when check-in is successful
+    refetch();
+  };
+  
+  // Add state for dropdown menu
+  const [actionsDropdownOpen, setActionsDropdownOpen] = useState(false);
+  
+  // Update the click outside handler
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Only close if dropdown is open and click is outside dropdown container
+      if (actionsDropdownOpen) {
+        const dropdownContainer = document.querySelector('.dropdown-container');
+        if (dropdownContainer && !dropdownContainer.contains(event.target)) {
+          setActionsDropdownOpen(false);
+        }
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [actionsDropdownOpen]);
   
   if (isLoading) {
     return <LoadingSpinner text="Loading event details..." />;
@@ -999,92 +1174,115 @@ const EventDetail = () => {
         </div>
         
         <PageActionsContainer>
+          {/* Prioritize the most important user action - RSVP */}
           {(eventStatus.text === 'Upcoming' || eventStatus.text === 'Ongoing') && !isCurrentUserOrganizerForEvent && 
            (!event.capacity || event.numGuests < event.capacity) && (
-            attending ? (
-              <Button 
-                variant="outlined" 
-                color="danger"
-                onClick={handleCancelRsvp}
-                loading={isCancellingRsvp}
-              >
-                Cancel RSVP
-              </Button>
-            ) : (
-              <Button 
-                onClick={handleRsvp}
-                loading={isRsvping}
-              >
-                RSVP to Event
-              </Button>
-            )
+            <ButtonGroup>
+              {attending ? (
+                <RsvpButton 
+                  variant="outlined" 
+                  color="danger"
+                  onClick={handleCancelRsvp}
+                  loading={isCancellingRsvp}
+                >
+                  Cancel RSVP
+                </RsvpButton>
+              ) : (
+                <RsvpButton 
+                  onClick={handleRsvp}
+                  loading={isRsvping}
+                >
+                  RSVP to Event
+                </RsvpButton>
+              )}
+            </ButtonGroup>
           )}
           
-          {isCurrentUserOrganizerForEvent && (
-            <>
-              <Button
-                variant="outlined"
-                onClick={() => navigate(`/events/${event.id}/checkin-display`)}
-              >
-                <FaQrcode /> Check-In QR
-              </Button>
-            </>
-          )}
-          
+          {/* Group event organizer actions */}
           {canEditEventDetails && (
-            <>
-              {/* First row of buttons */}
-              <div style={{ display: 'flex', gap: theme.spacing.sm }}>
-                <Button
+            <ActionButtonsContainer>
+              {/* Primary action group */}
+              <ButtonGroup>
+                {/* Edit event is a primary action */}
+                <ActionButton 
                   variant="outlined"
                   onClick={handleEditEvent}
                 >
-                  <FaEdit /> Edit Event
-                </Button>
+                  <FaEdit /> Edit
+                </ActionButton>
                 
-                {isManager && (
-                  <Button 
-                    variant="outlined" 
-                    color="error"
-                    onClick={handleDeleteEventClick}
-                  >
-                    <FaTrash /> Delete Event
-                  </Button>
-                )}
-                
+                {/* Publish is an important action for managers */}
                 {isManager && !event.published && (
-                  <Button 
-                    onClick={handlePublishEvent}
-                  >
-                    <FaGlobe /> Publish Event
-                  </Button>
+                  <ActionButton onClick={handlePublishEvent}>
+                    <FaGlobe /> Publish
+                  </ActionButton>
                 )}
-
-                {(isCurrentUserOrganizerForEvent || isManager) && (
-                  <Button
-                    variant="outlined"
-                    onClick={() => navigate(`/events/${event.id}/checkin-display`)}
-                  >
-                    <FaQrcode /> Check-In QR
-                  </Button>
-                )}
-              </div>
-
-              {/* Second row of buttons */}
-              <div style={{ display: 'flex', gap: theme.spacing.sm, marginTop: theme.spacing.sm }}>
-                {(isCurrentUserOrganizerForEvent || isManager) && (
-                  <Button onClick={() => setScanModalOpen(true)}>
-                    <FaQrcode /> Scan Guest QR
-                  </Button>
-                )}
-
-                {(isCurrentUserOrganizerForEvent || isManager) && (
-                  <Button onClick={() => setManualCheckinModalOpen(true)}>
-                    <FaUserCheck /> Check-in Manually
-                  </Button>
-                )}
-              </div>
-            </>
+              </ButtonGroup>
+              
+              {/* Check-in related functions */}
+              {(isCurrentUserOrganizerForEvent || isManager) && (
+                <ButtonGroup>
+                  <DropdownContainer className="dropdown-container">
+                    <DropdownButton 
+                      variant="outlined"
+                      onClick={() => setActionsDropdownOpen(!actionsDropdownOpen)}
+                      isOpen={actionsDropdownOpen}
+                    >
+                      <span style={{ display: 'flex', alignItems: 'center' }}>
+                        <FaQrcode style={{ fontSize: '1.2em', marginRight: theme.spacing.md }} /> Check-in
+                      </span>
+                      <FaChevronDown />
+                    </DropdownButton>
+                    
+                    <DropdownMenu isOpen={actionsDropdownOpen}>
+                      <DropdownItem onClick={() => {
+                        setActionsDropdownOpen(false);
+                        navigate(`/events/${event.id}/checkin-display`);
+                      }}>
+                        <FaQrcode /> Display QR Code
+                      </DropdownItem>
+                      
+                      <DropdownSeparator />
+                      
+                      <DropdownItem onClick={() => {
+                        setActionsDropdownOpen(false);
+                        // Only allow check-in for ongoing events
+                        if (eventStatus.text !== 'Ongoing') {
+                          toast.error("Check-in is only available during ongoing events");
+                          return;
+                        }
+                        setScanModalOpen(true);
+                      }}>
+                        <FaQrcode /> Scan Guest QR
+                      </DropdownItem>
+                      
+                      <DropdownItem onClick={() => {
+                        setActionsDropdownOpen(false);
+                        // Only allow check-in for ongoing events
+                        if (eventStatus.text !== 'Ongoing') {
+                          toast.error("Check-in is only available during ongoing events");
+                          return;
+                        }
+                        handleManualCheckinOpen();
+                      }}>
+                        <FaKeyboard /> Manual Check-in
+                      </DropdownItem>
+                    </DropdownMenu>
+                  </DropdownContainer>
+                </ButtonGroup>
+              )}
+              
+              {/* Destructive actions isolated and visually distinct */}
+              {isManager && (
+                <ActionButton 
+                  variant="outlined" 
+                  color="error"
+                  onClick={handleDeleteEventClick}
+                >
+                  <FaTrash /> Delete
+                </ActionButton>
+              )}
+            </ActionButtonsContainer>
           )}
         </PageActionsContainer>
       </PageHeader>
@@ -1308,7 +1506,7 @@ const EventDetail = () => {
                                 {pointsAwarded > 0 ? (
                                   <Badge color="success">{pointsAwarded}pt</Badge>
                                 ) : canEditEventDetails && (eventStatus.text === 'Upcoming' || eventStatus.text === 'Ongoing') ? (
-                                  <ActionButton 
+                                  <AttendeeActionButton 
                                     size="tiny" 
                                     onClick={() => {
                                       setSelectedUserId(guest.id);
@@ -1317,16 +1515,16 @@ const EventDetail = () => {
                                     }}
                                   >
                                     🏆
-                                  </ActionButton>
+                                  </AttendeeActionButton>
                                 ) : null}
                                 {isManager && (
-                                  <ActionButton 
+                                  <AttendeeActionButton 
                                     size="tiny" 
                                     color="error"
                                     onClick={() => handleRemoveGuest(guest.id)}
                                   >
                                     ❌
-                                  </ActionButton>
+                                  </AttendeeActionButton>
                                 )}
                               </AudienceRole>
                             </AudienceSeat>
@@ -1426,7 +1624,12 @@ const EventDetail = () => {
               </SummaryItem>
               <SummaryItem>
                 <strong>Status:</strong>
-                <UpcomingBadge>Upcoming</UpcomingBadge>
+                <UpcomingBadge style={{ 
+                  backgroundColor: eventStatus.color,
+                  color: '#FFFFFF'
+                }}>
+                  {eventStatus.text}
+                </UpcomingBadge>
               </SummaryItem>
               <SummaryItem>
                 <strong>Guests:</strong>
@@ -1929,46 +2132,13 @@ const EventDetail = () => {
         onScanSuccess={handleScanSuccess}
       />
 
-      {/* Manual Check-in Modal */}
-      <Modal
+      {/* Manual check-in modal for organizers/managers */}
+      <ManualCheckinModal
         isOpen={manualCheckinModalOpen}
-        onClose={() => {
-          setManualCheckinModalOpen(false);
-          setManualCheckinUtorid('');
-        }}
-        title="Manual Check-in"
-        size="small"
-      >
-        <ModalContent>
-          <ModalForm>
-            <Input
-              label="UTORid"
-              value={manualCheckinUtorid}
-              onChange={(e) => setManualCheckinUtorid(e.target.value.trim())}
-              placeholder="Enter UTORid (8 characters)"
-              required
-            />
-          </ModalForm>
-          
-          <ModalActions>
-            <Button
-              variant="outlined"
-              onClick={() => {
-                setManualCheckinModalOpen(false);
-                setManualCheckinUtorid('');
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleManualCheckin}
-              disabled={!manualCheckinUtorid}
-            >
-              Check In
-            </Button>
-          </ModalActions>
-        </ModalContent>
-      </Modal>
+        onClose={handleManualCheckinClose}
+        eventId={eventId}
+        onCheckinSuccess={handleManualCheckinSuccess}
+      />
     </div>
   );
 };

@@ -123,7 +123,7 @@ const getEvents = async (req, res) => {
             console.log('Added manager-specific filter - published:', req.query.published);
         }
 
-        
+        // Add support for organizers to view their unpublished events
         const includeMyOrganizedEvents = req.query.includeMyOrganizedEvents === 'true';
         console.log('Include my organized events:', includeMyOrganizedEvents);
         
@@ -224,22 +224,22 @@ const getEvent = async (req, res) => {
             organizerCount: event.organizers.length
         }, null, 2));
 
-        
+        // Determine if the user is an organizer
         const isOrganizer = event.organizers.some(org => org.id === userId);
         console.log('Is user an organizer:', isOrganizer);
 
-        // 
+        // Get includeAsOrganizer parameter
         const includeAsOrganizer = req.query.includeAsOrganizer === 'true';
         console.log('Include as organizer:', includeAsOrganizer);
 
-        // 
+        // If the event is not published, non-managers and non-organizers who haven't specifically requested organizer view cannot view it
         if (!isManager && !event.published && !isOrganizer) {
             if (!includeAsOrganizer) {
                 console.log('Event is not published and user is not authorized to view it');
                 console.log('===== GET EVENT REQUEST END (403) =====\n\n');
                 return res.status(403).json({ error: 'This event is not published yet. Only managers and organizers can view unpublished events.' });
             } else {
-                // 
+                // If the user requested organizer view but is not actually an organizer
                 console.log('User requested organizer view but is not an organizer');
                 console.log('===== GET EVENT REQUEST END (404) =====\n\n');
                 return res.status(404).json({ error: 'Event not found' });
@@ -309,7 +309,7 @@ const updateEvent = async (req, res) => {
             return res.status(400).json({ error: 'No fields provided for update' });
         }
 
-        // 
+        // First check if the event exists
         console.log('Checking if event exists');
         const event = await prisma.event.findUnique({
             where: { id: eventId },
@@ -335,14 +335,14 @@ const updateEvent = async (req, res) => {
             guestCount: event.guests.length
         }, null, 2));
 
-        // 
+        // Check if the event has ended
         const now = new Date();
         console.log('Current time:', now);
         console.log('Event end time:', event.endTime);
         console.log('Has event ended?', event.endTime <= now);
         
         if (event.endTime <= now) {
-            // 
+            // If the event has ended, do not allow updates to any fields
             console.log('Event has ended, cannot update');
             console.log('===== UPDATE EVENT REQUEST END (400) =====\n\n');
             return res.status(400).json({ error: 'Cannot update an event that has ended' });
@@ -360,14 +360,14 @@ const updateEvent = async (req, res) => {
             return res.status(403).json({ error: 'Unauthorized to update this event' });
         }
 
-        // 检查是否尝试更新需要管理员权限的字段
+        // Check if attempting to update fields that require manager privileges
         if (!isManager && (req.body.points !== undefined || req.body.published !== undefined)) {
             console.log('Non-manager attempting to update restricted fields (points or published)');
             console.log('===== UPDATE EVENT REQUEST END (403) =====\n\n');
             return res.status(403).json({ error: 'Unauthorized to update points or publishing status' });
         }
 
-        // 检查容量更新是否有效
+        // Check if capacity update is valid
         if (req.body.capacity !== undefined && req.body.capacity !== null) {
             const capacity = parseInt(req.body.capacity);
             console.log('New capacity:', capacity);
@@ -386,9 +386,9 @@ const updateEvent = async (req, res) => {
             }
         }
 
-        // 检查points更新是否有效
+        // Check if points update is valid
         if (isManager && req.body.points !== undefined) {
-            // 只有当points不为null时才进行数值验证
+            // Only validate as a number when points is not null
             if (req.body.points !== null) {
                 const points = parseInt(req.body.points);
                 console.log('New points:', points);
@@ -413,13 +413,13 @@ const updateEvent = async (req, res) => {
         const updateData = {};
         // Only include fields that are provided
         if (req.body.name !== undefined) {
-            // 只有当name不为null且为空字符串时才报错
+            // Only report an error when name is not null and is an empty string
             if (req.body.name !== null && (req.body.name === '' || req.body.name.trim() === '')) {
                 console.log('Event name cannot be empty');
                 console.log('===== UPDATE EVENT REQUEST END (400) =====\n\n');
                 return res.status(400).json({ error: 'Event name cannot be empty' });
             }
-            // 只有当name不为null时才添加到更新数据
+            // Only add to update data when name is not null
             if (req.body.name !== null) {
                 updateData.name = req.body.name;
                 console.log('Adding name to update data:', req.body.name);
@@ -428,13 +428,13 @@ const updateEvent = async (req, res) => {
             }
         }
         if (req.body.description !== undefined) {
-            // 只有当description不为null且为空字符串时才报错
+            // Only report an error when description is not null and is an empty string
             if (req.body.description !== null && (req.body.description === '' || req.body.description.trim() === '')) {
                 console.log('Event description cannot be empty');
                 console.log('===== UPDATE EVENT REQUEST END (400) =====\n\n');
                 return res.status(400).json({ error: 'Event description cannot be empty' });
             }
-            // 只有当description不为null时才添加到更新数据
+            // Only add to update data when description is not null
             if (req.body.description !== null) {
                 updateData.description = req.body.description;
                 console.log('Adding description to update data');
@@ -443,13 +443,13 @@ const updateEvent = async (req, res) => {
             }
         }
         if (req.body.location !== undefined) {
-            // 只有当location不为null且为空字符串时才报错
+            // Only report an error when location is not null and is an empty string
             if (req.body.location !== null && (req.body.location === '' || req.body.location.trim() === '')) {
                 console.log('Event location cannot be empty');
                 console.log('===== UPDATE EVENT REQUEST END (400) =====\n\n');
                 return res.status(400).json({ error: 'Event location cannot be empty' });
             }
-            // 只有当location不为null时才添加到更新数据
+            // Only add to update data when location is not null
             if (req.body.location !== null) {
                 updateData.location = req.body.location;
                 console.log('Adding location to update data:', req.body.location);
@@ -580,7 +580,7 @@ const deleteEvent = async (req, res) => {
             return res.status(400).json({ error: 'Invalid event ID' });
         }
 
-        // 先检查事件是否存在及其状态
+        // First check if the event exists and its status
         console.log('Checking if event exists');
         const event = await prisma.event.findUnique({
             where: { id: eventId }
@@ -598,7 +598,7 @@ const deleteEvent = async (req, res) => {
             published: event.published
         }, null, 2));
 
-        // 检查事件是否已发布
+        // Check if the event is already published
         if (event.published) {
             console.log('Event is published, cannot delete');
             console.log('===== DELETE EVENT REQUEST END (400) =====\n\n');
@@ -654,7 +654,7 @@ const addOrganizer = async (req, res) => {
             return res.status(400).json({ error: 'UTORid is required' });
         }
 
-        // 先检查用户是否存在
+        // First check if the user exists
         const user = await prisma.user.findUnique({
             where: { utorid }
         });
@@ -663,7 +663,7 @@ const addOrganizer = async (req, res) => {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        // 先检查事件是否存在及其状态
+        // Check if the event exists and its status
         const event = await prisma.event.findUnique({
             where: { id: eventId }
         });
@@ -672,7 +672,7 @@ const addOrganizer = async (req, res) => {
             return res.status(404).json({ error: 'Event not found' });
         }
 
-        // 检查事件是否已结束
+        // Check if the event has ended
         if (event.endTime <= new Date()) {
             return res.status(410).json({ error: 'Event has ended' });
         }
@@ -758,7 +758,7 @@ const addGuest = async (req, res) => {
             return res.status(400).json({ error: 'UTORid is required' });
         }
 
-        // 先检查用户是否存在
+        // First check if the user exists
         const user = await prisma.user.findUnique({
             where: { utorid }
         });
@@ -767,7 +767,7 @@ const addGuest = async (req, res) => {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        // 先检查事件是否存在及其状态
+        // Check if the event exists and its status
         const event = await prisma.event.findUnique({
             where: { id: eventId }
         });
@@ -776,12 +776,12 @@ const addGuest = async (req, res) => {
             return res.status(404).json({ error: 'Event not found' });
         }
 
-        // 检查事件是否已结束
+        // Check if the event has ended
         if (event.endTime <= new Date()) {
             return res.status(410).json({ error: 'Event has ended' });
         }
 
-        // 检查事件是否已满
+        // Check if the event is full
         if (event.capacity !== null) {
             const guestsCount = await prisma.event.findUnique({
                 where: { id: eventId },
@@ -860,7 +860,7 @@ const removeGuest = async (req, res) => {
             return res.status(400).json({ error: 'Invalid user ID' });
         }
 
-        // 先检查事件是否存在及其状态
+        // First check if the event exists and its status
         const event = await prisma.event.findUnique({
             where: { id: eventId },
             include: {
@@ -874,12 +874,12 @@ const removeGuest = async (req, res) => {
             return res.status(404).json({ error: 'Event not found' });
         }
 
-        // 检查事件是否已结束
+        // Check if the event has ended
         if (event.endTime <= new Date()) {
             return res.status(410).json({ error: 'Event has already ended' });
         }
 
-        // 检查用户是否是嘉宾
+        // Check if the user is a guest
         if (event.guests.length === 0) {
             return res.status(404).json({ error: 'User is not a guest for this event' });
         }
@@ -930,7 +930,7 @@ const addCurrentUserAsGuest = async (req, res) => {
         const userId = req.auth.id;
         console.log('User ID:', userId);
 
-        // 先检查事件是否存在及其状态
+        // First check if the event exists and its status
         console.log('Checking if event exists and its status');
         const event = await prisma.event.findUnique({
             where: { id: eventId },
@@ -958,7 +958,7 @@ const addCurrentUserAsGuest = async (req, res) => {
             endTime: event.endTime
         }, null, 2));
 
-        // 检查事件是否已发布
+        // Check if the event is published
         if (!event.published) {
             console.log('Event is not published');
             console.log('===== ADD CURRENT USER AS GUEST REQUEST END (404) =====\n\n');
@@ -966,7 +966,7 @@ const addCurrentUserAsGuest = async (req, res) => {
         }
         console.log('Event is published');
 
-        // 检查事件是否已结束
+        // Check if the event has ended
         const now = new Date();
         console.log('Current time:', now);
         console.log('Event end time:', event.endTime);
@@ -978,12 +978,12 @@ const addCurrentUserAsGuest = async (req, res) => {
             return res.status(410).json({ error: 'Event has already ended' });
         }
 
-        // 记录事件开始时间信息，但不再阻止用户加入尚未开始的活动
+        // Record event start time info, but no longer prevent users from joining events that haven't started yet
         console.log('Event start time:', event.startTime);
         console.log('Has event started?', event.startTime <= now);
         console.log('Allowing registration regardless of start time');
 
-        // 检查用户是否已经是嘉宾
+        // Check if the user is already a guest
         console.log('Checking if user is already a guest');
         console.log('Guest count for this user:', event.guests.length);
         
@@ -993,7 +993,7 @@ const addCurrentUserAsGuest = async (req, res) => {
             return res.status(400).json({ error: 'User is already registered as a guest' });
         }
 
-        // 检查用户是否已经是组织者
+        // Check if the user is already an organizer
         console.log('Checking if user is already an organizer');
         console.log('Organizer count for this user:', event.organizers.length);
         
@@ -1003,7 +1003,7 @@ const addCurrentUserAsGuest = async (req, res) => {
             return res.status(400).json({ error: 'User is already registered as an organizer' });
         }
 
-        // 检查事件是否已满
+        // Check if the event is full
         console.log('Checking if event is full');
         if (event.capacity !== null) {
             console.log('Event has capacity limit:', event.capacity);
@@ -1088,7 +1088,7 @@ const removeCurrentUserAsGuest = async (req, res) => {
         const userId = req.auth.id;
         console.log('User ID:', userId);
 
-        // 先检查事件是否存在及其状态
+        // First check if the event exists and its status
         console.log('Checking if event exists and its status');
         const event = await prisma.event.findUnique({
             where: { id: eventId },
@@ -1111,7 +1111,7 @@ const removeCurrentUserAsGuest = async (req, res) => {
             endTime: event.endTime
         }, null, 2));
 
-        // 检查事件是否已结束
+        // Check if the event has ended
         const now = new Date();
         console.log('Current time:', now);
         console.log('Event end time:', event.endTime);
@@ -1123,7 +1123,7 @@ const removeCurrentUserAsGuest = async (req, res) => {
             return res.status(410).json({ error: 'Event has already ended' });
         }
 
-        // 检查用户是否是嘉宾
+        // Check if the user is a guest
         console.log('Checking if user is a guest');
         console.log('Guest count for this user:', event.guests.length);
         
@@ -1205,7 +1205,7 @@ const createEventTransaction = async (req, res) => {
             return res.status(400).json({ error: 'Amount must be a positive number' });
         }
 
-        // 先检查事件是否存在
+        // First check if the event exists
         const event = await prisma.event.findUnique({
             where: { id: eventId },
             include: {
@@ -1227,15 +1227,15 @@ const createEventTransaction = async (req, res) => {
             return res.status(403).json({ error: 'Unauthorized to create event transactions' });
         }
 
-        // 检查是否有足够的积分
+        // Check if there are enough points
         const parsedAmount = parseInt(amount);
         if (utorid) {
-            // 单个用户奖励
+            // Reward for a single user
             if (parsedAmount > event.pointsRemain) {
                 return res.status(400).json({ error: 'Not enough points remaining for this event' });
             }
         } else {
-            // 所有嘉宾奖励
+            // Reward for all guests
             const guestsCount = await prisma.event.findUnique({
                 where: { id: eventId },
                 include: { _count: { select: { guests: true } } }
@@ -1438,24 +1438,24 @@ const checkInWithToken = async (req, res) => {
                 });
             }
 
-            // 检查用户是否已经签到
+            // Check if the user has already checked in
             const existing = await prisma.eventAttendance.findUnique({
                 where: { eventId_userId: { eventId, userId } },
             });
 
             if (!existing) {
-                // 记录签到情况
+                // Record attendance
                 await prisma.eventAttendance.upsert({
                     where: { eventId_userId: { eventId, userId } },
-                    update: {}, // 如果记录已存在，不做任何更新
-                    create: { eventId, userId }, // 如果记录不存在，创建新记录
+                    update: {}, // If record exists, don't update anything
+                    create: { eventId, userId }, // If record doesn't exist, create a new one
                 });
                 return res.status(201).json({ 
                     message: 'Successfully checked in',
                     checkedInAt: new Date().toISOString()
                 });
             } else {
-                // 用户已经签到过
+                // User has already checked in
                 return res.status(200).json({ 
                     message: 'Already checked in',
                     checkedInAt: existing.checkedInAt
@@ -1605,110 +1605,6 @@ const checkInByScan = async (req, res) => {
     }
 };
 
-/**
- * Manual check-in for organizers and managers
- */
-const checkInManually = async (req, res) => {
-    console.log('\n\n===== MANUAL CHECK-IN REQUEST START =====');
-    console.log('Time:', new Date().toISOString());
-    console.log('URL:', req.originalUrl);
-    console.log('Method:', req.method);
-    console.log('Request body:', JSON.stringify(req.body, null, 2));
-    console.log('Auth user:', JSON.stringify(req.auth, null, 2));
-    
-    try {
-        const eventId = parseInt(req.params.eventId);
-        const { utorid } = req.body;
-        
-        if (!utorid) {
-            console.log('No UTORid provided');
-            console.log('===== MANUAL CHECK-IN REQUEST END (400) =====\n\n');
-            return res.status(400).json({ error: 'UTORid is required' });
-        }
-
-        // First check if the user exists
-        const user = await prisma.user.findUnique({
-            where: { utorid }
-        });
-
-        if (!user) {
-            console.log('User not found');
-            console.log('===== MANUAL CHECK-IN REQUEST END (404) =====\n\n');
-            return res.status(404).json({ error: 'User not found' });
-        }
-
-        // Check if the event exists
-        const event = await prisma.event.findUnique({
-            where: { id: eventId },
-            include: {
-                organizers: true,
-                guests: true
-            }
-        });
-
-        if (!event) {
-            console.log('Event not found');
-            console.log('===== MANUAL CHECK-IN REQUEST END (404) =====\n\n');
-            return res.status(404).json({ error: 'Event not found' });
-        }
-
-        // Check if user is an organizer or manager
-        const isOrganizer = event.organizers.some(org => org.id === req.auth.id);
-        const isManager = checkRole(req.auth, 'manager');
-
-        if (!isOrganizer && !isManager) {
-            console.log('User is not authorized to perform manual check-in');
-            console.log('===== MANUAL CHECK-IN REQUEST END (403) =====\n\n');
-            return res.status(403).json({ error: 'Only organizers and managers can perform manual check-in' });
-        }
-
-        // Check if the guest exists in the event
-        const guest = event.guests.find(g => g.id === user.id);
-        if (!guest) {
-            console.log('Guest not found in event');
-            console.log('===== MANUAL CHECK-IN REQUEST END (404) =====\n\n');
-            return res.status(404).json({ error: 'Guest not found in this event' });
-        }
-
-        // Check if already checked in
-        const existingAttendance = await prisma.eventAttendance.findUnique({
-            where: { eventId_userId: { eventId, userId: user.id } }
-        });
-
-        if (existingAttendance) {
-            console.log('Guest already checked in');
-            console.log('===== MANUAL CHECK-IN REQUEST END (400) =====\n\n');
-            return res.status(400).json({ error: 'Guest is already checked in' });
-        }
-
-        // Create attendance record
-        const attendance = await prisma.eventAttendance.create({
-            data: {
-                eventId,
-                userId: user.id,
-                checkedInAt: new Date()
-            }
-        });
-
-        console.log('Manual check-in successful');
-        console.log('===== MANUAL CHECK-IN REQUEST END (200) =====\n\n');
-        return res.status(200).json({ 
-            message: 'Check-in successful',
-            guest: {
-                id: user.id,
-                name: user.name,
-                utorid: user.utorid,
-                checkedInAt: attendance.checkedInAt
-            }
-        });
-    } catch (error) {
-        console.error('Error during manual check-in:', error);
-        console.log('Error stack:', error.stack);
-        console.log('===== MANUAL CHECK-IN REQUEST END (500) =====\n\n');
-        return res.status(500).json({ error: 'Failed to perform check-in' });
-    }
-};
-
 module.exports = {
     createEvent,
     getEvents,
@@ -1726,5 +1622,4 @@ module.exports = {
     getCheckinToken,
     checkInWithToken,
     checkInByScan,
-    checkInManually
 };
