@@ -703,7 +703,7 @@ const ProcessRedemption = () => {
       {(status === 'idle' || status === 'found') && (
         <Card>
           <Card.Header>
-            <Card.Title>Process Redemption by ID and Utorid</Card.Title>
+            <Card.Title>Process Redemption by ID and UTORid</Card.Title>
           </Card.Header>
           <Card.Body>
             <ScanContainer>
@@ -712,7 +712,7 @@ const ProcessRedemption = () => {
                   <Input
                     value={redemptionId}
                     onChange={(e) => setRedemptionId(e.target.value)}
-                    placeholder="Enter Redemption ID or UTOrid"
+                    placeholder="Enter Redemption ID or UTORid"
                     leftIcon={<FaSearch />}
                   />
                 </ManualInput>
