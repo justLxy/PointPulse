@@ -1,44 +1,178 @@
-name: Tests
+name: 🧪 Tests & Coverage
 
 on:
   push:
     branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+env:
+  NODE_VERSION: '20.x'
+  WORKING_DIR: './backend'
 
 jobs:
   test:
+    name: 🧪 Run Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
-    - name: Checkout code
+    - name: 📦 Checkout repository
       uses: actions/checkout@v4
 
-    - name: Setup Node.js
+    - name: 🟢 Setup Node.js ${{ env.NODE_VERSION }}
       uses: actions/setup-node@v4
       with:
-        node-version: '20.x'
+        node-version: ${{ env.NODE_VERSION }}
 
-    - name: Install dependencies
-      working-directory: ./backend
-      run: npm install
+    - name: 🔧 Install dependencies
+      working-directory: ${{ env.WORKING_DIR }}
+      run: |
+        if [ -f package-lock.json ]; then
+          npm ci
+        else
+          npm install
+        fi
 
-    - name: Run tests with coverage
-      working-directory: ./backend
-      run: npm run test:coverage
+    - name: 🧪 Run tests with coverage
+      working-directory: ${{ env.WORKING_DIR }}
+      run: |
+        npm run test:coverage 2>&1 | tee test-output.log
+      continue-on-error: true
 
-    - name: Upload coverage reports
+    - name: 📊 Parse test results
+      id: test-results
+      working-directory: ${{ env.WORKING_DIR }}
+      run: |
+        # Parse test results from output
+        TEST_OUTPUT=$(cat test-output.log)
+        
+        # Extract test suites count  
+        SUITES_LINE=$(echo "$TEST_OUTPUT" | grep "Test Suites:" | tail -1)
+        SUITES_PASSED=$(echo "$SUITES_LINE" | grep -o "[0-9]\+ passed" | grep -o "[0-9]\+")
+        SUITES_TOTAL=$(echo "$SUITES_LINE" | grep -o "[0-9]\+ total" | grep -o "[0-9]\+")
+        
+        # Extract individual tests count
+        TESTS_LINE=$(echo "$TEST_OUTPUT" | grep "Tests:" | tail -1)
+        TESTS_PASSED=$(echo "$TESTS_LINE" | grep -o "[0-9]\+ passed" | grep -o "[0-9]\+")
+        TESTS_TOTAL=$(echo "$TESTS_LINE" | grep -o "[0-9]\+ total" | grep -o "[0-9]\+")
+        
+        # Extract coverage percentage
+        COVERAGE_NUM=$(echo "$TEST_OUTPUT" | grep "All files" | grep -o "[0-9.]\+" | head -1)
+        COVERAGE="${COVERAGE_NUM}%"
+        
+        # Set defaults if parsing fails
+        SUITES_PASSED=${SUITES_PASSED:-"0"}
+        SUITES_TOTAL=${SUITES_TOTAL:-"0"}
+        TESTS_PASSED=${TESTS_PASSED:-"0"}
+        TESTS_TOTAL=${TESTS_TOTAL:-"0"}
+        COVERAGE=${COVERAGE:-"Unknown"}
+        
+        # Check if all tests passed
+        if [ "$SUITES_PASSED" = "$SUITES_TOTAL" ] && [ "$TESTS_PASSED" = "$TESTS_TOTAL" ] && [ "$TESTS_TOTAL" -gt "0" ]; then
+          TEST_STATUS="✅ All tests passed"
+          EXIT_CODE=0
+        else
+          TEST_STATUS="❌ Some tests failed"
+          EXIT_CODE=1
+        fi
+        
+        # Debug output
+        echo "Parsed: Suites $SUITES_PASSED/$SUITES_TOTAL, Tests $TESTS_PASSED/$TESTS_TOTAL, Coverage $COVERAGE"
+        
+        # Export results
+        echo "suites-passed=$SUITES_PASSED" >> $GITHUB_OUTPUT
+        echo "suites-total=$SUITES_TOTAL" >> $GITHUB_OUTPUT
+        echo "tests-passed=$TESTS_PASSED" >> $GITHUB_OUTPUT
+        echo "tests-total=$TESTS_TOTAL" >> $GITHUB_OUTPUT
+        echo "coverage=$COVERAGE" >> $GITHUB_OUTPUT
+        echo "status=$TEST_STATUS" >> $GITHUB_OUTPUT
+        echo "exit-code=$EXIT_CODE" >> $GITHUB_OUTPUT
+
+    - name: 📋 Generate test summary
+      if: always()
+      run: |
+        echo "## 🧪 Test Results Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Metric | Result |" >> $GITHUB_STEP_SUMMARY
+        echo "|--------|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| **Status** | ${{ steps.test-results.outputs.status }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| **Test Suites** | ${{ steps.test-results.outputs.suites-passed }}/${{ steps.test-results.outputs.suites-total }} passed |" >> $GITHUB_STEP_SUMMARY
+        echo "| **Individual Tests** | ${{ steps.test-results.outputs.tests-passed }}/${{ steps.test-results.outputs.tests-total }} passed |" >> $GITHUB_STEP_SUMMARY
+        echo "| **Coverage** | ${{ steps.test-results.outputs.coverage }} |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "📁 **Coverage Report**: Available in artifacts below" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "🔗 **Coverage Details**: Download the \`coverage-report\` artifact for detailed HTML coverage analysis" >> $GITHUB_STEP_SUMMARY
+
+    - name: 📊 Upload coverage reports
+      if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: coverage-report
-        path: backend/coverage/
+        name: coverage-report-${{ github.run_number }}
+        path: ${{ env.WORKING_DIR }}/coverage/
+        retention-days: 30
 
-    - name: Coverage Summary
-      working-directory: ./backend
+    - name: 💬 Comment on PR
+      if: github.event_name == 'pull_request' && always()
+      uses: actions/github-script@v7
+      continue-on-error: true
+      with:
+        script: |
+          try {
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && comment.body.includes('🧪 Test Results')
+            );
+            
+            const body = `## 🧪 Test Results
+            
+            ${{ steps.test-results.outputs.status }}
+            
+            | Metric | Result |
+            |--------|--------|
+            | **Test Suites** | ${{ steps.test-results.outputs.suites-passed }}/${{ steps.test-results.outputs.suites-total }} passed |
+            | **Individual Tests** | ${{ steps.test-results.outputs.tests-passed }}/${{ steps.test-results.outputs.tests-total }} passed |
+            | **Coverage** | ${{ steps.test-results.outputs.coverage }} |
+            
+            📊 [View detailed coverage report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) in the artifacts section.
+            
+            ---
+            *Updated at: ${new Date().toISOString()}*`;
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }
+          } catch (error) {
+            console.log('Could not comment on PR due to permissions. Results available in job summary.');
+            console.log('Error:', error.message);
+          }
+
+    - name: ❌ Fail if tests failed
+      if: steps.test-results.outputs.exit-code != '0'
       run: |
-        echo "## 📊 Test Coverage Summary" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "✅ **12 test suites passed**" >> $GITHUB_STEP_SUMMARY
-        echo "✅ **147 individual tests passed**" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "📁 Coverage reports are available in the artifacts." >> $GITHUB_STEP_SUMMARY 
+        echo "Tests failed! Check the summary above for details."
+        exit 1
