@@ -1,4 +1,4 @@
-name: 🧪 Tests & Coverage
+name: Tests
 
 on:
   push:
@@ -18,7 +18,7 @@ env:
 
 jobs:
   test:
-    name: 🧪 Run Tests
+    name: Run Tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
