@@ -14,9 +14,9 @@ const validateEmail = (email) => {
     console.log('===== VALIDATE EMAIL DEBUG =====');
     console.log('Email to validate:', email);
     
-    // 如果email为null，直接返回false
-    if (email === null) {
-        console.log('Email is null, validation failed');
+    // 如果email为null或undefined，直接返回false
+    if (email === null || email === undefined) {
+        console.log('Email is null or undefined, validation failed');
         return false;
     }
     

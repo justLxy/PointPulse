@@ -1,7 +1,4 @@
-#!/usr/bin/env node
 'use strict';
-
-const port = process.env.PORT || 8000; // Use PORT env var or default to 8000
 
 // Configuration
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000"; // This can be changed when deployed
@@ -119,12 +116,5 @@ io.on('connection', (socket) => {
 // Add socket instance to app for access in routes
 app.set('io', io);
 
-// Start server
-server.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-});
-
-server.on('error', (err) => {
-    console.error(`cannot start server: ${err.message}`);
-    process.exit(1);
-});
+// Export the app for testing
+module.exports = app;

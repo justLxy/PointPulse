@@ -4,7 +4,12 @@
   "description": "CSSU Reward System",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "node server.js",
+    "test": "cross-env NODE_PATH=. NODE_ENV=test jest --testTimeout=10000",
+    "test:watch": "cross-env NODE_PATH=. NODE_ENV=test jest --testTimeout=10000 --watch",
+    "test:coverage": "cross-env NODE_PATH=. NODE_ENV=test jest --testTimeout=10000 --coverage",
+    "lint": "echo 'Linting not configured yet'",
+    "lint:fix": "echo 'Linting not configured yet'",
     "seed": "node prisma/seed.js",
     "createsuperuser": "node prisma/createsu.js lyuxuany xuanyi.lyu@mail.utoronto.ca Lvxuanyi2003!",
     "clean": "rm -rf prisma/dev.db* node_modules package-lock.json prisma/migrations/"
@@ -27,6 +32,17 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
-    "prisma": "^6.5.0"
+    "cross-env": "^7.0.3",
+    "eslint-plugin-jest": "^28.11.0",
+    "jest": "^29.7.0",
+    "prisma": "^6.5.0",
+    "supertest": "^7.1.1"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "coveragePathIgnorePatterns": [
+      "/node_modules/"
+    ],
+    "verbose": true
   }
 }
