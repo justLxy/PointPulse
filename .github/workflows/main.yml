@@ -21,20 +21,18 @@ jobs:
 
     - name: Install dependencies
       working-directory: ./backend
-      run: npm ci
+      run: npm install
+
+    - name: Run tests
+      working-directory: ./backend
+      run: npm test
 
     - name: Run tests with coverage
       working-directory: ./backend
       run: npm run test:coverage
 
-    - name: Comment on PR
-      if: github.event_name == 'pull_request'
-      uses: actions/github-script@v7
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
       with:
-        script: |
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: `🧪 **Tests completed successfully!** ✅\n\n12 test suites passed with 147 individual tests.`
-          }); 
+        directory: ./backend/coverage
+        fail_ci_if_error: false 
