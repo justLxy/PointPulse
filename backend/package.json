@@ -6,10 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "test": "cross-env NODE_PATH=. NODE_ENV=test jest --testTimeout=10000",
-    "test:watch": "cross-env NODE_PATH=. NODE_ENV=test jest --testTimeout=10000 --watch",
     "test:coverage": "cross-env NODE_PATH=. NODE_ENV=test jest --testTimeout=10000 --coverage",
-    "lint": "echo 'Linting not configured yet'",
-    "lint:fix": "echo 'Linting not configured yet'",
     "seed": "node prisma/seed.js",
     "createsuperuser": "node prisma/createsu.js lyuxuany xuanyi.lyu@mail.utoronto.ca Lvxuanyi2003!",
     "clean": "rm -rf prisma/dev.db* node_modules package-lock.json prisma/migrations/"
@@ -41,8 +38,23 @@
   "jest": {
     "testEnvironment": "node",
     "coveragePathIgnorePatterns": [
-      "/node_modules/"
+      "/node_modules/",
+      "/prisma/",
+      "/uploads/"
     ],
+    "collectCoverageFrom": [
+      "services/**/*.js",
+      "controllers/**/*.js",
+      "middlewares/**/*.js",
+      "utils/**/*.js",
+      "routes/**/*.js"
+    ],
+    "coverageReporters": [
+      "text",
+      "lcov",
+      "html"
+    ],
+    "coverageDirectory": "coverage",
     "verbose": true
   }
 }
