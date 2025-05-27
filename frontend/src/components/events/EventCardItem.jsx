@@ -255,7 +255,7 @@ const EventCardItem = ({
               </Button>
             )}
             
-            {isManager && (
+            {isManager && !event.published && (
               <Button 
                 size="small" 
                 variant="outlined" 

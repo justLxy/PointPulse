@@ -948,7 +948,7 @@ const EventDetail = () => {
   const handleDeleteEvent = () => {
     deleteEvent(eventId, {
       onSuccess: () => {
-        refetch();
+        navigate('/events');
       },
     });
   };
@@ -1273,7 +1273,7 @@ const EventDetail = () => {
               )}
               
               {/* Destructive actions isolated and visually distinct */}
-              {isManager && (
+              {isManager && !event.published && (
                 <ActionButton 
                   variant="outlined" 
                   color="error"
