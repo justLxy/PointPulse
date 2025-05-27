@@ -18,7 +18,6 @@ env:
 
 jobs:
   test:
-    name: Run Tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
