@@ -63,48 +63,87 @@ jobs:
         # Parse test results from output
         TEST_OUTPUT=$(cat test-output.log)
         
-        # Extract test suites count using more precise regex
+        echo "[${{ matrix.project }}] ===== FULL TEST OUTPUT START ====="
+        cat test-output.log
+        echo "[${{ matrix.project }}] ===== FULL TEST OUTPUT END ====="
+        
+        # Extract test suites count with improved parsing
         SUITES_LINE=$(echo "$TEST_OUTPUT" | grep "Test Suites:" | tail -1)
-        if [[ $SUITES_LINE =~ ([0-9]+)\ passed.*([0-9]+)\ total ]]; then
-          SUITES_PASSED="${BASH_REMATCH[1]}"
-          SUITES_TOTAL="${BASH_REMATCH[2]}"
-        else
-          SUITES_PASSED="0"
-          SUITES_TOTAL="0"
+        echo "[${{ matrix.project }}] Raw suites line: '$SUITES_LINE'"
+        
+        # Use sed for more reliable parsing
+        SUITES_PASSED=$(echo "$SUITES_LINE" | sed -n 's/.*\([0-9]\+\) passed.*/\1/p')
+        SUITES_TOTAL=$(echo "$SUITES_LINE" | sed -n 's/.*[0-9]\+ passed[^0-9]*\([0-9]\+\) total.*/\1/p')
+        
+        # Fallback to basic extraction if sed fails
+        if [ -z "$SUITES_PASSED" ]; then
+          SUITES_PASSED=$(echo "$SUITES_LINE" | grep -o "[0-9]\+ passed" | head -1 | grep -o "[0-9]\+")
+        fi
+        if [ -z "$SUITES_TOTAL" ]; then
+          SUITES_TOTAL=$(echo "$SUITES_LINE" | grep -o "[0-9]\+ total" | head -1 | grep -o "[0-9]\+")
         fi
         
-        # Extract individual tests count using more precise regex
+        # Set defaults if still empty
+        SUITES_PASSED=${SUITES_PASSED:-"0"}
+        SUITES_TOTAL=${SUITES_TOTAL:-"0"}
+        
+        echo "[${{ matrix.project }}] Parsed suites: passed=$SUITES_PASSED, total=$SUITES_TOTAL"
+        
+        # Extract individual tests count with improved parsing
         TESTS_LINE=$(echo "$TEST_OUTPUT" | grep "Tests:" | tail -1)
-        if [[ $TESTS_LINE =~ ([0-9]+)\ passed.*([0-9]+)\ total ]]; then
-          TESTS_PASSED="${BASH_REMATCH[1]}"
-          TESTS_TOTAL="${BASH_REMATCH[2]}"
-        else
-          TESTS_PASSED="0"
-          TESTS_TOTAL="0"
+        echo "[${{ matrix.project }}] Raw tests line: '$TESTS_LINE'"
+        
+        # Use sed for more reliable parsing
+        TESTS_PASSED=$(echo "$TESTS_LINE" | sed -n 's/.*\([0-9]\+\) passed.*/\1/p')
+        TESTS_TOTAL=$(echo "$TESTS_LINE" | sed -n 's/.*[0-9]\+ passed[^0-9]*\([0-9]\+\) total.*/\1/p')
+        
+        # Fallback to basic extraction if sed fails
+        if [ -z "$TESTS_PASSED" ]; then
+          TESTS_PASSED=$(echo "$TESTS_LINE" | grep -o "[0-9]\+ passed" | head -1 | grep -o "[0-9]\+")
+        fi
+        if [ -z "$TESTS_TOTAL" ]; then
+          TESTS_TOTAL=$(echo "$TESTS_LINE" | grep -o "[0-9]\+ total" | head -1 | grep -o "[0-9]\+")
         fi
         
-        # Extract coverage percentage
+        # Set defaults if still empty
+        TESTS_PASSED=${TESTS_PASSED:-"0"}
+        TESTS_TOTAL=${TESTS_TOTAL:-"0"}
+        
+        echo "[${{ matrix.project }}] Parsed tests: passed=$TESTS_PASSED, total=$TESTS_TOTAL"
+        
+        # Extract coverage percentage with improved parsing
         COVERAGE_LINE=$(echo "$TEST_OUTPUT" | grep "All files" | head -1)
-        if [[ $COVERAGE_LINE =~ ([0-9]+\.?[0-9]*) ]]; then
-          COVERAGE="${BASH_REMATCH[1]}%"
+        echo "[${{ matrix.project }}] Raw coverage line: '$COVERAGE_LINE'"
+        
+        # Extract first number from coverage line
+        COVERAGE_NUM=$(echo "$COVERAGE_LINE" | grep -o "[0-9]\+\.[0-9]\+" | head -1)
+        if [ -z "$COVERAGE_NUM" ]; then
+          COVERAGE_NUM=$(echo "$COVERAGE_LINE" | grep -o "[0-9]\+" | head -1)
+        fi
+        
+        if [ -n "$COVERAGE_NUM" ]; then
+          COVERAGE="${COVERAGE_NUM}%"
         else
           COVERAGE="Unknown"
         fi
         
+        echo "[${{ matrix.project }}] Parsed coverage: $COVERAGE"
+        
         # Check if all tests passed
+        echo "[${{ matrix.project }}] Checking test status: suites $SUITES_PASSED/$SUITES_TOTAL, tests $TESTS_PASSED/$TESTS_TOTAL"
+        
         if [ "$SUITES_PASSED" = "$SUITES_TOTAL" ] && [ "$TESTS_PASSED" = "$TESTS_TOTAL" ] && [ "$TESTS_TOTAL" -gt "0" ]; then
           TEST_STATUS="✅ All tests passed"
           EXIT_CODE=0
+          echo "[${{ matrix.project }}] Status: PASSED"
         else
           TEST_STATUS="❌ Some tests failed"
           EXIT_CODE=1
+          echo "[${{ matrix.project }}] Status: FAILED"
         fi
         
-        # Debug output
-        echo "[${{ matrix.project }}] Raw suites line: $SUITES_LINE"
-        echo "[${{ matrix.project }}] Raw tests line: $TESTS_LINE"
-        echo "[${{ matrix.project }}] Raw coverage line: $COVERAGE_LINE"
-        echo "[${{ matrix.project }}] Parsed: Suites $SUITES_PASSED/$SUITES_TOTAL, Tests $TESTS_PASSED/$TESTS_TOTAL, Coverage $COVERAGE"
+        # Final summary
+        echo "[${{ matrix.project }}] Final results: Suites $SUITES_PASSED/$SUITES_TOTAL, Tests $TESTS_PASSED/$TESTS_TOTAL, Coverage $COVERAGE, Status: $TEST_STATUS"
         
         # Export results
         echo "suites-passed=$SUITES_PASSED" >> $GITHUB_OUTPUT
