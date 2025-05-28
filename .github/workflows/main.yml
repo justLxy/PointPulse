@@ -51,99 +51,95 @@ jobs:
         fi
 
     - name: 🧪 Run tests with coverage
+      id: run-tests
       working-directory: './${{ matrix.project }}'
       run: |
+        set +e  # Don't exit on test failures
         npm run test:coverage 2>&1 | tee test-output.log
-      continue-on-error: true
+        TEST_EXIT_CODE=$?
+        echo "test-exit-code=$TEST_EXIT_CODE" >> $GITHUB_OUTPUT
+        exit 0  # Always succeed this step to allow parsing
 
     - name: 📊 Parse test results
       id: test-results
       working-directory: './${{ matrix.project }}'
       run: |
-        # Parse test results from output
+        # Read the test output
         TEST_OUTPUT=$(cat test-output.log)
         
-        echo "[${{ matrix.project }}] ===== FULL TEST OUTPUT START ====="
-        cat test-output.log
-        echo "[${{ matrix.project }}] ===== FULL TEST OUTPUT END ====="
+        echo "[${{ matrix.project }}] ===== TEST OUTPUT ANALYSIS ====="
+        echo "Test exit code: ${{ steps.run-tests.outputs.test-exit-code }}"
         
-        # Extract test suites count with improved parsing
-        SUITES_LINE=$(echo "$TEST_OUTPUT" | grep "Test Suites:" | tail -1)
-        echo "[${{ matrix.project }}] Raw suites line: '$SUITES_LINE'"
+        # Show relevant lines for debugging
+        echo "Lines containing 'Test Suites:':"
+        grep "Test Suites:" test-output.log || echo "No 'Test Suites:' line found"
         
-        # Use sed for more reliable parsing
-        SUITES_PASSED=$(echo "$SUITES_LINE" | sed -n 's/.*\([0-9]\+\) passed.*/\1/p')
-        SUITES_TOTAL=$(echo "$SUITES_LINE" | sed -n 's/.*[0-9]\+ passed[^0-9]*\([0-9]\+\) total.*/\1/p')
+        echo "Lines containing 'Tests:':"
+        grep "Tests:" test-output.log || echo "No 'Tests:' line found"
         
-        # Fallback to basic extraction if sed fails
-        if [ -z "$SUITES_PASSED" ]; then
-          SUITES_PASSED=$(echo "$SUITES_LINE" | grep -o "[0-9]\+ passed" | head -1 | grep -o "[0-9]\+")
+        echo "Lines containing 'All files':"
+        grep "All files" test-output.log || echo "No 'All files' line found"
+        
+        # Simple parsing approach
+        SUITES_PASSED="0"
+        SUITES_TOTAL="0"
+        TESTS_PASSED="0"
+        TESTS_TOTAL="0"
+        COVERAGE="Unknown"
+        
+        # Parse test suites
+        if grep -q "Test Suites:" test-output.log; then
+          SUITES_LINE=$(grep "Test Suites:" test-output.log | tail -1)
+          echo "Suites line: $SUITES_LINE"
+          
+          # Extract numbers using awk - look for "passed" without comma
+          SUITES_PASSED=$(echo "$SUITES_LINE" | awk '{for(i=1;i<=NF;i++) if($i=="passed,") print $(i-1); if($i=="passed") print $(i-1)}' | head -1)
+          SUITES_TOTAL=$(echo "$SUITES_LINE" | awk '{for(i=1;i<=NF;i++) if($i=="total") print $(i-1)}')
         fi
-        if [ -z "$SUITES_TOTAL" ]; then
-          SUITES_TOTAL=$(echo "$SUITES_LINE" | grep -o "[0-9]\+ total" | head -1 | grep -o "[0-9]\+")
+        
+        # Parse individual tests
+        if grep -q "Tests:" test-output.log; then
+          TESTS_LINE=$(grep "Tests:" test-output.log | tail -1)
+          echo "Tests line: $TESTS_LINE"
+          
+          # Extract numbers using awk - look for "passed" without comma
+          TESTS_PASSED=$(echo "$TESTS_LINE" | awk '{for(i=1;i<=NF;i++) if($i=="passed,") print $(i-1); if($i=="passed") print $(i-1)}' | head -1)
+          TESTS_TOTAL=$(echo "$TESTS_LINE" | awk '{for(i=1;i<=NF;i++) if($i=="total") print $(i-1)}')
         fi
         
-        # Set defaults if still empty
+        # Parse coverage
+        if grep -q "All files" test-output.log; then
+          COVERAGE_LINE=$(grep "All files" test-output.log | head -1)
+          echo "Coverage line: $COVERAGE_LINE"
+          
+          # Extract first percentage - it's usually the 4th field
+          COVERAGE_NUM=$(echo "$COVERAGE_LINE" | awk '{print $4}' | head -1)
+          if [[ "$COVERAGE_NUM" =~ ^[0-9]+\.?[0-9]*$ ]]; then
+            COVERAGE="${COVERAGE_NUM}%"
+          fi
+        fi
+        
+        # Set defaults if parsing failed
         SUITES_PASSED=${SUITES_PASSED:-"0"}
         SUITES_TOTAL=${SUITES_TOTAL:-"0"}
-        
-        echo "[${{ matrix.project }}] Parsed suites: passed=$SUITES_PASSED, total=$SUITES_TOTAL"
-        
-        # Extract individual tests count with improved parsing
-        TESTS_LINE=$(echo "$TEST_OUTPUT" | grep "Tests:" | tail -1)
-        echo "[${{ matrix.project }}] Raw tests line: '$TESTS_LINE'"
-        
-        # Use sed for more reliable parsing
-        TESTS_PASSED=$(echo "$TESTS_LINE" | sed -n 's/.*\([0-9]\+\) passed.*/\1/p')
-        TESTS_TOTAL=$(echo "$TESTS_LINE" | sed -n 's/.*[0-9]\+ passed[^0-9]*\([0-9]\+\) total.*/\1/p')
-        
-        # Fallback to basic extraction if sed fails
-        if [ -z "$TESTS_PASSED" ]; then
-          TESTS_PASSED=$(echo "$TESTS_LINE" | grep -o "[0-9]\+ passed" | head -1 | grep -o "[0-9]\+")
-        fi
-        if [ -z "$TESTS_TOTAL" ]; then
-          TESTS_TOTAL=$(echo "$TESTS_LINE" | grep -o "[0-9]\+ total" | head -1 | grep -o "[0-9]\+")
-        fi
-        
-        # Set defaults if still empty
         TESTS_PASSED=${TESTS_PASSED:-"0"}
         TESTS_TOTAL=${TESTS_TOTAL:-"0"}
         
-        echo "[${{ matrix.project }}] Parsed tests: passed=$TESTS_PASSED, total=$TESTS_TOTAL"
+        echo "[${{ matrix.project }}] Parsed results:"
+        echo "  Suites: $SUITES_PASSED/$SUITES_TOTAL"
+        echo "  Tests: $TESTS_PASSED/$TESTS_TOTAL"
+        echo "  Coverage: $COVERAGE"
         
-        # Extract coverage percentage with improved parsing
-        COVERAGE_LINE=$(echo "$TEST_OUTPUT" | grep "All files" | head -1)
-        echo "[${{ matrix.project }}] Raw coverage line: '$COVERAGE_LINE'"
-        
-        # Extract first number from coverage line
-        COVERAGE_NUM=$(echo "$COVERAGE_LINE" | grep -o "[0-9]\+\.[0-9]\+" | head -1)
-        if [ -z "$COVERAGE_NUM" ]; then
-          COVERAGE_NUM=$(echo "$COVERAGE_LINE" | grep -o "[0-9]\+" | head -1)
-        fi
-        
-        if [ -n "$COVERAGE_NUM" ]; then
-          COVERAGE="${COVERAGE_NUM}%"
-        else
-          COVERAGE="Unknown"
-        fi
-        
-        echo "[${{ matrix.project }}] Parsed coverage: $COVERAGE"
-        
-        # Check if all tests passed
-        echo "[${{ matrix.project }}] Checking test status: suites $SUITES_PASSED/$SUITES_TOTAL, tests $TESTS_PASSED/$TESTS_TOTAL"
-        
-        if [ "$SUITES_PASSED" = "$SUITES_TOTAL" ] && [ "$TESTS_PASSED" = "$TESTS_TOTAL" ] && [ "$TESTS_TOTAL" -gt "0" ]; then
+        # Determine status based on npm exit code and parsed results
+        if [ "${{ steps.run-tests.outputs.test-exit-code }}" = "0" ] && [ "$TESTS_TOTAL" -gt "0" ]; then
           TEST_STATUS="✅ All tests passed"
           EXIT_CODE=0
-          echo "[${{ matrix.project }}] Status: PASSED"
         else
           TEST_STATUS="❌ Some tests failed"
           EXIT_CODE=1
-          echo "[${{ matrix.project }}] Status: FAILED"
         fi
         
-        # Final summary
-        echo "[${{ matrix.project }}] Final results: Suites $SUITES_PASSED/$SUITES_TOTAL, Tests $TESTS_PASSED/$TESTS_TOTAL, Coverage $COVERAGE, Status: $TEST_STATUS"
+        echo "[${{ matrix.project }}] Final status: $TEST_STATUS (exit code: $EXIT_CODE)"
         
         # Export results
         echo "suites-passed=$SUITES_PASSED" >> $GITHUB_OUTPUT
