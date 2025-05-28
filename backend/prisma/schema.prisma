@@ -8,29 +8,29 @@ datasource db {
 }
 
 model User {
-  id                   Int           @id @default(autoincrement())
-  utorid               String        @unique
+  id                   Int               @id @default(autoincrement())
+  utorid               String            @unique
   name                 String
-  email                String        @unique
+  email                String            @unique
   password             String?
   birthday             String?
-  role                 String        @default("regular") // regular, cashier, manager, superuser
-  points               Int           @default(0)
-  createdAt            DateTime      @default(now())
+  role                 String            @default("regular") // regular, cashier, manager, superuser
+  points               Int               @default(0)
+  createdAt            DateTime          @default(now())
   lastLogin            DateTime?
-  verified             Boolean       @default(false)
-  suspicious           Boolean       @default(false)
+  verified             Boolean           @default(false)
+  suspicious           Boolean           @default(false)
   resetToken           String?
   expiresAt            DateTime?
   avatarUrl            String?
-  sentTransactions     Transaction[] @relation("SentTransactions")
-  receivedTransactions Transaction[] @relation("ReceivedTransactions")
-  createdTransactions  Transaction[] @relation("CreatedTransactions")
-  processedRedemptions Transaction[] @relation("ProcessedRedemptions")
-  organizedEvents      Event[]       @relation("EventOrganizers")
-  attendedEvents       Event[]       @relation("EventGuests")
+  sentTransactions     Transaction[]     @relation("SentTransactions")
+  receivedTransactions Transaction[]     @relation("ReceivedTransactions")
+  createdTransactions  Transaction[]     @relation("CreatedTransactions")
+  processedRedemptions Transaction[]     @relation("ProcessedRedemptions")
+  organizedEvents      Event[]           @relation("EventOrganizers")
+  attendedEvents       Event[]           @relation("EventGuests")
   attendances          EventAttendance[]
-  usedPromotions       Promotion[]   @relation("UserPromotions")
+  usedPromotions       Promotion[]       @relation("UserPromotions")
 }
 
 model Transaction {
@@ -82,8 +82,8 @@ model Event {
   createdAt     DateTime @default(now())
 
   // Relations
-  organizers   User[]        @relation("EventOrganizers")
-  guests       User[]        @relation("EventGuests")
+  organizers   User[]            @relation("EventOrganizers")
+  guests       User[]            @relation("EventGuests")
   transactions Transaction[]
   attendances  EventAttendance[]
 }
@@ -115,8 +115,8 @@ model PromotionTransaction {
 }
 
 model EventAttendance {
-  eventId Int
-  userId Int
+  eventId     Int
+  userId      Int
   checkedInAt DateTime @default(now())
 
   event Event @relation(fields: [eventId], references: [id])

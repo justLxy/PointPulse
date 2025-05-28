@@ -4,7 +4,7 @@
   "description": "CSSU Reward System",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon server.js",
+    "start": "node server.js",
     "test": "cross-env NODE_PATH=. NODE_ENV=test jest --testTimeout=10000",
     "test:coverage": "cross-env NODE_PATH=. NODE_ENV=test jest --testTimeout=10000 --coverage",
     "seed": "node prisma/seed.js",
