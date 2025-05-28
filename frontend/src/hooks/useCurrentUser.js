@@ -1,11 +1,11 @@
-import { useQuery } from 'react-query';
-import { userService } from '../services/userService';
+import { useQuery } from '@tanstack/react-query';
+import UserService from '../services/user.service';
 import { getToken } from '../utils/tokenUtils';
 
 export const useCurrentUser = () => {
   const { data: userProfile, isLoading, error, refetch } = useQuery({
     queryKey: ['userProfile'],
-    queryFn: userService.getProfile,
+    queryFn: UserService.getProfile,
     enabled: !!getToken(),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
@@ -13,7 +13,7 @@ export const useCurrentUser = () => {
   // Query for pending redemptions total
   const { data: pendingRedemptionsTotal = 0 } = useQuery({
     queryKey: ['pendingRedemptionsTotal'],
-    queryFn: userService.getPendingRedemptionsTotal,
+    queryFn: UserService.getPendingRedemptionsTotal,
     enabled: !!getToken(),
     staleTime: 3 * 60 * 1000, // 3 minutes
   });
