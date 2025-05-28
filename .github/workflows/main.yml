@@ -14,12 +14,15 @@ permissions:
 
 env:
   NODE_VERSION: '20.x'
-  WORKING_DIR: './backend'
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        project: [backend, frontend]
+      fail-fast: false  # Continue testing other projects even if one fails
 
     steps:
     - name: 📦 Checkout repository
@@ -29,9 +32,11 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: '${{ matrix.project }}/package-lock.json'
 
     - name: 🔧 Install dependencies
-      working-directory: ${{ env.WORKING_DIR }}
+      working-directory: './${{ matrix.project }}'
       run: |
         if [ -f package-lock.json ]; then
           npm ci
@@ -40,14 +45,14 @@ jobs:
         fi
 
     - name: 🧪 Run tests with coverage
-      working-directory: ${{ env.WORKING_DIR }}
+      working-directory: './${{ matrix.project }}'
       run: |
         npm run test:coverage 2>&1 | tee test-output.log
       continue-on-error: true
 
     - name: 📊 Parse test results
       id: test-results
-      working-directory: ${{ env.WORKING_DIR }}
+      working-directory: './${{ matrix.project }}'
       run: |
         # Parse test results from output
         TEST_OUTPUT=$(cat test-output.log)
@@ -83,7 +88,7 @@ jobs:
         fi
         
         # Debug output
-        echo "Parsed: Suites $SUITES_PASSED/$SUITES_TOTAL, Tests $TESTS_PASSED/$TESTS_TOTAL, Coverage $COVERAGE"
+        echo "[${{ matrix.project }}] Parsed: Suites $SUITES_PASSED/$SUITES_TOTAL, Tests $TESTS_PASSED/$TESTS_TOTAL, Coverage $COVERAGE"
         
         # Export results
         echo "suites-passed=$SUITES_PASSED" >> $GITHUB_OUTPUT
@@ -93,11 +98,12 @@ jobs:
         echo "coverage=$COVERAGE" >> $GITHUB_OUTPUT
         echo "status=$TEST_STATUS" >> $GITHUB_OUTPUT
         echo "exit-code=$EXIT_CODE" >> $GITHUB_OUTPUT
+        echo "project=${{ matrix.project }}" >> $GITHUB_OUTPUT
 
     - name: 📋 Generate test summary
       if: always()
       run: |
-        echo "## 🧪 Test Results Summary" >> $GITHUB_STEP_SUMMARY
+        echo "## 🧪 ${{ matrix.project }} Test Results" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "| Metric | Result |" >> $GITHUB_STEP_SUMMARY
         echo "|--------|--------|" >> $GITHUB_STEP_SUMMARY
@@ -106,20 +112,102 @@ jobs:
         echo "| **Individual Tests** | ${{ steps.test-results.outputs.tests-passed }}/${{ steps.test-results.outputs.tests-total }} passed |" >> $GITHUB_STEP_SUMMARY
         echo "| **Coverage** | ${{ steps.test-results.outputs.coverage }} |" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "📁 **Coverage Report**: Available in artifacts below" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "🔗 **Coverage Details**: Download the \`coverage-report\` artifact for detailed HTML coverage analysis" >> $GITHUB_STEP_SUMMARY
 
     - name: 📊 Upload coverage reports
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: coverage-report-${{ github.run_number }}
-        path: ${{ env.WORKING_DIR }}/coverage/
+        name: coverage-report-${{ matrix.project }}-${{ github.run_number }}
+        path: '${{ matrix.project }}/coverage/'
         retention-days: 30
 
+    # Store results for aggregation
+    - name: 💾 Store test results
+      if: always()
+      run: |
+        mkdir -p /tmp/test-results
+        echo "${{ steps.test-results.outputs.project }}|${{ steps.test-results.outputs.status }}|${{ steps.test-results.outputs.suites-passed }}|${{ steps.test-results.outputs.suites-total }}|${{ steps.test-results.outputs.tests-passed }}|${{ steps.test-results.outputs.tests-total }}|${{ steps.test-results.outputs.coverage }}|${{ steps.test-results.outputs.exit-code }}" > /tmp/test-results/${{ matrix.project }}.txt
+
+    - name: 📤 Upload test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-${{ matrix.project }}
+        path: /tmp/test-results/
+        retention-days: 1
+
+    - name: ❌ Fail if tests failed
+      if: steps.test-results.outputs.exit-code != '0'
+      run: |
+        echo "[${{ matrix.project }}] Tests failed! Check the summary above for details."
+        exit 1
+
+  # Aggregate results and comment on PR
+  test-summary:
+    runs-on: ubuntu-latest
+    needs: test
+    if: always() && github.event_name == 'pull_request'
+    steps:
+    - name: 📥 Download test results
+      uses: actions/download-artifact@v4
+      with:
+        pattern: test-results-*
+        merge-multiple: true
+        path: /tmp/test-results
+
+    - name: 📝 Collect test results
+      id: collect-results
+      run: |
+        # Initialize variables
+        BACKEND_STATUS="❌ Failed"
+        FRONTEND_STATUS="❌ Failed"
+        BACKEND_DETAILS="Not run"
+        FRONTEND_DETAILS="Not run"
+        OVERALL_SUCCESS=true
+        
+        # Read backend results if available
+        if [ -f "/tmp/test-results/backend.txt" ]; then
+          BACKEND_DATA=$(cat /tmp/test-results/backend.txt)
+          IFS='|' read -r PROJECT STATUS SUITES_PASSED SUITES_TOTAL TESTS_PASSED TESTS_TOTAL COVERAGE EXIT_CODE <<< "$BACKEND_DATA"
+          if [ "$EXIT_CODE" = "0" ]; then
+            BACKEND_STATUS="✅ Passed"
+          else
+            OVERALL_SUCCESS=false
+          fi
+          BACKEND_DETAILS="$TESTS_PASSED/$TESTS_TOTAL tests, $SUITES_PASSED/$SUITES_TOTAL suites, $COVERAGE coverage"
+        else
+          OVERALL_SUCCESS=false
+        fi
+        
+        # Read frontend results if available
+        if [ -f "/tmp/test-results/frontend.txt" ]; then
+          FRONTEND_DATA=$(cat /tmp/test-results/frontend.txt)
+          IFS='|' read -r PROJECT STATUS SUITES_PASSED SUITES_TOTAL TESTS_PASSED TESTS_TOTAL COVERAGE EXIT_CODE <<< "$FRONTEND_DATA"
+          if [ "$EXIT_CODE" = "0" ]; then
+            FRONTEND_STATUS="✅ Passed"
+          else
+            OVERALL_SUCCESS=false
+          fi
+          FRONTEND_DETAILS="$TESTS_PASSED/$TESTS_TOTAL tests, $SUITES_PASSED/$SUITES_TOTAL suites, $COVERAGE coverage"
+        else
+          OVERALL_SUCCESS=false
+        fi
+        
+        # Set overall status
+        if [ "$OVERALL_SUCCESS" = true ]; then
+          OVERALL_STATUS="✅ All projects passed"
+        else
+          OVERALL_STATUS="❌ Some projects failed"
+        fi
+        
+        # Export results
+        echo "overall-status=$OVERALL_STATUS" >> $GITHUB_OUTPUT
+        echo "backend-status=$BACKEND_STATUS" >> $GITHUB_OUTPUT
+        echo "frontend-status=$FRONTEND_STATUS" >> $GITHUB_OUTPUT
+        echo "backend-details=$BACKEND_DETAILS" >> $GITHUB_OUTPUT
+        echo "frontend-details=$FRONTEND_DETAILS" >> $GITHUB_OUTPUT
+
     - name: 💬 Comment on PR
-      if: github.event_name == 'pull_request' && always()
       uses: actions/github-script@v7
       continue-on-error: true
       with:
@@ -132,20 +220,25 @@ jobs:
             });
             
             const botComment = comments.find(comment => 
-              comment.user.type === 'Bot' && comment.body.includes('🧪 Test Results')
+              comment.user.type === 'Bot' && comment.body.includes('🧪 Test Results Summary')
             );
             
-            const body = `## 🧪 Test Results
+            const body = `## 🧪 Test Results Summary
             
-            ${{ steps.test-results.outputs.status }}
+            ${{ steps.collect-results.outputs.overall-status }}
             
-            | Metric | Result |
-            |--------|--------|
-            | **Test Suites** | ${{ steps.test-results.outputs.suites-passed }}/${{ steps.test-results.outputs.suites-total }} passed |
-            | **Individual Tests** | ${{ steps.test-results.outputs.tests-passed }}/${{ steps.test-results.outputs.tests-total }} passed |
-            | **Coverage** | ${{ steps.test-results.outputs.coverage }} |
+            ### 📊 Project Results
             
-            📊 [View detailed coverage report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) in the artifacts section.
+            | Project | Status | Details |
+            |---------|--------|---------|
+            | **Backend** | ${{ steps.collect-results.outputs.backend-status }} | ${{ steps.collect-results.outputs.backend-details }} |
+            | **Frontend** | ${{ steps.collect-results.outputs.frontend-status }} | ${{ steps.collect-results.outputs.frontend-details }} |
+            
+            ### 📋 Coverage Reports
+            - 📊 **Backend Coverage**: [Download Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            - 📊 **Frontend Coverage**: [Download Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            
+            > 💡 **Tip**: Click on the individual job details in the [Actions tab](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) to see detailed test results for each project.
             
             ---
             *Updated at: ${new Date().toISOString()}*`;
@@ -168,10 +261,4 @@ jobs:
           } catch (error) {
             console.log('Could not comment on PR due to permissions. Results available in job summary.');
             console.log('Error:', error.message);
-          }
-
-    - name: ❌ Fail if tests failed
-      if: steps.test-results.outputs.exit-code != '0'
-      run: |
-        echo "Tests failed! Check the summary above for details."
-        exit 1
+          } 
