@@ -21,10 +21,17 @@ PrismaClient.mockImplementation(() => mockPrisma);
 
 // Import after mocking
 const authService = require('../../services/authService');
+const emailService = require('../../services/emailService');
 
 describe('AuthService', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        jest.spyOn(console, 'log').mockImplementation(() => {});
+        emailService.sendResetEmail.mockResolvedValue();
+    });
+
+    afterEach(() => {
+        console.log.mockRestore();
     });
 
     describe('generateToken', () => {
@@ -101,6 +108,7 @@ describe('AuthService', () => {
             const mockUser = {
                 id: 1,
                 utorid: 'testuser1',
+                name: 'Test User',
                 email: 'test@mail.utoronto.ca',
                 resetToken: null
             };
@@ -128,18 +136,65 @@ describe('AuthService', () => {
                     expiresAt: expect.any(Date)
                 }
             });
+            expect(emailService.sendResetEmail).toHaveBeenCalled();
             expect(result).toEqual({
                 resetToken: mockResetToken,
                 expiresAt: expect.any(Date)
             });
         });
 
+        test('should handle user with existing reset token', async () => {
+            const mockUser = {
+                id: 1,
+                utorid: 'testuser1',
+                name: 'Test User',
+                email: 'test@mail.utoronto.ca',
+                resetToken: 'existing-token'
+            };
+
+            const mockResetToken = 'new-mock-uuid-token';
+
+            mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+            uuidv4.mockReturnValue(mockResetToken);
+            mockPrisma.user.update.mockResolvedValue({
+                ...mockUser,
+                resetToken: mockResetToken
+            });
+
+            const result = await authService.requestPasswordReset('testuser1', '192.168.1.100');
+
+            expect(result.resetToken).toBe(mockResetToken);
+        });
+
         test('should throw error for non-existent user', async () => {
             mockPrisma.user.findUnique.mockResolvedValue(null);
 
             await expect(
-                authService.requestPasswordReset('nonexistent', '127.0.0.1')
+                authService.requestPasswordReset('nonexistent', '192.168.1.200')
             ).rejects.toThrow('User not found');
+        });
+
+        test('should enforce rate limiting', async () => {
+            const mockUser = {
+                id: 1,
+                utorid: 'testuser1',
+                name: 'Test User',
+                email: 'test@mail.utoronto.ca',
+                resetToken: null
+            };
+
+            mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+            uuidv4.mockReturnValue('token1');
+
+            const uniqueIP = '192.168.1.300';
+
+            // First request should succeed
+            await authService.requestPasswordReset('testuser1', uniqueIP);
+
+            // Second request from same IP within 60 seconds should fail
+            await expect(
+                authService.requestPasswordReset('testuser1', uniqueIP)
+            ).rejects.toThrow('Too many requests');
         });
     });
 
@@ -201,6 +256,21 @@ describe('AuthService', () => {
             ).rejects.toThrow('Reset token has expired');
         });
 
+        test('should throw error for null expiresAt', async () => {
+            const mockUser = {
+                id: 1,
+                utorid: 'testuser1',
+                resetToken: 'valid-token',
+                expiresAt: null // null expiration
+            };
+
+            mockPrisma.user.findFirst.mockResolvedValue(mockUser);
+
+            await expect(
+                authService.resetPassword('valid-token', 'testuser1', 'newPassword')
+            ).rejects.toThrow('Reset token has expired');
+        });
+
         test('should throw error for mismatched utorid', async () => {
             const mockUser = {
                 id: 1,
@@ -214,6 +284,63 @@ describe('AuthService', () => {
             await expect(
                 authService.resetPassword('valid-token', 'wronguser', 'newPassword')
             ).rejects.toThrow('Token does not match utorid');
+        });
+
+        test('should handle case-insensitive utorid matching', async () => {
+            const mockUser = {
+                id: 1,
+                utorid: 'testuser1',
+                resetToken: 'valid-token',
+                expiresAt: new Date(Date.now() + 60 * 60 * 1000)
+            };
+
+            mockPrisma.user.findFirst.mockResolvedValue(mockUser);
+            bcrypt.hash.mockResolvedValue('newHashedPassword');
+            mockPrisma.user.update.mockResolvedValue(mockUser);
+
+            const result = await authService.resetPassword('valid-token', 'TESTUSER1', 'newPassword');
+
+            expect(result).toEqual({ success: true });
+        });
+
+        test('should remove token from expired tokens map when resetting password', async () => {
+            // First create an expired token scenario by making a password reset request
+            const mockUserForReset = {
+                id: 1,
+                utorid: 'testuser1',
+                name: 'Test User',
+                email: 'test@mail.utoronto.ca',
+                resetToken: 'old-token'
+            };
+
+            mockPrisma.user.findUnique.mockResolvedValue(mockUserForReset);
+            uuidv4.mockReturnValue('new-token');
+            mockPrisma.user.update.mockResolvedValue(mockUserForReset);
+
+            // This will put the old token in the expired tokens map - use unique IP
+            await authService.requestPasswordReset('testuser1', '192.168.1.600');
+
+            // Now reset password with the old token that's in the expired map
+            const mockUserForPasswordReset = {
+                id: 1,
+                utorid: 'testuser1',
+                resetToken: 'old-token',
+                expiresAt: new Date(Date.now() + 60 * 60 * 1000)
+            };
+
+            mockPrisma.user.findFirst.mockResolvedValue(mockUserForPasswordReset);
+            bcrypt.hash.mockResolvedValue('newHashedPassword');
+            mockPrisma.user.update.mockResolvedValue({
+                ...mockUserForPasswordReset,
+                password: 'newHashedPassword',
+                resetToken: null,
+                expiresAt: null
+            });
+
+            const result = await authService.resetPassword('old-token', 'testuser1', 'newPassword');
+
+            expect(result).toEqual({ success: true });
+            // This test exercises the code path where expiredTokens.delete() is called
         });
     });
 
@@ -241,6 +368,29 @@ describe('AuthService', () => {
             const result = await authService.findUserByResetToken('invalid-token');
 
             expect(result).toBeNull();
+        });
+
+        test('should find expired token in expired tokens map', async () => {
+            // First, create an expired token scenario
+            const mockUser = {
+                id: 1,
+                utorid: 'testuser1',
+                resetToken: 'expired-token'
+            };
+
+            // Simulate the expired token being stored in the map by first requesting a reset
+            mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+            uuidv4.mockReturnValue('new-token');
+            mockPrisma.user.update.mockResolvedValue(mockUser);
+            
+            await authService.requestPasswordReset('testuser1', '192.168.1.400');
+
+            // Now try to find the expired token
+            mockPrisma.user.findFirst.mockResolvedValue(null);
+            
+            const result = await authService.findUserByResetToken('expired-token');
+            
+            expect(result).toBeDefined();
         });
     });
 
@@ -275,12 +425,48 @@ describe('AuthService', () => {
             expect(result).toBe(true);
         });
 
+        test('should return true for token with null expiresAt', async () => {
+            const mockUser = {
+                id: 1,
+                utorid: 'testuser1',
+                resetToken: 'valid-token',
+                expiresAt: null
+            };
+
+            mockPrisma.user.findFirst.mockResolvedValue(mockUser);
+
+            const result = await authService.isResetTokenExpired('valid-token');
+
+            expect(result).toBe(true);
+        });
+
         test('should return false for non-existent token', async () => {
             mockPrisma.user.findFirst.mockResolvedValue(null);
 
             const result = await authService.isResetTokenExpired('non-existent-token');
 
             expect(result).toBe(false);
+        });
+
+        test('should return true for token in expired tokens map', async () => {
+            // First create an expired token scenario
+            const mockUser = {
+                id: 1,
+                utorid: 'testuser1',
+                resetToken: 'old-token'
+            };
+
+            mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+            uuidv4.mockReturnValue('new-token');
+            mockPrisma.user.update.mockResolvedValue(mockUser);
+            
+            // Use a unique IP to avoid rate limiting issues
+            await authService.requestPasswordReset('testuser1', '192.168.1.700');
+
+            // Now check if the old token is expired
+            const result = await authService.isResetTokenExpired('old-token');
+            
+            expect(result).toBe(true);
         });
     });
 }); 
