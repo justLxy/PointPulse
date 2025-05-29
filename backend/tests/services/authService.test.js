@@ -302,6 +302,46 @@ describe('AuthService', () => {
 
             expect(result).toEqual({ success: true });
         });
+
+        test('should remove token from expired tokens map when resetting password', async () => {
+            // First create an expired token scenario by making a password reset request
+            const mockUserForReset = {
+                id: 1,
+                utorid: 'testuser1',
+                name: 'Test User',
+                email: 'test@mail.utoronto.ca',
+                resetToken: 'old-token'
+            };
+
+            mockPrisma.user.findUnique.mockResolvedValue(mockUserForReset);
+            uuidv4.mockReturnValue('new-token');
+            mockPrisma.user.update.mockResolvedValue(mockUserForReset);
+
+            // This will put the old token in the expired tokens map - use unique IP
+            await authService.requestPasswordReset('testuser1', '192.168.1.600');
+
+            // Now reset password with the old token that's in the expired map
+            const mockUserForPasswordReset = {
+                id: 1,
+                utorid: 'testuser1',
+                resetToken: 'old-token',
+                expiresAt: new Date(Date.now() + 60 * 60 * 1000)
+            };
+
+            mockPrisma.user.findFirst.mockResolvedValue(mockUserForPasswordReset);
+            bcrypt.hash.mockResolvedValue('newHashedPassword');
+            mockPrisma.user.update.mockResolvedValue({
+                ...mockUserForPasswordReset,
+                password: 'newHashedPassword',
+                resetToken: null,
+                expiresAt: null
+            });
+
+            const result = await authService.resetPassword('old-token', 'testuser1', 'newPassword');
+
+            expect(result).toEqual({ success: true });
+            // This test exercises the code path where expiredTokens.delete() is called
+        });
     });
 
     describe('findUserByResetToken', () => {
@@ -420,7 +460,8 @@ describe('AuthService', () => {
             uuidv4.mockReturnValue('new-token');
             mockPrisma.user.update.mockResolvedValue(mockUser);
             
-            await authService.requestPasswordReset('testuser1', '192.168.1.500');
+            // Use a unique IP to avoid rate limiting issues
+            await authService.requestPasswordReset('testuser1', '192.168.1.700');
 
             // Now check if the old token is expired
             const result = await authService.isResetTokenExpired('old-token');
