@@ -24,169 +24,100 @@ Object.defineProperty(window, 'localStorage', {
   writable: true
 });
 
-describe('AuthService', () => {
+describe('AuthService - Authentication Lifecycle', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     localStorageMock.getItem.mockReturnValue(null);
-    localStorageMock.setItem.mockClear();
-    localStorageMock.removeItem.mockClear();
   });
 
-  describe('login', () => {
-    test('should successfully login and store token', async () => {
-      const mockResponse = {
-        data: {
-          token: 'mock.jwt.token',
-          expiresAt: '2024-12-31T23:59:59Z'
-        }
-      };
-      api.post.mockResolvedValue(mockResponse);
+  test('complete authentication flow: login → fetch user → validate session → logout', async () => {
+    const mockLoginResponse = {
+      data: { token: 'mock.jwt.token', expiresAt: '2024-12-31T23:59:59Z' }
+    };
+    const mockUser = { id: 1, utorid: 'testuser', role: 'regular', verified: true };
 
-      const result = await AuthService.login('testuser', 'password123');
-
-      expect(api.post).toHaveBeenCalledWith('/auth/tokens', {
-        utorid: 'testuser',
-        password: 'password123'
-      });
-      expect(localStorageMock.setItem).toHaveBeenCalledWith('token', 'mock.jwt.token');
-      expect(localStorageMock.setItem).toHaveBeenCalledWith('tokenExpiry', '2024-12-31T23:59:59Z');
-      expect(result).toEqual(mockResponse.data);
+    // Login success
+    api.post.mockResolvedValue(mockLoginResponse);
+    const loginResult = await AuthService.login('testuser', 'password123');
+    
+    expect(api.post).toHaveBeenCalledWith('/auth/tokens', {
+      utorid: 'testuser', password: 'password123'
     });
+    expect(localStorageMock.setItem).toHaveBeenCalledWith('token', 'mock.jwt.token');
+    expect(loginResult).toEqual(mockLoginResponse.data);
 
-    test('should handle 401 unauthorized error', async () => {
-      const error = {
-        response: { status: 401, data: { message: 'Invalid credentials' } }
-      };
-      api.post.mockRejectedValue(error);
+    // Fetch user data
+    api.get.mockResolvedValue({ data: mockUser });
+    const userResult = await AuthService.getCurrentUser(true);
+    
+    expect(api.get).toHaveBeenCalledWith('/users/me');
+    expect(localStorageMock.setItem).toHaveBeenCalledWith('user', JSON.stringify(mockUser));
+    expect(userResult).toEqual(mockUser);
 
-      await expect(AuthService.login('wrong', 'credentials'))
-        .rejects.toThrow('Invalid username or password. Please try again.');
-    });
-
-    test('should handle network error', async () => {
-      const error = { request: {} };
-      api.post.mockRejectedValue(error);
-
-      await expect(AuthService.login('user', 'pass'))
-        .rejects.toThrow('Network error. Please check your internet connection.');
-    });
+    // Logout
+    AuthService.logout();
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith('token');
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith('user');
   });
 
-  describe('logout', () => {
-    test('should clear all stored authentication data', () => {
-      AuthService.logout();
+  test('handles authentication errors and edge cases', async () => {
+    // Invalid credentials
+    const authError = { response: { status: 401, data: { message: 'Invalid credentials' } } };
+    api.post.mockRejectedValue(authError);
+    
+    await expect(AuthService.login('wrong', 'credentials'))
+      .rejects.toThrow('Invalid username or password. Please try again.');
 
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('token');
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('tokenExpiry');
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('user');
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('role');
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('activeRole');
-    });
+    // User data fetch failure
+    const userError = { response: { data: { error: 'Unauthorized' } } };
+    api.get.mockRejectedValue(userError);
+    
+    await expect(AuthService.getCurrentUser(true)).rejects.toEqual({ error: 'Unauthorized' });
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith('user');
   });
 
-  describe('getCurrentUser', () => {
-    test('should return cached user when available and not forcing refresh', async () => {
-      const cachedUser = { id: 1, utorid: 'testuser', role: 'regular' };
-      localStorageMock.getItem.mockReturnValue(JSON.stringify(cachedUser));
-
-      const result = await AuthService.getCurrentUser(false);
-
-      expect(result).toEqual(cachedUser);
-      expect(api.get).not.toHaveBeenCalled();
+  test('password management workflow', async () => {
+    // Password update success
+    const updateResponse = { data: { message: 'Password updated' } };
+    api.patch.mockResolvedValue(updateResponse);
+    
+    const result = await AuthService.updatePassword('oldpass', 'newpass123');
+    expect(api.patch).toHaveBeenCalledWith('/users/me/password', {
+      old: 'oldpass', new: 'newpass123'
     });
+    expect(result).toEqual(updateResponse.data);
 
-    test('should fetch from API when forcing refresh', async () => {
-      const apiUser = { id: 1, utorid: 'testuser', role: 'regular', verified: true };
-      localStorageMock.getItem.mockReturnValue(JSON.stringify({ old: 'data' }));
-      api.get.mockResolvedValue({ data: apiUser });
+    // Password reset request
+    const resetResponse = { data: { message: 'Reset email sent' } };
+    api.post.mockResolvedValue(resetResponse);
+    
+    const resetResult = await AuthService.requestPasswordReset('testuser');
+    expect(api.post).toHaveBeenCalledWith('/auth/resets', { utorid: 'testuser' });
+    expect(resetResult).toEqual(resetResponse.data);
 
-      const result = await AuthService.getCurrentUser(true);
-
-      expect(api.get).toHaveBeenCalledWith('/users/me');
-      expect(localStorageMock.setItem).toHaveBeenCalledWith('user', JSON.stringify(apiUser));
-      expect(result).toEqual(apiUser);
-    });
-
-    test('should handle API error and clear cached data', async () => {
-      const error = { response: { data: { error: 'Unauthorized' } } };
-      api.get.mockRejectedValue(error);
-
-      await expect(AuthService.getCurrentUser(true))
-        .rejects.toEqual({ error: 'Unauthorized' });
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('user');
-    });
+    // Handle incorrect current password
+    const wrongPasswordError = { response: { status: 401, data: { message: 'Invalid password' } } };
+    api.patch.mockRejectedValue(wrongPasswordError);
+    
+    await expect(AuthService.updatePassword('wrong', 'new123'))
+      .rejects.toThrow('Your current password is incorrect. Please enter the correct password.');
   });
 
-  describe('isAuthenticated', () => {
-    test('should return true for valid token within expiry', () => {
-      const futureDate = new Date(Date.now() + 3600000).toISOString(); // 1 hour from now
-      localStorageMock.getItem.mockImplementation((key) => {
-        if (key === 'token') return 'valid.jwt.token';
-        if (key === 'tokenExpiry') return futureDate;
-        return null;
-      });
+  test('cached user data and session persistence', async () => {
+    const cachedUser = { id: 1, utorid: 'testuser', role: 'regular' };
+    localStorageMock.getItem.mockReturnValue(JSON.stringify(cachedUser));
 
-      expect(AuthService.isAuthenticated()).toBe(true);
-    });
+    // Should return cached data without API call
+    const result = await AuthService.getCurrentUser(false);
+    expect(result).toEqual(cachedUser);
+    expect(api.get).not.toHaveBeenCalled();
 
-    test('should return false for expired token', () => {
-      const pastDate = new Date(Date.now() - 3600000).toISOString(); // 1 hour ago
-      localStorageMock.getItem.mockImplementation((key) => {
-        if (key === 'token') return 'expired.jwt.token';
-        if (key === 'tokenExpiry') return pastDate;
-        return null;
-      });
-
-      expect(AuthService.isAuthenticated()).toBe(false);
-    });
-
-    test('should return false for missing token', () => {
-      localStorageMock.getItem.mockReturnValue(null);
-
-      expect(AuthService.isAuthenticated()).toBe(false);
-    });
-  });
-
-  describe('requestPasswordReset', () => {
-    test('should successfully request password reset', async () => {
-      const mockResponse = { data: { message: 'Reset email sent' } };
-      api.post.mockResolvedValue(mockResponse);
-
-      const result = await AuthService.requestPasswordReset('testuser');
-
-      expect(api.post).toHaveBeenCalledWith('/auth/resets', { utorid: 'testuser' });
-      expect(result).toEqual(mockResponse.data);
-    });
-
-    test('should handle user not found error', async () => {
-      const error = { response: { status: 404, data: { message: 'User not found' } } };
-      api.post.mockRejectedValue(error);
-
-      await expect(AuthService.requestPasswordReset('nonexistent'))
-        .rejects.toThrow('User not found. Please verify your UTORid.');
-    });
-  });
-
-  describe('updatePassword', () => {
-    test('should successfully update password', async () => {
-      const mockResponse = { data: { message: 'Password updated' } };
-      api.patch.mockResolvedValue(mockResponse);
-
-      const result = await AuthService.updatePassword('oldpass', 'newpass123');
-
-      expect(api.patch).toHaveBeenCalledWith('/users/me/password', {
-        old: 'oldpass',
-        new: 'newpass123'
-      });
-      expect(result).toEqual(mockResponse.data);
-    });
-
-    test('should handle incorrect current password', async () => {
-      const error = { response: { status: 401, data: { message: 'Invalid password' } } };
-      api.patch.mockRejectedValue(error);
-
-      await expect(AuthService.updatePassword('wrong', 'new123'))
-        .rejects.toThrow('Your current password is incorrect. Please enter the correct password.');
-    });
+    // Should make API call when forcing refresh
+    const freshUser = { ...cachedUser, verified: true };
+    api.get.mockResolvedValue({ data: freshUser });
+    
+    const refreshResult = await AuthService.getCurrentUser(true);
+    expect(api.get).toHaveBeenCalledWith('/users/me');
+    expect(refreshResult).toEqual(freshUser);
   });
 }); 

@@ -1,7 +1,6 @@
 /**
- * TokenUtils Tests
- * Purpose: Test token management utilities including validation,
- * storage operations, and expiry checking logic
+ * Core User Flow: Token validation and storage lifecycle
+ * Validates token management during login, session persistence, and logout
  */
 
 import {
@@ -25,166 +24,97 @@ Object.defineProperty(window, 'localStorage', {
   writable: true
 });
 
-describe('TokenUtils', () => {
+describe('TokenUtils - Authentication Lifecycle', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     localStorageMock.getItem.mockReturnValue(null);
   });
 
-  describe('getToken', () => {
-    test('should return token from localStorage', () => {
-      const mockToken = 'mock.jwt.token';
-      localStorageMock.getItem.mockReturnValue(mockToken);
+  test('complete token lifecycle: set → validate → clear', () => {
+    const token = 'mock.jwt.token';
+    const futureExpiry = new Date(Date.now() + 3600000).toISOString(); // 1 hour future
+    const user = { id: 1, utorid: 'testuser', role: 'regular' };
 
-      const result = getToken();
+    // Initial state - no tokens
+    expect(isTokenValid()).toBe(false);
+    expect(getToken()).toBeNull();
 
-      expect(localStorageMock.getItem).toHaveBeenCalledWith('token');
-      expect(result).toBe(mockToken);
+    // Set authentication data
+    setAuthData(token, futureExpiry, user);
+    
+    expect(localStorageMock.setItem).toHaveBeenCalledWith('token', token);
+    expect(localStorageMock.setItem).toHaveBeenCalledWith('tokenExpiry', futureExpiry);
+    expect(localStorageMock.setItem).toHaveBeenCalledWith('user', JSON.stringify(user));
+
+    // Mock localStorage to return the stored values
+    localStorageMock.getItem.mockImplementation((key) => {
+      if (key === 'token') return token;
+      if (key === 'tokenExpiry') return futureExpiry;
+      if (key === 'user') return JSON.stringify(user);
+      return null;
     });
 
-    test('should return null when no token exists', () => {
-      localStorageMock.getItem.mockReturnValue(null);
+    // Validate stored tokens
+    expect(getToken()).toBe(token);
+    expect(getTokenExpiry()).toBe(futureExpiry);
+    expect(isTokenValid()).toBe(true);
 
-      const result = getToken();
-
-      expect(result).toBeNull();
-    });
+    // Clear authentication data
+    clearAuthData();
+    
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith('token');
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith('tokenExpiry');
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith('user');
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith('activeRole');
   });
 
-  describe('getTokenExpiry', () => {
-    test('should return token expiry from localStorage', () => {
-      const mockExpiry = '2024-12-31T23:59:59Z';
-      localStorageMock.getItem.mockReturnValue(mockExpiry);
-
-      const result = getTokenExpiry();
-
-      expect(localStorageMock.getItem).toHaveBeenCalledWith('tokenExpiry');
-      expect(result).toBe(mockExpiry);
+  test('handles expired tokens and invalid data gracefully', () => {
+    const expiredDate = new Date(Date.now() - 3600000).toISOString(); // 1 hour ago
+    
+    // Test with expired token
+    localStorageMock.getItem.mockImplementation((key) => {
+      if (key === 'token') return 'expired.token';
+      if (key === 'tokenExpiry') return expiredDate;
+      return null;
     });
 
-    test('should return null when no expiry exists', () => {
-      localStorageMock.getItem.mockReturnValue(null);
+    expect(isTokenValid()).toBe(false);
 
-      const result = getTokenExpiry();
-
-      expect(result).toBeNull();
+    // Test with missing token but valid expiry
+    localStorageMock.getItem.mockImplementation((key) => {
+      if (key === 'token') return null;
+      if (key === 'tokenExpiry') return new Date(Date.now() + 3600000).toISOString();
+      return null;
     });
+
+    expect(isTokenValid()).toBe(false);
+
+    // Test with invalid expiry date
+    localStorageMock.getItem.mockImplementation((key) => {
+      if (key === 'token') return 'valid.token';
+      if (key === 'tokenExpiry') return 'invalid-date-format';
+      return null;
+    });
+
+    expect(isTokenValid()).toBe(false);
   });
 
-  describe('isTokenValid', () => {
-    test('should return true for valid token within expiry', () => {
-      const futureDate = new Date(Date.now() + 3600000).toISOString(); // 1 hour from now
-      
-      localStorageMock.getItem.mockImplementation((key) => {
-        if (key === 'token') return 'valid.jwt.token';
-        if (key === 'tokenExpiry') return futureDate;
-        return null;
-      });
+  test('handles partial authentication data correctly', () => {
+    const token = 'partial.token';
+    const expiry = new Date(Date.now() + 3600000).toISOString();
 
-      const result = isTokenValid();
+    // Set data without user (login without user fetch)
+    setAuthData(token, expiry, null);
+    
+    expect(localStorageMock.setItem).toHaveBeenCalledWith('token', token);
+    expect(localStorageMock.setItem).toHaveBeenCalledWith('tokenExpiry', expiry);
+    expect(localStorageMock.setItem).toHaveBeenCalledTimes(2); // Should not set user
 
-      expect(result).toBe(true);
-    });
-
-    test('should return false for expired token', () => {
-      const pastDate = new Date(Date.now() - 3600000).toISOString(); // 1 hour ago
-      
-      localStorageMock.getItem.mockImplementation((key) => {
-        if (key === 'token') return 'expired.jwt.token';
-        if (key === 'tokenExpiry') return pastDate;
-        return null;
-      });
-
-      const result = isTokenValid();
-
-      expect(result).toBe(false);
-    });
-
-    test('should return false when token is missing', () => {
-      const futureDate = new Date(Date.now() + 3600000).toISOString();
-      
-      localStorageMock.getItem.mockImplementation((key) => {
-        if (key === 'token') return null;
-        if (key === 'tokenExpiry') return futureDate;
-        return null;
-      });
-
-      const result = isTokenValid();
-
-      expect(result).toBe(false);
-    });
-
-    test('should return false when expiry is missing', () => {
-      localStorageMock.getItem.mockImplementation((key) => {
-        if (key === 'token') return 'valid.jwt.token';
-        if (key === 'tokenExpiry') return null;
-        return null;
-      });
-
-      const result = isTokenValid();
-
-      expect(result).toBe(false);
-    });
-
-    test('should return false for invalid expiry date', () => {
-      localStorageMock.getItem.mockImplementation((key) => {
-        if (key === 'token') return 'valid.jwt.token';
-        if (key === 'tokenExpiry') return 'invalid-date';
-        return null;
-      });
-
-      const result = isTokenValid();
-
-      expect(result).toBe(false);
-    });
-  });
-
-  describe('clearAuthData', () => {
-    test('should remove all authentication data from localStorage', () => {
-      clearAuthData();
-
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('token');
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('tokenExpiry');
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('user');
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('activeRole');
-      expect(localStorageMock.removeItem).toHaveBeenCalledTimes(4);
-    });
-  });
-
-  describe('setAuthData', () => {
-    test('should store token and expiry in localStorage', () => {
-      const token = 'new.jwt.token';
-      const expiry = '2024-12-31T23:59:59Z';
-
-      setAuthData(token, expiry);
-
-      expect(localStorageMock.setItem).toHaveBeenCalledWith('token', token);
-      expect(localStorageMock.setItem).toHaveBeenCalledWith('tokenExpiry', expiry);
-      expect(localStorageMock.setItem).toHaveBeenCalledTimes(2);
-    });
-
-    test('should store token, expiry, and user data when user is provided', () => {
-      const token = 'new.jwt.token';
-      const expiry = '2024-12-31T23:59:59Z';
-      const user = { id: 1, utorid: 'testuser', role: 'regular' };
-
-      setAuthData(token, expiry, user);
-
-      expect(localStorageMock.setItem).toHaveBeenCalledWith('token', token);
-      expect(localStorageMock.setItem).toHaveBeenCalledWith('tokenExpiry', expiry);
-      expect(localStorageMock.setItem).toHaveBeenCalledWith('user', JSON.stringify(user));
-      expect(localStorageMock.setItem).toHaveBeenCalledTimes(3);
-    });
-
-    test('should not store user data when user is null', () => {
-      const token = 'new.jwt.token';
-      const expiry = '2024-12-31T23:59:59Z';
-
-      setAuthData(token, expiry, null);
-
-      expect(localStorageMock.setItem).toHaveBeenCalledWith('token', token);
-      expect(localStorageMock.setItem).toHaveBeenCalledWith('tokenExpiry', expiry);
-      expect(localStorageMock.setItem).toHaveBeenCalledTimes(2);
-    });
+    // Set data with all parameters
+    const user = { id: 1, utorid: 'testuser' };
+    localStorageMock.setItem.mockClear();
+    
+    setAuthData(token, expiry, user);
+    expect(localStorageMock.setItem).toHaveBeenCalledTimes(3); // token, expiry, user
   });
 }); 

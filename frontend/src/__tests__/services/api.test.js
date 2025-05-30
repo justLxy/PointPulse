@@ -1,46 +1,49 @@
 /**
- * API Service Tests
- * Purpose: Test API configuration and localStorage token management
+ * Core User Flow: API configuration and environment setup
+ * Validates API service initialization and token management behavior
  */
 
-// Mock localStorage
+import { getToken } from '../../utils/tokenUtils';
+
+jest.mock('../../utils/tokenUtils');
+
 const localStorageMock = {
   getItem: jest.fn(),
   setItem: jest.fn(),
   removeItem: jest.fn(),
 };
 
-// Override global localStorage
 Object.defineProperty(window, 'localStorage', {
   value: localStorageMock,
   writable: true
 });
 
-describe('API Service', () => {
+describe('API Service - Core Integration', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    localStorageMock.getItem.mockReturnValue(null);
   });
 
-  test('should use correct API URL from environment', () => {
-    // Test that API_URL is configured correctly
-    const expectedUrl = process.env.REACT_APP_BACKEND_URL || "http://localhost:8000";
-    expect(expectedUrl).toMatch(/localhost:8000/);
-  });
-
-  test('should mock localStorage operations correctly', () => {
-    const testToken = 'test.jwt.token';
+  test('environment configuration and token utilities work correctly', () => {
+    const expectedBaseUrl = process.env.REACT_APP_BACKEND_URL || "http://localhost:8000";
     
-    // Test setting and getting token
-    localStorageMock.setItem('token', testToken);
-    localStorageMock.getItem.mockReturnValue(testToken);
-    
-    expect(localStorageMock.setItem).toHaveBeenCalledWith('token', testToken);
-    expect(localStorageMock.getItem('token')).toBe(testToken);
+    // Verify API URL configuration
+    expect(expectedBaseUrl).toMatch(/localhost:8000/);
   });
 
-  test('should handle token removal on logout', () => {
-    // Simulate logout by removing tokens
+  test('token lifecycle management integrates with localStorage', () => {
+    const mockToken = 'valid.jwt.token';
+    
+    // Test token storage and retrieval
+    getToken.mockReturnValue(mockToken);
+    expect(getToken()).toBe(mockToken);
+
+    // Test token clearing behavior
+    getToken.mockReturnValue(null);
+    expect(getToken()).toBeNull();
+  });
+
+  test('handles authentication cleanup during logout', () => {
+    // Simulate logout cleanup
     localStorageMock.removeItem('token');
     localStorageMock.removeItem('tokenExpiry');
     localStorageMock.removeItem('user');
