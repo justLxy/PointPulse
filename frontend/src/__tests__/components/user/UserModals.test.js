@@ -539,8 +539,8 @@ describe('UserModals Component', () => {
     it('handles last login display correctly', () => {
       render(<UserModals {...viewProps} />);
       
-      // Should show formatted date
-      expect(screen.getByText(/2024/)).toBeInTheDocument();
+      // Should show formatted date - use more specific query to avoid multiple matches
+      expect(screen.getByText(/Last Login:/).parentElement).toHaveTextContent('2024');
     });
 
     it('handles never logged in user', () => {
