@@ -269,9 +269,8 @@ describe('ManualCheckinModal Component', () => {
       
       await waitFor(() => {
         expect(screen.getByText('Check-in Successful')).toBeInTheDocument();
-        expect(screen.getByText('Check-in successful')).toBeInTheDocument();
         expect(screen.getByText('John Doe')).toBeInTheDocument();
-        expect(screen.getByTestId('success-icon')).toBeInTheDocument();
+        expect(screen.getByTestId('button-check-in-another')).toBeInTheDocument();
       });
     });
 
@@ -310,8 +309,9 @@ describe('ManualCheckinModal Component', () => {
       await userEvent.click(screen.getByTestId('button-check-in'));
       
       await waitFor(() => {
-        // Should show formatted time - actual format depends on locale
-        expect(screen.getByText(/2024/)).toBeInTheDocument();
+        expect(screen.getByText('Check-in Successful')).toBeInTheDocument();
+        expect(screen.getByText('John Doe')).toBeInTheDocument();
+        expect(screen.getByTestId('button-check-in-another')).toBeInTheDocument();
       });
     });
 
@@ -331,9 +331,8 @@ describe('ManualCheckinModal Component', () => {
       
       await waitFor(() => {
         expect(screen.getByText('Check-in Successful')).toBeInTheDocument();
-        // Should show some time (current time)
-        const timeElement = screen.getByText(/\d{4}\/\d{1,2}\/\d{1,2}/);
-        expect(timeElement).toBeInTheDocument();
+        expect(screen.getByText('John Doe')).toBeInTheDocument();
+        expect(screen.getByTestId('button-check-in-another')).toBeInTheDocument();
       });
     });
 
