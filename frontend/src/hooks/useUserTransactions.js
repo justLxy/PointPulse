@@ -22,6 +22,8 @@ export const useUserTransactions = (params = {}) => {
       toast.success('Redemption request created successfully');
       queryClient.invalidateQueries({ queryKey: ['userTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+      queryClient.invalidateQueries({ queryKey: ['tierStatus'] });
+      queryClient.invalidateQueries({ queryKey: ['currentCycleEarnedPoints'] });
       queryClient.invalidateQueries({ queryKey: ['pendingRedemptions'] });
       queryClient.invalidateQueries({ queryKey: ['pendingRedemptionsTotal'] });
       queryClient.refetchQueries({ queryKey: ['pendingRedemptionsTotal'] });
@@ -37,6 +39,8 @@ export const useUserTransactions = (params = {}) => {
       toast.success('Points transferred successfully');
       queryClient.invalidateQueries({ queryKey: ['userTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+      queryClient.invalidateQueries({ queryKey: ['tierStatus'] });
+      queryClient.invalidateQueries({ queryKey: ['currentCycleEarnedPoints'] });
     },
     onError: (error) => {
       toast.error(error.message || 'Failed to transfer points');

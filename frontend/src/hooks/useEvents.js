@@ -30,8 +30,6 @@ export const useEvents = (params = {}) => {
     queryKey: ['events', apiParams],
     queryFn: () => EventService.getEvents(apiParams),
     staleTime: 1 * 60 * 1000, // 1 minute
-    refetchInterval: 10000, // Refetch every 10 seconds
-    refetchIntervalInBackground: false, // Don't refetch in background
     refetchOnWindowFocus: true, // Refetch on window focus (default)
   });
   
@@ -167,6 +165,11 @@ export const useEvents = (params = {}) => {
     onSuccess: (_, variables) => {
       toast.success('Points awarded successfully');
       queryClient.invalidateQueries({ queryKey: ['event', variables.eventId] });
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+      queryClient.invalidateQueries({ queryKey: ['tierStatus'] });
+      queryClient.invalidateQueries({ queryKey: ['allTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['userTransactions'] });
     },
     onError: (error) => {
       toast.error(error.message || 'Failed to award points');

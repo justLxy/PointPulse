@@ -34,6 +34,9 @@ export const useTransactions = (params = {}) => {
     onSuccess: () => {
       toast.success('Purchase transaction created successfully');
       queryClient.invalidateQueries({ queryKey: ['allTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+      queryClient.invalidateQueries({ queryKey: ['tierStatus'] });
+      queryClient.invalidateQueries({ queryKey: ['currentCycleEarnedPoints'] });
     },
     onError: (error) => {
       toast.error(error.message || 'Failed to create purchase transaction');
@@ -46,6 +49,9 @@ export const useTransactions = (params = {}) => {
     onSuccess: () => {
       toast.success('Adjustment transaction created successfully');
       queryClient.invalidateQueries({ queryKey: ['allTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+      queryClient.invalidateQueries({ queryKey: ['tierStatus'] });
+      queryClient.invalidateQueries({ queryKey: ['currentCycleEarnedPoints'] });
     },
     onError: (error) => {
       toast.error(error.message || 'Failed to create adjustment transaction');
@@ -61,6 +67,8 @@ export const useTransactions = (params = {}) => {
       queryClient.invalidateQueries({ queryKey: ['allTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['userTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+      queryClient.invalidateQueries({ queryKey: ['tierStatus'] });
+      queryClient.invalidateQueries({ queryKey: ['currentCycleEarnedPoints'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },
@@ -80,6 +88,8 @@ export const useTransactions = (params = {}) => {
       queryClient.invalidateQueries({ queryKey: ['allTransactions'] }); // For managers
       queryClient.invalidateQueries({ queryKey: ['userTransactions'] }); // For user's own view
       queryClient.invalidateQueries({ queryKey: ['userProfile'] }); // To update points balance
+      queryClient.invalidateQueries({ queryKey: ['tierStatus'] }); // To update tier status
+      queryClient.invalidateQueries({ queryKey: ['currentCycleEarnedPoints'] }); // To update earned points
       queryClient.invalidateQueries({ queryKey: ['dashboard'] }); // To update dashboard stats
       
       // Invalidate the pending redemptions query to refresh the list

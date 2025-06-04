@@ -9,7 +9,7 @@
     "@testing-library/dom": "^10.4.0",
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.8.4",
-    "framer-motion": "^12.6.2",
+    "framer-motion": "^12.16.0",
     "html5-qrcode": "^2.3.8",
     "qrcode.react": "^4.2.0",
     "react": "^19.1.0",

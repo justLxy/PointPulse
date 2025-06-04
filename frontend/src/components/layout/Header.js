@@ -12,6 +12,7 @@ import {
   FaTimes,
   FaChevronDown,
   FaExchangeAlt,
+  FaHistory,
 } from 'react-icons/fa';
 
 
