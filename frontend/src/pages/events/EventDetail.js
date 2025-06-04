@@ -972,8 +972,15 @@ const EventDetail = () => {
       return;
     }
     
+    // Find the selected user's utorid from the guests list
+    const selectedGuest = event.guests?.find(g => g.id === selectedUserId);
+    if (!selectedGuest) {
+      toast.error("Selected user not found");
+      return;
+    }
+    
     awardPoints(
-      { eventId, userId: selectedUserId, points },
+      { eventId, utorid: selectedGuest.utorid, points },
       {
         onSuccess: () => {
           setAwardPointsModalOpen(false);
@@ -1409,7 +1416,11 @@ const EventDetail = () => {
                       </Button>
                       <Button 
                         size="small" 
-                        onClick={() => setAwardPointsModalOpen(true)}
+                        onClick={() => {
+                          setSelectedUserId(null);
+                          setSelectedUtorid(null);
+                          setAwardPointsModalOpen(true);
+                        }}
                       >
                         <FaTrophy /> Award Points
                       </Button>
@@ -1881,9 +1892,54 @@ const EventDetail = () => {
             )}
             
             {!selectedUserId && (
-              <p>
-                This will award points to all {event.guests && Array.isArray(event.guests) ? event.guests.length : 0} guests who have RSVP'd to this event.
-              </p>
+              <>
+                <p>
+                  This will award points to all {event.guests && Array.isArray(event.guests) ? event.guests.length : 0} guests who have RSVP'd to this event.
+                </p>
+                
+                {pointsAmount && event.guests && Array.isArray(event.guests) && event.guests.length > 0 && (
+                  <div style={{
+                    marginTop: theme.spacing.md,
+                    padding: theme.spacing.md,
+                    backgroundColor: theme.colors.background.light,
+                    borderRadius: theme.radius.md,
+                    border: `1px solid ${theme.colors.primary.light}`
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: theme.spacing.sm
+                    }}>
+                      <span style={{ 
+                        fontWeight: theme.typography.fontWeights.medium,
+                        color: theme.colors.text.primary
+                      }}>
+                        Points per guest:
+                      </span>
+                      <span style={{
+                        fontSize: theme.typography.fontSize.lg,
+                        fontWeight: theme.typography.fontWeights.bold,
+                        color: theme.colors.primary.main
+                      }}>
+                        {pointsAmount} pts each
+                      </span>
+                    </div>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      fontSize: theme.typography.fontSize.sm,
+                      color: theme.colors.text.secondary
+                    }}>
+                      <span>Total points needed:</span>
+                      <span style={{ fontWeight: theme.typography.fontWeights.medium }}>
+                        {pointsAmount} × {event.guests.length} = {Number(pointsAmount) * event.guests.length} pts
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </ModalForm>
           
@@ -1906,6 +1962,17 @@ const EventDetail = () => {
                 if (isNaN(pointsNum) || pointsNum <= 0) {
                   toast.error("Points must be a positive number");
                   return;
+                }
+                
+                // If awarding to all guests, check if we have enough total points
+                if (!selectedUserId && event.guests && Array.isArray(event.guests)) {
+                  const totalPointsNeeded = pointsNum * event.guests.length;
+                  const availablePoints = event.pointsRemain !== undefined ? event.pointsRemain : (event.points || 0);
+                  
+                  if (totalPointsNeeded > availablePoints) {
+                    toast.error(`Not enough points available. Need ${totalPointsNeeded} points but only ${availablePoints} available.`);
+                    return;
+                  }
                 }
                 
                 if (selectedUserId) {

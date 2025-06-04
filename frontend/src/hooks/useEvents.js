@@ -163,7 +163,7 @@ export const useEvents = (params = {}) => {
   });
   
   const awardPointsMutation = useMutation({
-    mutationFn: ({ eventId, userId, points }) => EventService.awardPoints(eventId, userId, points),
+    mutationFn: ({ eventId, utorid, points }) => EventService.awardPoints(eventId, utorid, points),
     onSuccess: (_, variables) => {
       toast.success('Points awarded successfully');
       queryClient.invalidateQueries({ queryKey: ['event', variables.eventId] });

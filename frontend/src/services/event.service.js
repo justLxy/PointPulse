@@ -482,7 +482,7 @@ const EventService = {
   },
 
   // Award points to attendees (Manager+ or Organizer)
-  awardPoints: async (eventId, userId = null, points) => {
+  awardPoints: async (eventId, utorid = null, points) => {
     try {
       // Ensure points is an integer
       const pointsValue = Math.floor(Number(points));
@@ -492,9 +492,9 @@ const EventService = {
         throw new Error('Points amount must be a positive number');
       }
       
-      // Explicitly use integer type
-      const data = userId ? 
-        { type: 'event', userId, amount: pointsValue } : 
+      // Explicitly use integer type and utorid (not userId)
+      const data = utorid ? 
+        { type: 'event', utorid, amount: pointsValue } : 
         { type: 'event', amount: pointsValue };
       
       console.log('Sending award points request:', data);
