@@ -1165,6 +1165,7 @@ const Dashboard = () => {
                 <h3>{TIER_CONFIG[tierStatus.activeTier].name} Member</h3>
               </TierBadgeCompact>
               <ExpiryInfo style={{ fontSize: '11px', textAlign: 'right', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span>Member benefits active until {formatTierExpiryDate(tierStatus.expiryDate)}</span>
                 <FaInfoCircle 
                   style={{ cursor: 'pointer', opacity: 0.8 }} 
                   onClick={(e) => {
@@ -1172,7 +1173,6 @@ const Dashboard = () => {
                     setShowTierExplanation(true);
                   }}
                 />
-                <span>Member benefits active until {formatTierExpiryDate(tierStatus.expiryDate)}</span>
                 {tierStatus.tierSource === 'previous' && (
                   <span style={{ 
                     fontSize: '10px', 
