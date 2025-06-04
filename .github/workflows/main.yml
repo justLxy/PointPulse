@@ -45,7 +45,12 @@ jobs:
       working-directory: './${{ matrix.project }}'
       run: |
         if [ -f package-lock.json ]; then
-          npm ci
+          # Try npm ci first, fallback to npm install if there are dependency issues
+          npm ci || {
+            echo "npm ci failed due to dependency conflicts, regenerating lock file..."
+            rm -rf node_modules package-lock.json
+            npm install
+          }
         else
           npm install
         fi
