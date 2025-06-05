@@ -14,6 +14,7 @@ class TierService {
   async calculateCycleEarnedPoints(userId, cycleYear) {
     const cycleStart = getCycleStartDate(cycleYear, DEFAULT_CYCLE_START);
     const cycleEnd = getCycleEndDate(cycleYear, DEFAULT_CYCLE_START);
+    const currentDate = getCurrentEffectiveDate(); // 使用当前有效日期（可能是模拟的）
 
     try {
       // Fetch all transactions for the user
@@ -34,10 +35,12 @@ class TierService {
 
       // Filter transactions within the cycle year and only count earned points
       // Exclude transfer receipts (positive transfer amounts) to avoid double counting
+      // IMPORTANT: Only include transactions that have already occurred (not future transactions)
       const earnedPoints = allTransactions
         .filter(transaction => {
           const transactionDate = new Date(transaction.createdAt);
           return isInCycleYear(transactionDate, cycleYear, DEFAULT_CYCLE_START) && 
+                 transactionDate <= currentDate && // 只包含已经发生的交易
                  this.isEarnedTransaction(transaction);
         })
         .reduce((sum, transaction) => sum + transaction.amount, 0);
@@ -79,7 +82,7 @@ class TierService {
     // Get points earned in current cycle
     const currentCycleEarnedPoints = await this.calculateCycleEarnedPoints(userId, currentCycleYear);
     const currentCycleTier = calculateTierFromPoints(currentCycleEarnedPoints);
-    
+
     // Get points earned in previous cycle
     const previousCycleYear = currentCycleYear - 1;
     const previousCycleEarnedPoints = await this.calculateCycleEarnedPoints(userId, previousCycleYear);
@@ -99,7 +102,7 @@ class TierService {
     
     // Previous cycle tier expiry date (valid until end of current cycle)
     const previousCycleTierExpiryDate = getCycleEndDate(currentCycleYear, DEFAULT_CYCLE_START);
-    
+
     // Check if we should use previous cycle tier (if it's still valid and not Bronze)
     if (currentDate <= previousCycleTierExpiryDate && 
         previousCycleTier !== 'BRONZE' && 
@@ -115,7 +118,7 @@ class TierService {
       // Current cycle tier extends to end of next cycle
       expiryDate = getCycleEndDate(currentCycleYear + 1, DEFAULT_CYCLE_START);
     }
-    
+
     return {
       activeTier,
       tierSource,

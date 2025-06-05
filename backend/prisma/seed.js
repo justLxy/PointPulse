@@ -813,6 +813,69 @@ async function createTransactions(users, events, promotions) {
         }
     }
 
+    // Create future transactions specifically for lyuxuany for testing purposes
+    console.log('Creating future transactions for lyuxuany (testing purposes)...');
+    const lyuxuanyUser = await prisma.user.findUnique({
+        where: { utorid: 'lyuxuany' }
+    });
+    
+    if (lyuxuanyUser) {
+        const cashier = users.cashiers[0]; // Use first cashier for future transactions
+        
+        // Create transactions for different future dates to test tier upgrade/downgrade scenarios
+        const futureTransactions = [
+            // === 2025 cycle (Sept 2024 - Aug 2025): ULTRA HIGH SPENDING = DIAMOND TIER ===
+            { date: new Date('2024-10-15'), spent: 1000, points: 4000, remark: 'Big purchase - Diamond tier earning' },
+            { date: new Date('2024-12-20'), spent: 800, points: 3200, remark: 'Holiday shopping - Diamond tier earning' },
+            { date: new Date('2025-02-14'), spent: 1200, points: 4800, remark: 'Valentine splurge - Diamond tier earning' },
+            { date: new Date('2025-05-10'), spent: 900, points: 3600, remark: 'Spring purchase - Diamond tier earning' },
+            { date: new Date('2025-07-20'), spent: 1500, points: 6000, remark: 'Summer vacation - Diamond tier earning' },
+            // Total 2025 cycle: 21,600 points = DIAMOND tier (20000+)
+            
+            // === 2026 cycle (Sept 2025 - Aug 2026): NO SPENDING = 0 POINTS (but carried over from Diamond) ===
+            // No transactions in this cycle - testing pure Diamond carryover with zero earned points
+            // Total 2026 cycle: 0 points = BRONZE tier (but should carry over DIAMOND from 2025)
+            
+            // === 2027 cycle (Sept 2026 - Aug 2027): MEDIUM SPENDING = GOLD TIER ===
+            { date: new Date('2026-10-05'), spent: 300, points: 1200, remark: 'Fall purchase - building to Gold' },
+            { date: new Date('2027-01-15'), spent: 400, points: 1600, remark: 'New year purchase - Gold tier earning' },
+            { date: new Date('2027-04-20'), spent: 500, points: 2000, remark: 'Spring purchase - Gold tier earning' },
+            { date: new Date('2027-07-30'), spent: 300, points: 1200, remark: 'Summer purchase - Gold tier earning' },
+            // Total 2027 cycle: 6,000 points = GOLD tier (5000-9999)
+            
+            // === 2028 cycle (Sept 2027 - Aug 2028): VERY LOW SPENDING = BRONZE TIER (real downgrade) ===
+            { date: new Date('2028-01-08'), spent: 50, points: 200, remark: 'New year small purchase - downgrade scenario' },
+            { date: new Date('2028-05-12'), spent: 75, points: 300, remark: 'Small purchase - true Bronze tier' },
+            // Total 2028 cycle: 500 points = BRONZE tier (真正降级到Bronze)
+            
+            // === 2029 cycle (Sept 2028 - Aug 2029): RECOVERY TO PLATINUM ===
+            { date: new Date('2028-11-10'), spent: 600, points: 2400, remark: 'Recovery spending - back to Platinum' },
+            { date: new Date('2029-02-15'), spent: 800, points: 3200, remark: 'Big purchase - Platinum tier' },
+            { date: new Date('2029-05-20'), spent: 700, points: 2800, remark: 'Spring splurge - Platinum tier' },
+            { date: new Date('2029-08-10'), spent: 400, points: 1600, remark: 'Summer purchase - Platinum tier' },
+            // Total 2029 cycle: 10,000 points = PLATINUM tier (10000-19999)
+        ];
+        
+        for (const [index, txData] of futureTransactions.entries()) {
+            await prisma.transaction.create({
+                data: {
+                    type: 'purchase',
+                    amount: txData.points,
+                    spent: txData.spent,
+                    remark: txData.remark || `Future test transaction #${index + 1} for tier testing`,
+                    suspicious: false,
+                    userId: lyuxuanyUser.id,
+                    createdBy: cashier.id,
+                    createdAt: txData.date,
+                }
+            });
+            
+            transactionCount.purchase++;
+        }
+        
+        console.log(`Created ${futureTransactions.length} future transactions for lyuxuany`);
+    }
+
     console.log('Created transactions:');
     console.log(`- Purchase: ${transactionCount.purchase}`);
     console.log(`- Adjustment: ${transactionCount.adjustment}`);

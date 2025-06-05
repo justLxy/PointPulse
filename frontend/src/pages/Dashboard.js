@@ -1160,10 +1160,10 @@ const Dashboard = () => {
           </PointsMainContent>
           {tierStatus && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
-              <TierBadgeCompact onClick={() => setShowBenefits(true)}>
-                <TierIconCompact>{getTierIcon(tierStatus.activeTier)}</TierIconCompact>
-                <h3>{TIER_CONFIG[tierStatus.activeTier].name} Member</h3>
-              </TierBadgeCompact>
+            <TierBadgeCompact onClick={() => setShowBenefits(true)}>
+              <TierIconCompact>{getTierIcon(tierStatus.activeTier)}</TierIconCompact>
+              <h3>{TIER_CONFIG[tierStatus.activeTier].name} Member</h3>
+            </TierBadgeCompact>
               <ExpiryInfo style={{ fontSize: '11px', textAlign: 'right', display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <span>Member benefits active until {formatTierExpiryDate(tierStatus.expiryDate)}</span>
                 <FaInfoCircle 
@@ -1192,62 +1192,109 @@ const Dashboard = () => {
         {tierStatus && (
           <TierSection>
             {(() => {
-              const nextTier = getNextTierInfo(tierStatus.activeTier);
-              const currentEarnedPoints = tierStatus.currentCycleEarnedPoints || 0; // 使用当前周期获得的积分
-              const pointsToNext = getPointsToNextTier(currentEarnedPoints, tierStatus.activeTier);
-              const tierConfig = TIER_CONFIG[tierStatus.activeTier];
-              const progress = nextTier 
-                ? ((currentEarnedPoints - tierConfig.threshold) / (nextTier.threshold - tierConfig.threshold)) * 100
-                : 100;
-
-              return nextTier ? (
-                <ProgressSection>
-                  <ProgressHeader>
-                    <span>Progress to {nextTier.name}</span>
-                    <span>{pointsToNext} points needed</span>
-                  </ProgressHeader>
-                  <ProgressBar>
-                    <ProgressFill width={`${Math.min(progress, 100)}%`} />
-                  </ProgressBar>
-                  <PointsInfo>
-                    <span>{currentEarnedPoints} points earned this cycle</span>
-                    <span>{nextTier.threshold} points required</span>
-                  </PointsInfo>
-                </ProgressSection>
-              ) : null;
+              const currentEarnedPoints = tierStatus.currentCycleEarnedPoints || 0;
+              
+              // Determine which tier the current cycle points would achieve
+              const currentCycleTier = Object.keys(TIER_CONFIG).reverse().find(tier => 
+                currentEarnedPoints >= TIER_CONFIG[tier].threshold
+              ) || 'BRONZE';
+              
+              const nextTier = getNextTierInfo(currentCycleTier);
+              const pointsToNext = getPointsToNextTier(currentEarnedPoints, currentCycleTier);
+              const currentTierConfig = TIER_CONFIG[currentCycleTier];
+              
+              if (nextTier) {
+                // Calculate progress based on current cycle tier, not active tier
+                const currentTierThreshold = currentTierConfig.threshold;
+                const nextTierThreshold = nextTier.threshold;
+                
+                // Calculate progress for current cycle points
+                let progress = 0;
+                if (currentEarnedPoints >= currentTierThreshold) {
+                  progress = ((currentEarnedPoints - currentTierThreshold) / (nextTierThreshold - currentTierThreshold)) * 100;
+                }
+                
+                return (
+                  <ProgressSection>
+                    <ProgressHeader>
+                      <span>Progress to {nextTier.name}</span>
+                      <span>{pointsToNext} points needed</span>
+                    </ProgressHeader>
+                    <ProgressBar>
+                      <ProgressFill width={`${Math.max(0, Math.min(progress, 100))}%`} />
+                    </ProgressBar>
+                    <PointsInfo>
+                      <span>{currentEarnedPoints} points earned this cycle</span>
+                      <span>{nextTier.threshold} points required</span>
+                    </PointsInfo>
+                  </ProgressSection>
+                );
+              } else {
+                // Diamond tier - show max tier achievement
+                return (
+                  <ProgressSection>
+                    <ProgressHeader>
+                      <span>🎉 Maximum Tier Achieved!</span>
+                    </ProgressHeader>
+                    <ProgressBar>
+                      <ProgressFill width="100%" style={{
+                        background: 'linear-gradient(90deg, rgba(185, 242, 255, 0.9), rgba(135, 206, 235, 0.8))',
+                        boxShadow: '0 0 5px rgba(185, 242, 255, 0.3)'
+                      }} />
+                    </ProgressBar>
+                    <PointsInfo>
+                      <span>{currentEarnedPoints} points earned this cycle</span>
+                      <span>Highest tier unlocked</span>
+                    </PointsInfo>
+                  </ProgressSection>
+                );
+              }
             })()}
             
             {/* Integrated Tier Cards */}
             <TierCardsContainer>
-              <TierCard isActive={tierStatus.activeTier === 'BRONZE'}>
-                <TierCardIcon>{getTierIcon('BRONZE')}</TierCardIcon>
-                <TierCardName>Bronze</TierCardName>
-                <TierCardPoints>0+ pts</TierCardPoints>
-              </TierCard>
-              
-              <TierCard isActive={tierStatus.activeTier === 'SILVER'}>
-                <TierCardIcon>{getTierIcon('SILVER')}</TierCardIcon>
-                <TierCardName>Silver</TierCardName>
-                <TierCardPoints>1000+ pts</TierCardPoints>
-              </TierCard>
-              
-              <TierCard isActive={tierStatus.activeTier === 'GOLD'}>
-                <TierCardIcon>{getTierIcon('GOLD')}</TierCardIcon>
-                <TierCardName>Gold</TierCardName>
-                <TierCardPoints>5000+ pts</TierCardPoints>
-              </TierCard>
-              
-              <TierCard isActive={tierStatus.activeTier === 'PLATINUM'}>
-                <TierCardIcon>{getTierIcon('PLATINUM')}</TierCardIcon>
-                <TierCardName>Platinum</TierCardName>
-                <TierCardPoints>10000+ pts</TierCardPoints>
-              </TierCard>
-              
-              <TierCard isActive={tierStatus.activeTier === 'DIAMOND'}>
-                <TierCardIcon>{getTierIcon('DIAMOND')}</TierCardIcon>
-                <TierCardName>Diamond</TierCardName>
-                <TierCardPoints>20000+ pts</TierCardPoints>
-              </TierCard>
+              {(() => {
+                const currentEarnedPoints = tierStatus.currentCycleEarnedPoints || 0;
+                
+                // Determine which tier the current cycle points would achieve
+                const currentCycleTier = Object.keys(TIER_CONFIG).reverse().find(tier => 
+                  currentEarnedPoints >= TIER_CONFIG[tier].threshold
+                ) || 'BRONZE';
+                
+                return (
+                  <>
+                    <TierCard isActive={currentCycleTier === 'BRONZE'}>
+                      <TierCardIcon>{getTierIcon('BRONZE')}</TierCardIcon>
+                      <TierCardName>Bronze</TierCardName>
+                      <TierCardPoints>0+ pts</TierCardPoints>
+                    </TierCard>
+                    
+                    <TierCard isActive={currentCycleTier === 'SILVER'}>
+                      <TierCardIcon>{getTierIcon('SILVER')}</TierCardIcon>
+                      <TierCardName>Silver</TierCardName>
+                      <TierCardPoints>1000+ pts</TierCardPoints>
+                    </TierCard>
+                    
+                    <TierCard isActive={currentCycleTier === 'GOLD'}>
+                      <TierCardIcon>{getTierIcon('GOLD')}</TierCardIcon>
+                      <TierCardName>Gold</TierCardName>
+                      <TierCardPoints>5000+ pts</TierCardPoints>
+                    </TierCard>
+                    
+                    <TierCard isActive={currentCycleTier === 'PLATINUM'}>
+                      <TierCardIcon>{getTierIcon('PLATINUM')}</TierCardIcon>
+                      <TierCardName>Platinum</TierCardName>
+                      <TierCardPoints>10000+ pts</TierCardPoints>
+                    </TierCard>
+                    
+                    <TierCard isActive={currentCycleTier === 'DIAMOND'}>
+                      <TierCardIcon>{getTierIcon('DIAMOND')}</TierCardIcon>
+                      <TierCardName>Diamond</TierCardName>
+                      <TierCardPoints>20000+ pts</TierCardPoints>
+                    </TierCard>
+                  </>
+                );
+              })()}
             </TierCardsContainer>
           </TierSection>
         )}
@@ -1736,49 +1783,202 @@ const Dashboard = () => {
                 placeholder="Select simulation date"
               />
               
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                <SimulatorButton 
-                  onClick={() => {
-                    const aug31_2025 = new Date('2025-08-31T12:00:00');
-                    setSimulatedDateTime(aug31_2025);
-                  }}
-                >
-                  Aug 31, 2025
-                </SimulatorButton>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {/* 2025-2026 Cycles */}
+                <div style={{ 
+                  borderBottom: `1px solid ${theme.colors.border.light}`, 
+                  paddingBottom: '6px', 
+                  marginBottom: '2px' 
+                }}>
+                  <div style={{ 
+                    fontSize: '10px', 
+                    color: theme.colors.text.secondary, 
+                    marginBottom: '4px',
+                    fontWeight: theme.typography.fontWeights.medium
+                  }}>
+                    2025-2026 Cycles
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px' }}>
+                    <SimulatorButton 
+                      onClick={() => {
+                        const aug31_2025 = new Date('2025-08-31T12:00:00');
+                        setSimulatedDateTime(aug31_2025);
+                      }}
+                    >
+                      Aug 31, 2025
+                    </SimulatorButton>
+                    
+                    <SimulatorButton 
+                      onClick={() => {
+                        const sept1_2025 = new Date('2025-09-01T12:00:00');
+                        setSimulatedDateTime(sept1_2025);
+                      }}
+                    >
+                      Sept 1, 2025
+                    </SimulatorButton>
+                    
+                    <SimulatorButton 
+                      onClick={() => {
+                        const aug31_2026 = new Date('2026-08-31T12:00:00');
+                        setSimulatedDateTime(aug31_2026);
+                      }}
+                    >
+                      Aug 31, 2026
+                    </SimulatorButton>
+                  </div>
+                </div>
                 
-                <SimulatorButton 
-                  onClick={() => {
-                    const sept1_2025 = new Date('2025-09-01T12:00:00');
-                    setSimulatedDateTime(sept1_2025);
-                  }}
-                >
-                  Sept 1, 2025
-                </SimulatorButton>
+                {/* 2027 Cycle */}
+                <div style={{ 
+                  borderBottom: `1px solid ${theme.colors.border.light}`, 
+                  paddingBottom: '6px', 
+                  marginBottom: '2px' 
+                }}>
+                  <div style={{ 
+                    fontSize: '10px', 
+                    color: theme.colors.text.secondary, 
+                    marginBottom: '4px',
+                    fontWeight: theme.typography.fontWeights.medium
+                  }}>
+                    2027 Cycle
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px' }}>
+                    <SimulatorButton 
+                      onClick={() => {
+                        const sept1_2026 = new Date('2026-09-01T12:00:00');
+                        setSimulatedDateTime(sept1_2026);
+                      }}
+                    >
+                      Sept 1, 2026
+                    </SimulatorButton>
+                    
+                    <SimulatorButton 
+                      onClick={() => {
+                        const oct5_2026 = new Date('2026-10-05T12:00:00');
+                        setSimulatedDateTime(oct5_2026);
+                      }}
+                    >
+                      Oct 5, 2026
+                    </SimulatorButton>
+                    
+                    <SimulatorButton 
+                      onClick={() => {
+                        const jan15_2027 = new Date('2027-01-15T12:00:00');
+                        setSimulatedDateTime(jan15_2027);
+                      }}
+                    >
+                      Jan 15, 2027
+                    </SimulatorButton>
+                    
+                    <SimulatorButton 
+                      onClick={() => {
+                        const aug31_2027 = new Date('2027-08-31T12:00:00');
+                        setSimulatedDateTime(aug31_2027);
+                      }}
+                    >
+                      Aug 31, 2027
+                    </SimulatorButton>
+                  </div>
+                </div>
                 
-                <SimulatorButton 
-                  onClick={() => {
-                    const aug31_2026 = new Date('2026-08-31T12:00:00');
-                    setSimulatedDateTime(aug31_2026);
-                  }}
-                >
-                  Aug 31, 2026
-                </SimulatorButton>
+                {/* 2028 Cycle */}
+                <div style={{ 
+                  borderBottom: `1px solid ${theme.colors.border.light}`, 
+                  paddingBottom: '6px', 
+                  marginBottom: '2px' 
+                }}>
+                  <div style={{ 
+                    fontSize: '10px', 
+                    color: theme.colors.text.secondary, 
+                    marginBottom: '4px',
+                    fontWeight: theme.typography.fontWeights.medium
+                  }}>
+                    2028 Cycle
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px' }}>
+                    <SimulatorButton 
+                      onClick={() => {
+                        const sept1_2027 = new Date('2027-09-01T12:00:00');
+                        setSimulatedDateTime(sept1_2027);
+                      }}
+                    >
+                      Sept 1, 2027
+                    </SimulatorButton>
+                    
+                    <SimulatorButton 
+                      onClick={() => {
+                        const jan8_2028 = new Date('2028-01-08T12:00:00');
+                        setSimulatedDateTime(jan8_2028);
+                      }}
+                    >
+                      Jan 8, 2028
+                    </SimulatorButton>
+                    
+                    <SimulatorButton 
+                      onClick={() => {
+                        const aug31_2028 = new Date('2028-08-31T12:00:00');
+                        setSimulatedDateTime(aug31_2028);
+                      }}
+                    >
+                      Aug 31, 2028
+                    </SimulatorButton>
+                  </div>
+                </div>
                 
-                <SimulatorButton 
-                  onClick={() => {
-                    const sept1_2026 = new Date('2026-09-01T12:00:00');
-                    setSimulatedDateTime(sept1_2026);
-                  }}
-                >
-                  Sept 1, 2026
-                </SimulatorButton>
+                {/* 2029 Cycle */}
+                <div style={{ 
+                  borderBottom: `1px solid ${theme.colors.border.light}`, 
+                  paddingBottom: '6px', 
+                  marginBottom: '2px' 
+                }}>
+                  <div style={{ 
+                    fontSize: '10px', 
+                    color: theme.colors.text.secondary, 
+                    marginBottom: '4px',
+                    fontWeight: theme.typography.fontWeights.medium
+                  }}>
+                    2029 Cycle
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px' }}>
+                    <SimulatorButton 
+                      onClick={() => {
+                        const sept1_2028 = new Date('2028-09-01T12:00:00');
+                        setSimulatedDateTime(sept1_2028);
+                      }}
+                    >
+                      Sept 1, 2028
+                    </SimulatorButton>
+                    
+                    <SimulatorButton 
+                      onClick={() => {
+                        const jan15_2029 = new Date('2029-01-15T12:00:00');
+                        setSimulatedDateTime(jan15_2029);
+                      }}
+                    >
+                      Jan 15, 2029
+                    </SimulatorButton>
+                    
+                    <SimulatorButton 
+                      onClick={() => {
+                        const aug31_2029 = new Date('2029-08-31T12:00:00');
+                        setSimulatedDateTime(aug31_2029);
+                      }}
+                    >
+                      Aug 31, 2029
+                    </SimulatorButton>
+                  </div>
+                </div>
                 
-                <SimulatorButton 
-                  variant="danger"
-                  onClick={() => setSimulatedDateTime(null)}
-                >
-                  Reset
-                </SimulatorButton>
+                {/* Reset button */}
+                <div style={{ textAlign: 'center', paddingTop: '4px' }}>
+                  <SimulatorButton 
+                    variant="danger"
+                    onClick={() => setSimulatedDateTime(null)}
+                    style={{ minWidth: '120px' }}
+                  >
+                    Reset to Current
+                  </SimulatorButton>
+                </div>
               </div>
               
               <div style={{ 
