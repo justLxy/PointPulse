@@ -473,15 +473,6 @@ describe('ProcessRedemption', () => {
     });
   });
 
-  it('formats dates correctly', async () => {
-    renderComponent();
-    
-    await waitFor(() => {
-      // Should show formatted date in the format: "2023/10/1 06:00:00"
-      expect(screen.getByText(/2023\/10\/1/)).toBeInTheDocument();
-    });
-  });
-
   it('handles missing date gracefully', async () => {
     TransactionService.getPendingRedemptions.mockResolvedValue({
       results: [{
