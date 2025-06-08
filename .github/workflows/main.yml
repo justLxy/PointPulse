@@ -87,10 +87,15 @@ jobs:
         cat test-output.log
         echo "=== End of test output ==="
         
-        # Parse test suites - Jest format: "Test Suites: X passed, Y total"
+        # Parse test suites - Jest format: "Test Suites: X passed, Y total" or "Test Suites: X failed, Y passed, Z total"
+        SUITES_FAILED=0
         if grep -q "Test Suites:" test-output.log; then
           SUITES_LINE=$(grep "Test Suites:" test-output.log | tail -1)
           echo "Suites line: $SUITES_LINE"
+          
+          # Extract failed suites first (format: "X failed")
+          SUITES_FAILED=$(echo "$SUITES_LINE" | grep -o '[0-9]\+ failed' | grep -o '[0-9]\+' | head -1)
+          SUITES_FAILED=${SUITES_FAILED:-0}
           
           # Extract passed suites (format: "X passed")
           SUITES_PASSED=$(echo "$SUITES_LINE" | grep -o '[0-9]\+ passed' | grep -o '[0-9]\+' | head -1)
@@ -99,10 +104,15 @@ jobs:
           SUITES_TOTAL=$(echo "$SUITES_LINE" | grep -o '[0-9]\+ total' | grep -o '[0-9]\+' | head -1)
         fi
         
-        # Parse individual tests - Jest format: "Tests: X passed, Y total"
+        # Parse individual tests - Jest format: "Tests: X passed, Y total" or "Tests: X failed, Y passed, Z total"
+        TESTS_FAILED=0
         if grep -q "Tests:" test-output.log; then
           TESTS_LINE=$(grep "Tests:" test-output.log | tail -1)
           echo "Tests line: $TESTS_LINE"
+          
+          # Extract failed tests first (format: "X failed")
+          TESTS_FAILED=$(echo "$TESTS_LINE" | grep -o '[0-9]\+ failed' | grep -o '[0-9]\+' | head -1)
+          TESTS_FAILED=${TESTS_FAILED:-0}
           
           # Extract passed tests (format: "X passed")
           TESTS_PASSED=$(echo "$TESTS_LINE" | grep -o '[0-9]\+ passed' | grep -o '[0-9]\+' | head -1)
@@ -127,8 +137,8 @@ jobs:
         TESTS_TOTAL=${TESTS_TOTAL:-"0"}
         
         echo "Parsed results:"
-        echo "  Suites: $SUITES_PASSED/$SUITES_TOTAL"
-        echo "  Tests: $TESTS_PASSED/$TESTS_TOTAL"
+        echo "  Suites: $SUITES_PASSED/$SUITES_TOTAL (${SUITES_FAILED} failed)"
+        echo "  Tests: $TESTS_PASSED/$TESTS_TOTAL (${TESTS_FAILED} failed)"
         echo "  Coverage: $COVERAGE"
         echo "  Exit code: $TEST_EXIT_CODE"
         
@@ -141,15 +151,26 @@ jobs:
           FAILURE_DETECTED=true
         fi
         
-        # Secondary checks only if we have valid parsing results
-        if [ -n "$TESTS_TOTAL" ] && [ "$TESTS_TOTAL" -gt "0" ] && [ -n "$TESTS_PASSED" ]; then
+        # Direct failure count checks (most reliable for Jest)
+        if [ "$TESTS_FAILED" -gt "0" ]; then
+          echo "❌ Failure detected: $TESTS_FAILED test(s) failed"
+          FAILURE_DETECTED=true
+        fi
+        
+        if [ "$SUITES_FAILED" -gt "0" ]; then
+          echo "❌ Failure detected: $SUITES_FAILED test suite(s) failed"
+          FAILURE_DETECTED=true
+        fi
+        
+        # Fallback checks: if we couldn't parse failure counts, check totals vs passed
+        if [ "$TESTS_FAILED" = "0" ] && [ -n "$TESTS_TOTAL" ] && [ "$TESTS_TOTAL" -gt "0" ] && [ -n "$TESTS_PASSED" ]; then
           if [ "$TESTS_PASSED" -lt "$TESTS_TOTAL" ]; then
             echo "❌ Failure detected: Not all tests passed ($TESTS_PASSED/$TESTS_TOTAL)"
             FAILURE_DETECTED=true
           fi
         fi
         
-        if [ -n "$SUITES_TOTAL" ] && [ "$SUITES_TOTAL" -gt "0" ] && [ -n "$SUITES_PASSED" ]; then
+        if [ "$SUITES_FAILED" = "0" ] && [ -n "$SUITES_TOTAL" ] && [ "$SUITES_TOTAL" -gt "0" ] && [ -n "$SUITES_PASSED" ]; then
           if [ "$SUITES_PASSED" -lt "$SUITES_TOTAL" ]; then
             echo "❌ Failure detected: Not all suites passed ($SUITES_PASSED/$SUITES_TOTAL)"
             FAILURE_DETECTED=true
