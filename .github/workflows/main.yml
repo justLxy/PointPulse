@@ -63,6 +63,11 @@ jobs:
         npm run test:coverage 2>&1 | tee test-output.log
         TEST_EXIT_CODE=$?
         echo "test-exit-code=$TEST_EXIT_CODE" >> $GITHUB_OUTPUT
+        
+        # Log the exit code for debugging
+        echo "Test exit code: $TEST_EXIT_CODE"
+        
+        # Always continue to parsing step, don't exit here
         exit 0
 
     - name: 📊 Parse test results
@@ -75,19 +80,43 @@ jobs:
         TESTS_PASSED="0"
         TESTS_TOTAL="0"
         COVERAGE="Unknown"
+        TEST_EXIT_CODE="${{ steps.run-tests.outputs.test-exit-code }}"
         
-        # Parse test suites
+        echo "=== Parsing test output ==="
+        echo "Original test exit code: $TEST_EXIT_CODE"
+        cat test-output.log
+        echo "=== End of test output ==="
+        
+        # Parse test suites - more robust parsing
         if grep -q "Test Suites:" test-output.log; then
           SUITES_LINE=$(grep "Test Suites:" test-output.log | tail -1)
-          SUITES_PASSED=$(echo "$SUITES_LINE" | awk '{for(i=1;i<=NF;i++) if($i=="passed,") print $(i-1); if($i=="passed") print $(i-1)}' | head -1)
-          SUITES_TOTAL=$(echo "$SUITES_LINE" | awk '{for(i=1;i<=NF;i++) if($i=="total") print $(i-1)}')
+          echo "Suites line: $SUITES_LINE"
+          
+          # Extract passed suites
+          if echo "$SUITES_LINE" | grep -q "passed"; then
+            SUITES_PASSED=$(echo "$SUITES_LINE" | sed -n 's/.*\([0-9]\+\) passed.*/\1/p')
+          fi
+          
+          # Extract total suites
+          if echo "$SUITES_LINE" | grep -q "total"; then
+            SUITES_TOTAL=$(echo "$SUITES_LINE" | sed -n 's/.* \([0-9]\+\) total.*/\1/p')
+          fi
         fi
         
-        # Parse individual tests
+        # Parse individual tests - more robust parsing
         if grep -q "Tests:" test-output.log; then
           TESTS_LINE=$(grep "Tests:" test-output.log | tail -1)
-          TESTS_PASSED=$(echo "$TESTS_LINE" | awk '{for(i=1;i<=NF;i++) if($i=="passed,") print $(i-1); if($i=="passed") print $(i-1)}' | head -1)
-          TESTS_TOTAL=$(echo "$TESTS_LINE" | awk '{for(i=1;i<=NF;i++) if($i=="total") print $(i-1)}')
+          echo "Tests line: $TESTS_LINE"
+          
+          # Extract passed tests
+          if echo "$TESTS_LINE" | grep -q "passed"; then
+            TESTS_PASSED=$(echo "$TESTS_LINE" | sed -n 's/.*\([0-9]\+\) passed.*/\1/p')
+          fi
+          
+          # Extract total tests
+          if echo "$TESTS_LINE" | grep -q "total"; then
+            TESTS_TOTAL=$(echo "$TESTS_LINE" | sed -n 's/.* \([0-9]\+\) total.*/\1/p')
+          fi
         fi
         
         # Parse coverage
@@ -105,14 +134,49 @@ jobs:
         TESTS_PASSED=${TESTS_PASSED:-"0"}
         TESTS_TOTAL=${TESTS_TOTAL:-"0"}
         
-        # Determine status
-        if [ "${{ steps.run-tests.outputs.test-exit-code }}" = "0" ] && [ "$TESTS_TOTAL" -gt "0" ]; then
-          TEST_STATUS="✅ All tests passed"
-          EXIT_CODE=0
-        else
+        echo "Parsed results:"
+        echo "  Suites: $SUITES_PASSED/$SUITES_TOTAL"
+        echo "  Tests: $TESTS_PASSED/$TESTS_TOTAL"
+        echo "  Coverage: $COVERAGE"
+        echo "  Exit code: $TEST_EXIT_CODE"
+        
+        # Determine status - multiple failure conditions
+        FAILURE_DETECTED=false
+        
+        # Check exit code
+        if [ "$TEST_EXIT_CODE" != "0" ]; then
+          echo "❌ Failure detected: Non-zero exit code ($TEST_EXIT_CODE)"
+          FAILURE_DETECTED=true
+        fi
+        
+        # Check if any tests failed (when totals are available)
+        if [ "$TESTS_TOTAL" -gt "0" ] && [ "$TESTS_PASSED" -lt "$TESTS_TOTAL" ]; then
+          echo "❌ Failure detected: Not all tests passed ($TESTS_PASSED/$TESTS_TOTAL)"
+          FAILURE_DETECTED=true
+        fi
+        
+        # Check if any suites failed (when totals are available)
+        if [ "$SUITES_TOTAL" -gt "0" ] && [ "$SUITES_PASSED" -lt "$SUITES_TOTAL" ]; then
+          echo "❌ Failure detected: Not all suites passed ($SUITES_PASSED/$SUITES_TOTAL)"
+          FAILURE_DETECTED=true
+        fi
+        
+        # Check for specific failure keywords
+        if grep -q -E "(FAIL|Failed|Error|ERROR|failed)" test-output.log; then
+          echo "❌ Failure detected: Failure keywords found in output"
+          FAILURE_DETECTED=true
+        fi
+        
+        # Set final status
+        if [ "$FAILURE_DETECTED" = true ]; then
           TEST_STATUS="❌ Some tests failed"
           EXIT_CODE=1
+        else
+          TEST_STATUS="✅ All tests passed"
+          EXIT_CODE=0
         fi
+        
+        echo "Final status: $TEST_STATUS (exit code: $EXIT_CODE)"
         
         # Export results
         echo "suites-passed=$SUITES_PASSED" >> $GITHUB_OUTPUT
@@ -135,6 +199,7 @@ jobs:
         echo "| **Test Suites** | ${{ steps.test-results.outputs.suites-passed }}/${{ steps.test-results.outputs.suites-total }} passed |" >> $GITHUB_STEP_SUMMARY
         echo "| **Individual Tests** | ${{ steps.test-results.outputs.tests-passed }}/${{ steps.test-results.outputs.tests-total }} passed |" >> $GITHUB_STEP_SUMMARY
         echo "| **Coverage** | ${{ steps.test-results.outputs.coverage }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| **Original Exit Code** | ${{ steps.run-tests.outputs.test-exit-code }} |" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
 
     - name: 📊 Upload coverage reports
@@ -162,7 +227,11 @@ jobs:
     - name: ❌ Fail if tests failed
       if: steps.test-results.outputs.exit-code != '0'
       run: |
-        echo "Tests failed! Check the summary above for details."
+        echo "❌ Tests failed for ${{ matrix.project }}!"
+        echo "Status: ${{ steps.test-results.outputs.status }}"
+        echo "Tests: ${{ steps.test-results.outputs.tests-passed }}/${{ steps.test-results.outputs.tests-total }}"
+        echo "Suites: ${{ steps.test-results.outputs.suites-passed }}/${{ steps.test-results.outputs.suites-total }}"
+        echo "Original exit code: ${{ steps.run-tests.outputs.test-exit-code }}"
         exit 1
 
   test-summary:
