@@ -36,6 +36,7 @@ import Events from './pages/events/Events';
 import EventDetail from './pages/events/EventDetail';
 import EventCheckinDisplay from './pages/events/EventCheckinDisplay';
 import EventCheckinAttend from './pages/events/EventCheckinAttend';
+import Products from './pages/products/Products';
 
 // New pages for universal scanning and transfer
 import TransferPage from './pages/TransferPage';
@@ -187,6 +188,16 @@ const App = () => {
                   <ProtectedRoute>
                     <Layout>
                       <EventDetail />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/products"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Products />
                     </Layout>
                   </ProtectedRoute>
                 }

@@ -434,6 +434,7 @@ const Header = () => {
   
   const navLinks = [
     { path: '/', label: 'Dashboard' },
+    { path: '/products', label: 'Products' },
     { path: '/promotions', label: 'Promotions' },
     { path: '/events', label: 'Events' },
     { path: '/user-transactions', label: 'Transactions' },
