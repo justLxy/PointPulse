@@ -402,48 +402,61 @@ const EventCardItem = ({
         </EventContent>
         
         <EventActions>
-          <div>
+          {/* For past events, make View Details button full width */}
+          {eventStatus.text === 'Past' ? (
             <Button 
               size="small" 
+              style={{ width: '100%' }}
               onClick={() => navigateToEventDetail ? navigateToEventDetail(event.id) : window.location.href = `/events/${event.id}`}
             >
               View Details
             </Button>
-          </div>
-          
-          <div style={{ display: 'flex', gap: theme.spacing.sm }}>
-            {(eventStatus.text === 'Upcoming' || eventStatus.text === 'Ongoing') && !isFull && (
-              <Button 
-                size="small" 
-                variant={isUserRsvpd ? "outlined" : "default"}
-                color={isUserRsvpd ? "error" : "default"}
-                onClick={() => handleRsvpClick(event)}
-              >
-                {isUserRsvpd ? 'Cancel RSVP' : 'RSVP'}
-              </Button>
-            )}
-            
-            {(isManagerOrHigher || event.isOrganizer) && eventStatus.text !== 'Past' && (
-              <Button 
-                size="small" 
-                variant="outlined" 
-                onClick={() => handleEditEvent(event)}
-              >
-                <FaEdit />
-              </Button>
-            )}
-            
-            {isManagerOrHigher && !event.published && (
-              <Button 
-                size="small" 
-                variant="outlined" 
-                color="error"
-                onClick={() => handleDeleteEventClick(event)}
-              >
-                <FaTrash />
-              </Button>
-            )}
-          </div>
+          ) : (
+            <>
+              <div>
+                <Button 
+                  size="small" 
+                  onClick={() => navigateToEventDetail ? navigateToEventDetail(event.id) : window.location.href = `/events/${event.id}`}
+                >
+                  View Details
+                </Button>
+              </div>
+              
+              <div style={{ display: 'flex', gap: theme.spacing.sm }}>
+                {(eventStatus.text === 'Upcoming' || eventStatus.text === 'Ongoing') && !isFull && (
+                  <Button 
+                    size="small" 
+                    variant={isUserRsvpd ? "outlined" : "default"}
+                    color={isUserRsvpd ? "error" : "default"}
+                    onClick={() => handleRsvpClick(event)}
+                  >
+                    {isUserRsvpd ? 'Cancel RSVP' : 'RSVP'}
+                  </Button>
+                )}
+                
+                {(isManagerOrHigher || event.isOrganizer) && eventStatus.text !== 'Past' && (
+                  <Button 
+                    size="small" 
+                    variant="outlined" 
+                    onClick={() => handleEditEvent(event)}
+                  >
+                    <FaEdit />
+                  </Button>
+                )}
+                
+                {isManagerOrHigher && !event.published && (
+                  <Button 
+                    size="small" 
+                    variant="outlined" 
+                    color="error"
+                    onClick={() => handleDeleteEventClick(event)}
+                  >
+                    <FaTrash />
+                  </Button>
+                )}
+              </div>
+            </>
+          )}
         </EventActions>
       </EventCardBody>
     </EventCard>

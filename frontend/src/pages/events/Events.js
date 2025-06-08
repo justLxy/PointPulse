@@ -308,6 +308,16 @@ const Events = () => {
   };
   
   // Set up event for editing
+  // Helper function to convert UTC datetime to local datetime-local format
+  const formatDateTimeForInput = (dateTimeString) => {
+    if (!dateTimeString) return '';
+    const date = new Date(dateTimeString);
+    // Adjust for timezone offset to get local time
+    const offset = date.getTimezoneOffset();
+    const localDate = new Date(date.getTime() - (offset * 60 * 1000));
+    return localDate.toISOString().slice(0, 16);
+  };
+
   const handleEditEvent = (event) => {
     console.log("Original event data:", event);
     
@@ -333,8 +343,8 @@ const Events = () => {
       location: event.location || '',
       capacity: event.capacity || '',
       points: initialPointsValue,
-      startTime: event.startTime ? new Date(event.startTime).toISOString().slice(0, 16) : '',
-      endTime: event.endTime ? new Date(event.endTime).toISOString().slice(0, 16) : '',
+      startTime: formatDateTimeForInput(event.startTime),
+      endTime: formatDateTimeForInput(event.endTime),
       published: event.published || false,
       backgroundUrl: event.backgroundUrl || '',
     };

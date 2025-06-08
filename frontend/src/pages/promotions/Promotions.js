@@ -201,12 +201,15 @@ const Promotions = () => {
     }
   };
   
-  // Format date for datetime-local input
+  // Format date for datetime-local input (fixes timezone issue)
   const formatDateTimeLocal = (dateStr) => {
     if (!dateStr) return '';
     try {
       const date = new Date(dateStr);
-      return date.toISOString().slice(0, 16); // Format as YYYY-MM-DDTHH:MM
+      // Adjust for timezone offset to get local time
+      const offset = date.getTimezoneOffset();
+      const localDate = new Date(date.getTime() - (offset * 60 * 1000));
+      return localDate.toISOString().slice(0, 16); // Format as YYYY-MM-DDTHH:MM
     } catch (error) {
       console.error("Error formatting date for input:", error);
       return '';
