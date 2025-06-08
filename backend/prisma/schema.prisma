@@ -79,6 +79,7 @@ model Event {
   pointsRemain  Int
   pointsAwarded Int      @default(0)
   published     Boolean  @default(false)
+  backgroundUrl String?
   createdAt     DateTime @default(now())
 
   // Relations
