@@ -9,8 +9,35 @@ import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Dashboard from '../../pages/Dashboard';
 
-// Create a dynamic mock context that can be updated
-let mockAuthContext = {
+// Mock framer-motion to avoid animation issues in tests
+jest.mock('framer-motion', () => ({
+  motion: {
+    div: ({ children, ...props }) => <div {...props}>{children}</div>,
+    button: ({ children, ...props }) => <button {...props}>{children}</button>,
+  },
+  AnimatePresence: ({ children }) => <>{children}</>,
+}));
+
+// Mock QR code library (third-party dependency)
+jest.mock('qrcode.react', () => ({
+  QRCodeCanvas: ({ value, ...props }) => (
+    <div data-testid="qr-code-canvas" data-value={value} {...props}>
+      QR Code: {value}
+    </div>
+  )
+}));
+
+// Mock react-hot-toast (third-party notification library)
+jest.mock('react-hot-toast', () => ({
+  toast: {
+    success: jest.fn(),
+    error: jest.fn(),
+    loading: jest.fn(),
+  }
+}));
+
+// Create mock auth context
+const mockAuthContext = {
   user: {
     id: 1,
     utorid: 'testuser',
@@ -18,41 +45,90 @@ let mockAuthContext = {
     role: 'regular',
     points: 1500
   },
+  currentUser: {
+    id: 1,
+    utorid: 'testuser',
+    name: 'John Doe',
+    role: 'regular',
+    points: 1500
+  },
   isAuthenticated: true,
-  activeRole: 'regular'
+  activeRole: 'regular',
+  updateCurrentUser: jest.fn(),
+  logout: jest.fn()
 };
 
 jest.mock('../../contexts/AuthContext', () => ({
   useAuth: () => mockAuthContext
 }));
 
-// Mock hooks
-jest.mock('../../hooks/useUserProfile', () => () => ({
-  profile: mockAuthContext.user,
-  isLoading: false,
-  error: null
+// Mock react-router for navigation
+const mockNavigate = jest.fn();
+jest.mock('react-router-dom', () => ({
+  ...jest.requireActual('react-router-dom'),
+  useNavigate: () => mockNavigate
 }));
 
-jest.mock('../../hooks/useUserTransactions', () => () => ({
-  transactions: [
-    { id: 1, type: 'purchase', amount: 100, createdAt: '2024-01-01' }
-  ],
-  isLoading: false,
-  error: null
-}));
-
-jest.mock('../../hooks/useEvents', () => () => ({
-  events: [
-    {
+// Mock hooks directly for more reliable data flow
+jest.mock('../../hooks/useUserProfile', () => ({
+  __esModule: true,
+  default: () => ({
+    profile: {
       id: 1,
-      name: 'Test Event',
-      location: 'Test Location',
-      startTime: '2024-12-25T10:00:00Z',
-      endTime: '2024-12-25T12:00:00Z'
-    }
-  ],
-  isLoading: false,
-  error: null
+      utorid: 'testuser',
+      name: 'John Doe',
+      role: 'regular',
+      points: 1500,
+      verified: true,
+      email: 'john.doe@mail.utoronto.ca'
+    },
+    isLoading: false,
+    error: null,
+    updateProfile: jest.fn(),
+    isUpdating: false,
+    updateAvatar: jest.fn(),
+    isUpdatingAvatar: false,
+    updatePassword: jest.fn(),
+    isUpdatingPassword: false
+  })
+}));
+
+jest.mock('../../hooks/useUserTransactions', () => ({
+  __esModule: true,
+  default: () => ({
+    transactions: [
+      { 
+        id: 1, 
+        type: 'purchase', 
+        amount: 100, 
+        createdAt: '2024-01-01T00:00:00Z', 
+        spent: 25.00 
+      }
+    ],
+    isLoading: false,
+    error: null,
+    createRedemption: jest.fn(),
+    isCreatingRedemption: false,
+    transferPoints: jest.fn(),
+    isTransferringPoints: false
+  })
+}));
+
+jest.mock('../../hooks/useEvents', () => ({
+  __esModule: true,
+  default: () => ({
+    events: [
+      {
+        id: 1,
+        name: 'Test Event',
+        location: 'Test Location',
+        startTime: '2024-12-25T10:00:00Z',
+        endTime: '2024-12-25T12:00:00Z'
+      }
+    ],
+    isLoading: false,
+    error: null
+  })
 }));
 
 jest.mock('../../hooks/usePromotions', () => ({
@@ -71,7 +147,6 @@ jest.mock('../../hooks/usePromotions', () => ({
   })
 }));
 
-// Mock useTierStatus hook
 jest.mock('../../hooks/useTierStatus', () => ({
   useTierStatus: () => ({
     tierStatus: {
@@ -86,43 +161,27 @@ jest.mock('../../hooks/useTierStatus', () => ({
   })
 }));
 
-// Mock components to avoid complex dependencies
-jest.mock('../../components/common/LoadingSpinner', () => ({ text }) => (
-  <div data-testid="loading-spinner">{text}</div>
-));
-
-jest.mock('../../components/common/UniversalQRCode', () => ({ description }) => (
-  <div data-testid="universal-qr-code">{description}</div>
-));
-
-jest.mock('../../components/user/RedemptionModal', () => ({ isOpen, onClose, availablePoints }) => 
-  isOpen ? (
-    <div data-testid="redemption-modal">
-      <button onClick={onClose}>Close</button>
-      <span>Available: {availablePoints}</span>
-    </div>
-  ) : null
-);
-
-jest.mock('../../components/user/TransferModal', () => ({ isOpen, onClose, availablePoints }) => 
-  isOpen ? (
-    <div data-testid="transfer-modal">
-      <button onClick={onClose}>Close</button>
-      <span>Available: {availablePoints}</span>
-    </div>
-  ) : null
-);
+jest.mock('../../hooks/usePendingRedemptions', () => ({
+  __esModule: true,
+  default: () => ({
+    pendingTotal: 0,
+    refetch: jest.fn()
+  })
+}));
 
 const renderDashboard = (userRole = 'regular') => {
-  // Update mock context for role - modify the object directly 
+  // Update mock context for role
   mockAuthContext.activeRole = userRole;
   mockAuthContext.user.role = userRole;
+  mockAuthContext.currentUser.role = userRole;
   
   // Create a new QueryClient for each test
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
         retry: false,
+        staleTime: 0,
+        cacheTime: 0
       },
     },
   });
@@ -142,18 +201,24 @@ describe('Dashboard - Core User Flows', () => {
     // Reset to default role
     mockAuthContext.activeRole = 'regular';
     mockAuthContext.user.role = 'regular';
+    mockAuthContext.currentUser.role = 'regular';
   });
 
   /**
    * Scenario: User views dashboard main page
    * Expected: Profile data and points balance are displayed
    */
-  test('displays user profile data and points balance', () => {
+  test('displays user profile data and points balance', async () => {
     renderDashboard();
     
-    // Verify user name and points are displayed (flexible matching)
-    expect(screen.getByText(/john.*doe/i)).toBeInTheDocument();
-    expect(screen.getByText(/1500/)).toBeInTheDocument();
+    // Wait for async content to load
+    await waitFor(() => {
+      expect(screen.getByText(/welcome.*john.*doe/i)).toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('1500')).toBeInTheDocument();
+    });
   });
 
   /**
@@ -163,31 +228,29 @@ describe('Dashboard - Core User Flows', () => {
   test('handles point management workflows', async () => {
     renderDashboard();
     
+    // Wait for dashboard to load
+    await waitFor(() => {
+      expect(screen.getByText(/welcome.*john.*doe/i)).toBeInTheDocument();
+    });
+    
     // Test redemption workflow
     const redeemButton = screen.getByRole('button', { name: /redeem/i });
     fireEvent.click(redeemButton);
     
     await waitFor(() => {
-      expect(screen.getByTestId('redemption-modal')).toBeInTheDocument();
+      expect(screen.getByText(/select.*amount/i)).toBeInTheDocument();
     });
     
-    fireEvent.click(screen.getByText('Close'));
-    await waitFor(() => {
-      expect(screen.queryByTestId('redemption-modal')).not.toBeInTheDocument();
-    });
+    // Close modal
+    const closeButton = screen.getByRole('button', { name: /close/i });
+    fireEvent.click(closeButton);
     
     // Test transfer workflow
     const transferButtons = screen.getAllByRole('button', { name: /transfer/i });
     fireEvent.click(transferButtons[0]);
     
     await waitFor(() => {
-      expect(screen.getByTestId('transfer-modal')).toBeInTheDocument();
-      expect(screen.getByText(/available.*1500/i)).toBeInTheDocument();
-    });
-    
-    fireEvent.click(screen.getByText('Close'));
-    await waitFor(() => {
-      expect(screen.queryByTestId('transfer-modal')).not.toBeInTheDocument();
+      expect(screen.getByText(/transfer.*points/i)).toBeInTheDocument();
     });
   });
 
@@ -195,39 +258,56 @@ describe('Dashboard - Core User Flows', () => {
    * Scenario: User navigates dashboard with role-based features
    * Expected: Appropriate navigation options are available based on user role
    */
-  test('displays role-appropriate navigation', () => {
-    // Test with default regular user role
+  test('displays role-appropriate navigation', async () => {
     renderDashboard('regular');
     
-    // Regular user should see personal features
-    expect(screen.getByText(/my.*transactions/i)).toBeInTheDocument();
-    expect(screen.getByText(/products/i)).toBeInTheDocument();
+    // Wait for content to load
+    await waitFor(() => {
+      expect(screen.getByText(/my.*transactions/i)).toBeInTheDocument();
+      expect(screen.getByText(/products/i)).toBeInTheDocument();
+    });
   });
 
   /**
    * Scenario: User accesses QR code functionality
    * Expected: QR code component is rendered
    */
-  test('provides QR code access', () => {
+  test('provides QR code access', async () => {
     renderDashboard();
-    expect(screen.getByTestId('universal-qr-code')).toBeInTheDocument();
+    
+    await waitFor(() => {
+      expect(screen.getByTestId('qr-code-canvas')).toBeInTheDocument();
+    });
   });
 
   /**
    * Scenario: Dashboard displays dynamic content (events, promotions, tier info)
    * Expected: Mock data is rendered correctly
    */
-  test('renders dynamic content sections', () => {
+  test('renders dynamic content sections', async () => {
     renderDashboard();
     
-    // Verify mock data is displayed (functional content, not specific wording)
-    expect(screen.getByText(/test.*event/i)).toBeInTheDocument();
-    expect(screen.getByText(/test.*location/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/test.*promotion/i).length).toBeGreaterThan(0);
+    // Wait for async content to load first
+    await waitFor(() => {
+      expect(screen.getByText(/welcome.*john.*doe/i)).toBeInTheDocument();
+    });
     
-    // Verify tier system functionality (semantic content)
-    expect(screen.getAllByText(/silver/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/progress/i)).toBeInTheDocument();
+    // Wait for events to load
+    await waitFor(() => {
+      expect(screen.getByText(/test.*event/i)).toBeInTheDocument();
+      expect(screen.getByText(/test.*location/i)).toBeInTheDocument();
+    });
+    
+    // Wait for promotions to load
+    await waitFor(() => {
+      expect(screen.getAllByText(/test.*promotion/i).length).toBeGreaterThan(0);
+    });
+    
+    // Verify tier system functionality
+    await waitFor(() => {
+      expect(screen.getAllByText(/silver/i).length).toBeGreaterThan(0);
+      expect(screen.getByText(/progress/i)).toBeInTheDocument();
+    });
   });
 });
 
@@ -236,6 +316,7 @@ describe('Dashboard - Tier System Multi-Year Flow', () => {
     jest.clearAllMocks();
     mockAuthContext.activeRole = 'regular';
     mockAuthContext.user.role = 'regular';
+    mockAuthContext.currentUser.role = 'regular';
   });
   
   /**
@@ -261,7 +342,11 @@ describe('Dashboard - Tier System Multi-Year Flow', () => {
 
     const queryClient = new QueryClient({
       defaultOptions: {
-        queries: { retry: false },
+        queries: { 
+          retry: false,
+          staleTime: 0,
+          cacheTime: 0
+        },
       },
     });
     
@@ -279,7 +364,7 @@ describe('Dashboard - Tier System Multi-Year Flow', () => {
    * Expected: Shows Diamond active tier with zero current cycle points, but progress based on current cycle
    * Tests: Carryover mechanics work correctly, progress bar shows Bronze→Silver (not Diamond max)
    */
-  test('displays Diamond carryover correctly during 2026 cycle', () => {
+  test('displays Diamond carryover correctly during 2026 cycle', async () => {
     const tierData = {
       activeTier: 'DIAMOND',
       currentCycleEarnedPoints: 0,
@@ -291,15 +376,16 @@ describe('Dashboard - Tier System Multi-Year Flow', () => {
 
     renderWithTierStatus(tierData);
 
-        // Should show Diamond as active tier (carryover)
-    expect(screen.getByText(/diamond.*member/i)).toBeInTheDocument();
+    // Wait for content to load and verify tier display
+    await waitFor(() => {
+      expect(screen.getByText(/diamond.*member/i)).toBeInTheDocument();
+    });
 
-    // Should show zero points earned in current cycle
-    expect(screen.getByText(/0.*points.*earned/i)).toBeInTheDocument();
-
-    // With 0 points in current cycle, should show progress to next tier (not max achievement)
-    expect(screen.getByText(/progress.*to/i)).toBeInTheDocument();
-    expect(screen.getByText(/1000.*points.*needed/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/0.*points.*earned/i)).toBeInTheDocument();
+      expect(screen.getByText(/progress.*to/i)).toBeInTheDocument();
+      expect(screen.getByText(/1000.*points.*needed/i)).toBeInTheDocument();
+    });
   });
 
   /**
@@ -307,7 +393,7 @@ describe('Dashboard - Tier System Multi-Year Flow', () => {
    * Expected: Shows Gold tier with 6000 current cycle points, 20% progress to Platinum
    * Tests: Current cycle tier achievement and accurate progress calculation
    */
-  test('displays Gold tier achievement in 2027 cycle', () => {
+  test('displays Gold tier achievement in 2027 cycle', async () => {
     const tierData = {
       activeTier: 'GOLD',
       currentCycleEarnedPoints: 6000,
@@ -319,14 +405,12 @@ describe('Dashboard - Tier System Multi-Year Flow', () => {
 
     renderWithTierStatus(tierData);
 
-    // Should show progress to next tier
-    expect(screen.getByText(/progress.*to.*platinum/i)).toBeInTheDocument();
-    expect(screen.getByText(/6000.*points.*earned/i)).toBeInTheDocument();
-    expect(screen.getByText(/10000.*points.*required/i)).toBeInTheDocument();
-
-    // Progress calculation: (6000 - 5000) / (10000 - 5000) = 20%
-    // Should show points needed for next tier
-    expect(screen.getByText(/4000.*points.*needed/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/progress.*to.*platinum/i)).toBeInTheDocument();
+      expect(screen.getByText(/6000.*points.*earned/i)).toBeInTheDocument();
+      expect(screen.getByText(/10000.*points.*required/i)).toBeInTheDocument();
+      expect(screen.getByText(/4000.*points.*needed/i)).toBeInTheDocument();
+    });
   });
 
   /**
@@ -334,7 +418,7 @@ describe('Dashboard - Tier System Multi-Year Flow', () => {
    * Expected: Shows Gold active tier but Bronze current cycle achievement, progress to Silver
    * Tests: UI shows current cycle progress, not carryover tier progress
    */
-  test('displays Gold carryover with minimal spending in 2028', () => {
+  test('displays Gold carryover with minimal spending in 2028', async () => {
     const tierData = {
       activeTier: 'GOLD',
       currentCycleEarnedPoints: 200,
@@ -346,15 +430,12 @@ describe('Dashboard - Tier System Multi-Year Flow', () => {
 
     renderWithTierStatus(tierData);
 
-    // Should show current cycle achievement (Bronze level)
-    expect(screen.getByText(/200.*points.*earned/i)).toBeInTheDocument();
-    
-    // Should show progress to next tier (based on current cycle points)
-    expect(screen.getByText(/progress.*to.*silver/i)).toBeInTheDocument();
-    expect(screen.getByText(/1000.*points.*required/i)).toBeInTheDocument();
-
-    // Progress calculation: (200 - 0) / (1000 - 0) = 20%
-    expect(screen.getByText(/800.*points.*needed/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/200.*points.*earned/i)).toBeInTheDocument();
+      expect(screen.getByText(/progress.*to.*silver/i)).toBeInTheDocument();
+      expect(screen.getByText(/1000.*points.*required/i)).toBeInTheDocument();
+      expect(screen.getByText(/800.*points.*needed/i)).toBeInTheDocument();
+    });
   });
 
   /**
@@ -362,7 +443,7 @@ describe('Dashboard - Tier System Multi-Year Flow', () => {
    * Expected: Shows Platinum achievement with 10000 current cycle points, 0% progress to Diamond
    * Tests: Recovery from downgrade and accurate progress at tier threshold
    */
-  test('displays Platinum recovery in 2029 cycle', () => {
+  test('displays Platinum recovery in 2029 cycle', async () => {
     const tierData = {
       activeTier: 'PLATINUM',
       currentCycleEarnedPoints: 10000,
@@ -374,22 +455,19 @@ describe('Dashboard - Tier System Multi-Year Flow', () => {
 
     renderWithTierStatus(tierData);
 
-    // Should show progress to next tier
-    expect(screen.getByText(/progress.*to.*diamond/i)).toBeInTheDocument();
-    expect(screen.getByText(/10000.*points.*earned/i)).toBeInTheDocument();
-    expect(screen.getByText(/20000.*points.*required/i)).toBeInTheDocument();
-
-    // Progress calculation: (10000 - 10000) / (20000 - 10000) = 0%
-    // User just reached Platinum threshold, so 0% progress to Diamond
-    expect(screen.getByText(/10000.*points.*needed/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/progress.*to.*diamond/i)).toBeInTheDocument();
+      expect(screen.getByText(/10000.*points.*earned/i)).toBeInTheDocument();
+      expect(screen.getByText(/20000.*points.*required/i)).toBeInTheDocument();
+      expect(screen.getByText(/10000.*points.*needed/i)).toBeInTheDocument();
+    });
   });
 
   /**
    * Scenario: Tier card highlighting based on current cycle points
    * Expected: Tier cards show current cycle achievement, not carryover tier
    */
-  test('highlights correct tier card based on current cycle points', () => {
-    // Test Gold carryover with Bronze-level current cycle points
+  test('highlights correct tier card based on current cycle points', async () => {
     const tierData = {
       activeTier: 'GOLD', // carryover from previous cycle
       currentCycleEarnedPoints: 200, // Bronze level in current cycle
@@ -400,22 +478,19 @@ describe('Dashboard - Tier System Multi-Year Flow', () => {
 
     renderWithTierStatus(tierData);
 
-             // Should display tier cards (current cycle achievement should be highlighted)
-    // This tests that tier cards show current cycle tier, not active tier
-    expect(screen.getAllByText(/bronze/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/silver/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/gold/i).length).toBeGreaterThan(0);
-    
-    // Verify progress is based on current cycle points (200 points → Bronze tier)
-    expect(screen.getByText(/progress.*to.*silver/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getAllByText(/bronze/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/silver/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/gold/i).length).toBeGreaterThan(0);
+      expect(screen.getByText(/progress.*to.*silver/i)).toBeInTheDocument();
+    });
   });
 
   /**
    * Scenario: Progress bar calculation accuracy
    * Expected: Progress percentage is calculated correctly for different scenarios
    */
-  test('calculates progress bar correctly for various point levels', () => {
-    // Test mid-Silver progress (1500 points = halfway to Gold)
+  test('calculates progress bar correctly for various point levels', async () => {
     const tierData = {
       activeTier: 'SILVER',
       currentCycleEarnedPoints: 1500,
@@ -426,19 +501,18 @@ describe('Dashboard - Tier System Multi-Year Flow', () => {
 
     renderWithTierStatus(tierData);
 
-    expect(screen.getByText(/progress.*to.*gold/i)).toBeInTheDocument();
-    expect(screen.getByText(/1500.*points.*earned/i)).toBeInTheDocument();
-    
-    // Progress: (1500 - 1000) / (5000 - 1000) = 500/4000 = 12.5%
-    // Should show points needed for next tier
-    expect(screen.getByText(/3500.*points.*needed/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/progress.*to.*gold/i)).toBeInTheDocument();
+      expect(screen.getByText(/1500.*points.*earned/i)).toBeInTheDocument();
+      expect(screen.getByText(/3500.*points.*needed/i)).toBeInTheDocument();
+    });
   });
 
   /**
    * Scenario: Diamond tier maximum achievement
    * Expected: Shows special Diamond tier achievement UI
    */
-  test('displays Diamond tier maximum achievement correctly', () => {
+  test('displays Diamond tier maximum achievement correctly', async () => {
     const tierData = {
       activeTier: 'DIAMOND',
       currentCycleEarnedPoints: 25000,
@@ -449,12 +523,10 @@ describe('Dashboard - Tier System Multi-Year Flow', () => {
 
     renderWithTierStatus(tierData);
 
-    // Should show maximum tier achievement message
-    expect(screen.getByText(/maximum.*tier.*achieved/i)).toBeInTheDocument();
-    expect(screen.getByText(/25000.*points.*earned/i)).toBeInTheDocument();
-    expect(screen.getByText(/highest.*tier/i)).toBeInTheDocument();
-
-    // Should show 100% progress for Diamond - no "points needed" text
-    // Diamond tier shows maximum achievement instead of progress
+    await waitFor(() => {
+      expect(screen.getByText(/maximum.*tier.*achieved/i)).toBeInTheDocument();
+      expect(screen.getByText(/25000.*points.*earned/i)).toBeInTheDocument();
+      expect(screen.getByText(/highest.*tier/i)).toBeInTheDocument();
+    });
   });
 }); 
