@@ -443,7 +443,7 @@ const Products = () => {
                 <FiSearch className="search-icon" />
                 <Input
                   type="text"
-                  placeholder="Search products..."
+                  placeholder="Search by name"
                   value={searchValue}
                   onChange={(e) => setSearchValue(e.target.value)}
                 />

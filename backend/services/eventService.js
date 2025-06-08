@@ -343,6 +343,7 @@ const getEvents = async (filters = {}, isManager = false, page = 1, limit = 10, 
             const formattedEvent = {
                 id: event.id,
                 name: event.name,
+                description: event.description,
                 location: event.location,
                 startTime: event.startTime.toISOString(),
                 endTime: event.endTime.toISOString(),

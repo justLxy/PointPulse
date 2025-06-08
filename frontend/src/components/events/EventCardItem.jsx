@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled from '@emotion/styled';
 import Card from '../common/Card';
 import Button from '../common/Button';
@@ -14,7 +14,8 @@ import {
   FaClock, 
   FaUsers, 
   FaCoins,
-  FaCheckCircle
+  FaCheckCircle,
+  FaImage
 } from 'react-icons/fa';
 
 const EventCard = styled(Card)`
@@ -46,12 +47,67 @@ const EventBackgroundContainer = styled.div`
   overflow: hidden;
 `;
 
+const BackgroundImage = styled.img`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: ${theme.radius.md};
+  transition: opacity 0.3s ease;
+  z-index: 1;
+`;
+
+const ImagePlaceholder = styled.div`
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: ${theme.spacing.xs};
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  padding: ${theme.spacing.md} ${theme.spacing.lg};
+  border-radius: ${theme.radius.md};
+  z-index: 2;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  
+  svg {
+    font-size: 1.5rem;
+    color: ${theme.colors.text.secondary};
+  }
+  
+  .placeholder-text {
+    font-size: ${theme.typography.fontSize.xs};
+    color: ${theme.colors.text.secondary};
+    font-weight: ${theme.typography.fontWeights.medium};
+    text-align: center;
+  }
+`;
+
+const GradientOverlay = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3));
+  border-radius: ${theme.radius.md};
+  z-index: 3;
+`;
+
 const EventBackgroundContent = styled.div`
   color: white;
   width: 100%;
   display: flex;
   align-items: center;
   gap: ${theme.spacing.md};
+  position: relative;
+  z-index: 4;
 `;
 
 const EventDate = styled.div`
@@ -88,8 +144,14 @@ const EventTitle = styled.h3`
 
 const EventDescription = styled.p`
   color: ${theme.colors.text.secondary};
+  font-size: ${theme.typography.fontSize.sm};
   margin-bottom: ${theme.spacing.md};
-  line-height: 1.5;
+  line-height: 1.6;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
 
 const EventDetails = styled.div`
@@ -155,6 +217,8 @@ const EventCardItem = ({
 }) => {
   const { activeRole } = useAuth();
   const isManagerOrHigher = ['manager', 'superuser'].includes(activeRole);
+  const [imageError, setImageError] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
 
   if (!event) return null; // Skip null/undefined events
   
@@ -173,9 +237,41 @@ const EventCardItem = ({
     return `${API_URL}${url}`;
   };
 
+  const handleImageLoad = () => {
+    setImageLoading(false);
+  };
+
+  const handleImageError = () => {
+    setImageError(true);
+    setImageLoading(false);
+  };
+
+  const backgroundUrl = getBackgroundUrl(event.backgroundUrl);
+
   return (
     <EventCard>
-      <EventBackgroundContainer backgroundUrl={getBackgroundUrl(event.backgroundUrl)}>
+      <EventBackgroundContainer>
+        {backgroundUrl && !imageError ? (
+          <BackgroundImage 
+            src={backgroundUrl} 
+            alt={event.name} 
+            onLoad={handleImageLoad}
+            onError={handleImageError}
+            style={{ 
+              opacity: imageLoading ? 0 : 1
+            }}
+          />
+        ) : null}
+        
+        {(!backgroundUrl || imageError) && !imageLoading && (
+          <ImagePlaceholder>
+            <FaImage />
+            <span className="placeholder-text">No Image</span>
+          </ImagePlaceholder>
+        )}
+        
+        {backgroundUrl && !imageError && <GradientOverlay />}
+        
         <EventBackgroundContent>
           <EventDate>
             <span className="month">{month || ''}</span>
@@ -200,7 +296,7 @@ const EventCardItem = ({
                 <Badge color="primary">Organizer</Badge>
               )}
               
-              {isManager && (
+              {isManagerOrHigher && (
                 event.published ? 
                 <Badge color="success">Published</Badge> : 
                 <Badge color="warning">Unpublished</Badge>
@@ -211,11 +307,11 @@ const EventCardItem = ({
       </EventBackgroundContainer>
       <Card.Body>
         
-        <EventDescription>
-          {event.description && event.description.length > 150
-            ? `${event.description.slice(0, 150)}...`
-            : event.description || ''}
-        </EventDescription>
+        {event.description && (
+          <EventDescription>
+            {event.description}
+          </EventDescription>
+        )}
         
         <EventDetails>
           <EventDetail>
@@ -277,7 +373,7 @@ const EventCardItem = ({
               </Button>
             )}
             
-            {(isManager || event.isOrganizer) && (
+            {(isManagerOrHigher || event.isOrganizer) && (
               <Button 
                 size="small" 
                 variant="outlined" 
@@ -287,7 +383,7 @@ const EventCardItem = ({
               </Button>
             )}
             
-            {isManager && !event.published && (
+            {isManagerOrHigher && !event.published && (
               <Button 
                 size="small" 
                 variant="outlined" 
