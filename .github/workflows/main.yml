@@ -63,6 +63,11 @@ jobs:
         npm run test:coverage 2>&1 | tee test-output.log
         TEST_EXIT_CODE=$?
         echo "test-exit-code=$TEST_EXIT_CODE" >> $GITHUB_OUTPUT
+        
+        # Log the exit code for debugging
+        echo "Test exit code: $TEST_EXIT_CODE"
+        
+        # Always continue to parsing step, don't exit here
         exit 0
 
     - name: 📊 Parse test results
@@ -75,19 +80,45 @@ jobs:
         TESTS_PASSED="0"
         TESTS_TOTAL="0"
         COVERAGE="Unknown"
+        TEST_EXIT_CODE="${{ steps.run-tests.outputs.test-exit-code }}"
         
-        # Parse test suites
+        echo "=== Parsing test output ==="
+        echo "Original test exit code: $TEST_EXIT_CODE"
+        cat test-output.log
+        echo "=== End of test output ==="
+        
+        # Parse test suites - Jest format: "Test Suites: X passed, Y total" or "Test Suites: X failed, Y passed, Z total"
+        SUITES_FAILED=0
         if grep -q "Test Suites:" test-output.log; then
           SUITES_LINE=$(grep "Test Suites:" test-output.log | tail -1)
-          SUITES_PASSED=$(echo "$SUITES_LINE" | awk '{for(i=1;i<=NF;i++) if($i=="passed,") print $(i-1); if($i=="passed") print $(i-1)}' | head -1)
-          SUITES_TOTAL=$(echo "$SUITES_LINE" | awk '{for(i=1;i<=NF;i++) if($i=="total") print $(i-1)}')
+          echo "Suites line: $SUITES_LINE"
+          
+          # Extract failed suites first (format: "X failed")
+          SUITES_FAILED=$(echo "$SUITES_LINE" | grep -o '[0-9]\+ failed' | grep -o '[0-9]\+' | head -1)
+          SUITES_FAILED=${SUITES_FAILED:-0}
+          
+          # Extract passed suites (format: "X passed")
+          SUITES_PASSED=$(echo "$SUITES_LINE" | grep -o '[0-9]\+ passed' | grep -o '[0-9]\+' | head -1)
+          
+          # Extract total suites (format: "Y total")
+          SUITES_TOTAL=$(echo "$SUITES_LINE" | grep -o '[0-9]\+ total' | grep -o '[0-9]\+' | head -1)
         fi
         
-        # Parse individual tests
+        # Parse individual tests - Jest format: "Tests: X passed, Y total" or "Tests: X failed, Y passed, Z total"
+        TESTS_FAILED=0
         if grep -q "Tests:" test-output.log; then
           TESTS_LINE=$(grep "Tests:" test-output.log | tail -1)
-          TESTS_PASSED=$(echo "$TESTS_LINE" | awk '{for(i=1;i<=NF;i++) if($i=="passed,") print $(i-1); if($i=="passed") print $(i-1)}' | head -1)
-          TESTS_TOTAL=$(echo "$TESTS_LINE" | awk '{for(i=1;i<=NF;i++) if($i=="total") print $(i-1)}')
+          echo "Tests line: $TESTS_LINE"
+          
+          # Extract failed tests first (format: "X failed")
+          TESTS_FAILED=$(echo "$TESTS_LINE" | grep -o '[0-9]\+ failed' | grep -o '[0-9]\+' | head -1)
+          TESTS_FAILED=${TESTS_FAILED:-0}
+          
+          # Extract passed tests (format: "X passed")
+          TESTS_PASSED=$(echo "$TESTS_LINE" | grep -o '[0-9]\+ passed' | grep -o '[0-9]\+' | head -1)
+          
+          # Extract total tests (format: "Y total")
+          TESTS_TOTAL=$(echo "$TESTS_LINE" | grep -o '[0-9]\+ total' | grep -o '[0-9]\+' | head -1)
         fi
         
         # Parse coverage
@@ -105,14 +136,69 @@ jobs:
         TESTS_PASSED=${TESTS_PASSED:-"0"}
         TESTS_TOTAL=${TESTS_TOTAL:-"0"}
         
-        # Determine status
-        if [ "${{ steps.run-tests.outputs.test-exit-code }}" = "0" ] && [ "$TESTS_TOTAL" -gt "0" ]; then
-          TEST_STATUS="✅ All tests passed"
-          EXIT_CODE=0
-        else
+        echo "Parsed results:"
+        echo "  Suites: $SUITES_PASSED/$SUITES_TOTAL (${SUITES_FAILED} failed)"
+        echo "  Tests: $TESTS_PASSED/$TESTS_TOTAL (${TESTS_FAILED} failed)"
+        echo "  Coverage: $COVERAGE"
+        echo "  Exit code: $TEST_EXIT_CODE"
+        
+        # Determine status - multiple failure conditions
+        FAILURE_DETECTED=false
+        
+        # Primary check: exit code (most reliable)
+        if [ "$TEST_EXIT_CODE" != "0" ]; then
+          echo "❌ Failure detected: Non-zero exit code ($TEST_EXIT_CODE)"
+          FAILURE_DETECTED=true
+        fi
+        
+        # Direct failure count checks (most reliable for Jest)
+        if [ "$TESTS_FAILED" -gt "0" ]; then
+          echo "❌ Failure detected: $TESTS_FAILED test(s) failed"
+          FAILURE_DETECTED=true
+        fi
+        
+        if [ "$SUITES_FAILED" -gt "0" ]; then
+          echo "❌ Failure detected: $SUITES_FAILED test suite(s) failed"
+          FAILURE_DETECTED=true
+        fi
+        
+        # Fallback checks: if we couldn't parse failure counts, check totals vs passed
+        if [ "$TESTS_FAILED" = "0" ] && [ -n "$TESTS_TOTAL" ] && [ "$TESTS_TOTAL" -gt "0" ] && [ -n "$TESTS_PASSED" ]; then
+          if [ "$TESTS_PASSED" -lt "$TESTS_TOTAL" ]; then
+            echo "❌ Failure detected: Not all tests passed ($TESTS_PASSED/$TESTS_TOTAL)"
+            FAILURE_DETECTED=true
+          fi
+        fi
+        
+        if [ "$SUITES_FAILED" = "0" ] && [ -n "$SUITES_TOTAL" ] && [ "$SUITES_TOTAL" -gt "0" ] && [ -n "$SUITES_PASSED" ]; then
+          if [ "$SUITES_PASSED" -lt "$SUITES_TOTAL" ]; then
+            echo "❌ Failure detected: Not all suites passed ($SUITES_PASSED/$SUITES_TOTAL)"
+            FAILURE_DETECTED=true
+          fi
+        fi
+        
+        # Check for specific failure keywords (but exclude common false positives)
+        # Only check for explicit test failures, not console.error or other logging
+        if grep -q -E "([0-9]+ failed|FAIL:|Test failed|Failed to|× )" test-output.log; then
+          # Double check this isn't just console.error or expected error logging
+          if ! (grep -q "console\.error" test-output.log && [ "$TEST_EXIT_CODE" = "0" ]); then
+            echo "❌ Failure detected: Failure keywords found in output"
+            FAILURE_DETECTED=true
+          else
+            echo "ℹ️  Found error keywords but they appear to be console.error logs (exit code is 0)"
+          fi
+        fi
+        
+        # Set final status
+        if [ "$FAILURE_DETECTED" = true ]; then
           TEST_STATUS="❌ Some tests failed"
           EXIT_CODE=1
+        else
+          TEST_STATUS="✅ All tests passed"
+          EXIT_CODE=0
         fi
+        
+        echo "Final status: $TEST_STATUS (exit code: $EXIT_CODE)"
         
         # Export results
         echo "suites-passed=$SUITES_PASSED" >> $GITHUB_OUTPUT
@@ -135,6 +221,7 @@ jobs:
         echo "| **Test Suites** | ${{ steps.test-results.outputs.suites-passed }}/${{ steps.test-results.outputs.suites-total }} passed |" >> $GITHUB_STEP_SUMMARY
         echo "| **Individual Tests** | ${{ steps.test-results.outputs.tests-passed }}/${{ steps.test-results.outputs.tests-total }} passed |" >> $GITHUB_STEP_SUMMARY
         echo "| **Coverage** | ${{ steps.test-results.outputs.coverage }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| **Original Exit Code** | ${{ steps.run-tests.outputs.test-exit-code }} |" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
 
     - name: 📊 Upload coverage reports
@@ -162,7 +249,11 @@ jobs:
     - name: ❌ Fail if tests failed
       if: steps.test-results.outputs.exit-code != '0'
       run: |
-        echo "Tests failed! Check the summary above for details."
+        echo "❌ Tests failed for ${{ matrix.project }}!"
+        echo "Status: ${{ steps.test-results.outputs.status }}"
+        echo "Tests: ${{ steps.test-results.outputs.tests-passed }}/${{ steps.test-results.outputs.tests-total }}"
+        echo "Suites: ${{ steps.test-results.outputs.suites-passed }}/${{ steps.test-results.outputs.suites-total }}"
+        echo "Original exit code: ${{ steps.run-tests.outputs.test-exit-code }}"
         exit 1
 
   test-summary:
