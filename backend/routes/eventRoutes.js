@@ -4,9 +4,10 @@ const express = require('express');
 const router = express.Router();
 const eventController = require('../controllers/eventController');
 const { requireRole } = require('../middlewares/authMiddleware');
+const { eventBackgroundUpload } = require('../utils/uploadConfig');
 
 // Create a new event (manager or higher)
-router.post('/', requireRole('manager'), eventController.createEvent);
+router.post('/', requireRole('manager'), eventBackgroundUpload.single('background'), eventController.createEvent);
 
 // Get events with filtering
 router.get('/', requireRole('regular'), eventController.getEvents);
@@ -15,7 +16,7 @@ router.get('/', requireRole('regular'), eventController.getEvents);
 router.get('/:eventId', requireRole('regular'), eventController.getEvent);
 
 // Update an event (manager or organizer)
-router.patch('/:eventId', requireRole('regular'), eventController.updateEvent);
+router.patch('/:eventId', requireRole('regular'), eventBackgroundUpload.single('background'), eventController.updateEvent);
 
 // Delete an event (manager or higher)
 router.delete('/:eventId', requireRole('manager'), eventController.deleteEvent);

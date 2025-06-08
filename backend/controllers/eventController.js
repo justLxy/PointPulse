@@ -43,6 +43,12 @@ const createEvent = async (req, res) => {
             }
         }
 
+        // Handle background image upload
+        let backgroundUrl = req.body.backgroundUrl;
+        if (req.file) {
+            backgroundUrl = `/uploads/events/${req.file.filename}`;
+        }
+
         const eventData = {
             name: req.body.name,
             description: req.body.description,
@@ -51,7 +57,8 @@ const createEvent = async (req, res) => {
             endTime: req.body.endTime,
             capacity: req.body.capacity,
             points: req.body.points,
-            creatorId: req.auth.id
+            creatorId: req.auth.id,
+            backgroundUrl: backgroundUrl
         };
         
         console.log('Event data prepared:', JSON.stringify(eventData, null, 2));
@@ -479,6 +486,15 @@ const updateEvent = async (req, res) => {
                 console.log('Adding capacity to update data:', req.body.capacity);
             } else {
                 console.log('Capacity is null, skipping this field in update');
+            }
+        }
+        if (req.body.backgroundUrl !== undefined || req.file) {
+            if (req.file) {
+                updateData.backgroundUrl = `/uploads/events/${req.file.filename}`;
+                console.log('Adding uploaded backgroundUrl to update data:', updateData.backgroundUrl);
+            } else {
+                updateData.backgroundUrl = req.body.backgroundUrl;
+                console.log('Adding backgroundUrl to update data:', req.body.backgroundUrl);
             }
         }
 

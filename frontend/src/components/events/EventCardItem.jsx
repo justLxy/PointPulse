@@ -1,11 +1,11 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import styled from '@emotion/styled';
 import Card from '../common/Card';
 import Button from '../common/Button';
 import Badge from '../common/Badge';
 import theme from '../../styles/theme';
 import { useAuth } from '../../contexts/AuthContext';
+import { API_URL } from '../../services/api';
 import { 
   FaEdit, 
   FaTrash, 
@@ -20,11 +20,38 @@ import {
 const EventCard = styled(Card)`
   height: 100%;
   transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  overflow: hidden;
   
   &:hover {
     transform: translateY(-5px);
     box-shadow: ${theme.shadows.lg};
   }
+`;
+
+const EventBackgroundContainer = styled.div`
+  position: relative;
+  width: calc(100% - 4px);
+  height: 185px;
+  margin: 2px 2px ${theme.spacing.sm} 2px;
+  border-radius: ${theme.radius.md};
+  background: ${props => props.backgroundUrl 
+    ? `linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), url(${props.backgroundUrl})`
+    : `linear-gradient(135deg, ${theme.colors.primary.main}, ${theme.colors.primary.dark})`};
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  display: flex;
+  align-items: flex-end;
+  padding: ${theme.spacing.md};
+  overflow: hidden;
+`;
+
+const EventBackgroundContent = styled.div`
+  color: white;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: ${theme.spacing.md};
 `;
 
 const EventDate = styled.div`
@@ -34,10 +61,11 @@ const EventDate = styled.div`
   justify-content: center;
   width: 70px;
   height: 70px;
-  background-color: ${theme.colors.primary.main};
-  color: ${theme.colors.primary.contrastText};
+  background-color: rgba(255, 255, 255, 0.9);
+  color: ${theme.colors.text.primary};
   border-radius: ${theme.radius.md};
-  margin-right: ${theme.spacing.md};
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   
   .month {
     font-size: ${theme.typography.fontSize.xs};
@@ -51,16 +79,11 @@ const EventDate = styled.div`
   }
 `;
 
-const EventHeader = styled.div`
-  display: flex;
-  align-items: center;
-  margin-bottom: ${theme.spacing.md};
-`;
-
 const EventTitle = styled.h3`
   font-size: ${theme.typography.fontSize.lg};
   font-weight: ${theme.typography.fontWeights.semiBold};
   margin-bottom: ${theme.spacing.xs};
+  color: inherit;
 `;
 
 const EventDescription = styled.p`
@@ -143,10 +166,17 @@ const EventCardItem = ({
   // Calculate if the event is at full capacity
   const isFull = event.capacity && event.numGuests >= event.capacity;
   
+  // Get background URL - handle both local uploads and external URLs
+  const getBackgroundUrl = (url) => {
+    if (!url) return null;
+    if (url.startsWith('http')) return url;
+    return `${API_URL}${url}`;
+  };
+
   return (
     <EventCard>
-      <Card.Body>
-        <EventHeader>
+      <EventBackgroundContainer backgroundUrl={getBackgroundUrl(event.backgroundUrl)}>
+        <EventBackgroundContent>
           <EventDate>
             <span className="month">{month || ''}</span>
             <span className="day">{day || ''}</span>
@@ -177,7 +207,9 @@ const EventCardItem = ({
               )}
             </BadgeContainer>
           </div>
-        </EventHeader>
+        </EventBackgroundContent>
+      </EventBackgroundContainer>
+      <Card.Body>
         
         <EventDescription>
           {event.description && event.description.length > 150

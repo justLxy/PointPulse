@@ -6,6 +6,7 @@ import EventFilters from '../../components/events/EventFilters';
 import EventList from '../../components/events/EventList';
 import { CreateEventModal, EditEventModal, DeleteEventModal, RsvpEventModal } from '../../components/events/EventModals';
 import EventService from '../../services/event.service';
+import { API_URL } from '../../services/api';
 import toast from 'react-hot-toast';
 
 const Events = () => {
@@ -71,7 +72,12 @@ const Events = () => {
     startTime: '',
     endTime: '',
     published: false,
+    backgroundUrl: '',
   });
+  
+  // Background image state
+  const [backgroundFile, setBackgroundFile] = useState(null);
+  const [backgroundPreview, setBackgroundPreview] = useState(null);
   
   // Effect to update URL when filters change
   useEffect(() => {
@@ -294,7 +300,10 @@ const Events = () => {
       startTime: '',
       endTime: '',
       published: false,
+      backgroundUrl: '',
     });
+    setBackgroundFile(null);
+    setBackgroundPreview(null);
     setSelectedEvent(null);
   };
   
@@ -327,7 +336,23 @@ const Events = () => {
       startTime: event.startTime ? new Date(event.startTime).toISOString().slice(0, 16) : '',
       endTime: event.endTime ? new Date(event.endTime).toISOString().slice(0, 16) : '',
       published: event.published || false,
+      backgroundUrl: event.backgroundUrl || '',
     };
+    
+    // Reset background image state for editing
+    setBackgroundFile(null);
+    
+    // Set background preview from existing URL if available
+    if (event.backgroundUrl) {
+      const getBackgroundUrl = (url) => {
+        if (!url) return null;
+        if (url.startsWith('http')) return url;
+        return `${API_URL}${url}`;
+      };
+      setBackgroundPreview(getBackgroundUrl(event.backgroundUrl));
+    } else {
+      setBackgroundPreview(null);
+    }
     
     // Set initial form data
     setEventData(initialFormData);
@@ -398,7 +423,21 @@ const Events = () => {
       points: eventData.points ? parseInt(eventData.points) : 0,
     };
     
-    createEvent(formattedData, {
+    // Create FormData if there's a file to upload
+    let submitData;
+    if (backgroundFile) {
+      submitData = new FormData();
+      Object.keys(formattedData).forEach(key => {
+        if (formattedData[key] !== null && formattedData[key] !== undefined) {
+          submitData.append(key, formattedData[key]);
+        }
+      });
+      submitData.append('background', backgroundFile);
+    } else {
+      submitData = formattedData;
+    }
+    
+    createEvent(submitData, {
       onSuccess: () => {
         setCreateModalOpen(false);
         resetForm();
@@ -430,8 +469,22 @@ const Events = () => {
       delete formattedData.published;
     }
     
+    // Create FormData if there's a file to upload
+    let submitData;
+    if (backgroundFile) {
+      submitData = new FormData();
+      Object.keys(formattedData).forEach(key => {
+        if (formattedData[key] !== null && formattedData[key] !== undefined) {
+          submitData.append(key, formattedData[key]);
+        }
+      });
+      submitData.append('background', backgroundFile);
+    } else {
+      submitData = formattedData;
+    }
+    
     updateEvent(
-      { id: selectedEvent.id, data: formattedData },
+      { id: selectedEvent.id, data: submitData },
       {
         onSuccess: () => {
           setEditModalOpen(false);
@@ -565,6 +618,10 @@ const Events = () => {
         handleCreateEvent={handleCreateEvent}
         isCreating={isCreating}
         isManager={isManager}
+        backgroundFile={backgroundFile}
+        setBackgroundFile={setBackgroundFile}
+        backgroundPreview={backgroundPreview}
+        setBackgroundPreview={setBackgroundPreview}
       />
       
       <EditEventModal
@@ -580,6 +637,10 @@ const Events = () => {
         isUpdating={isUpdating}
         isManager={isManager}
         isDisabled={selectedEvent && isEventEnded(selectedEvent.endTime)}
+        backgroundFile={backgroundFile}
+        setBackgroundFile={setBackgroundFile}
+        backgroundPreview={backgroundPreview}
+        setBackgroundPreview={setBackgroundPreview}
       />
       
       <DeleteEventModal

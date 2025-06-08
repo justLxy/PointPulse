@@ -237,6 +237,29 @@ async function createEvents(users) {
         'University College, Room 140'
     ];
     
+    const eventBackgrounds = [
+        'https://images.unsplash.com/photo-1519751138087-5bf79df62d5b?w=800&h=400&fit=crop', // Conference room
+        'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&h=400&fit=crop', // Auditorium
+        'https://images.unsplash.com/photo-1556761175-4b46a572b786?w=800&h=400&fit=crop', // Office meeting
+        'https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=800&h=400&fit=crop', // Tech conference
+        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=400&fit=crop', // Workshop
+        'https://images.unsplash.com/photo-1496024840928-4c417912ee90?w=800&h=400&fit=crop', // University lecture
+        'https://images.unsplash.com/photo-1543269865-cbf427effbad?w=800&h=400&fit=crop', // Graduation
+        'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&h=400&fit=crop', // Computer lab
+        'https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=800&h=400&fit=crop', // Science lab
+        'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800&h=400&fit=crop', // University hall
+        'https://images.unsplash.com/photo-1531058020387-3be344556be6?w=800&h=400&fit=crop', // Tech event
+        'https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=800&h=400&fit=crop', // Study group
+        'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800&h=400&fit=crop', // Networking
+        'https://images.unsplash.com/photo-1487017159836-4e23ece2e4cf?w=800&h=400&fit=crop', // Presentation
+        'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800&h=400&fit=crop', // Lecture hall
+        'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&h=400&fit=crop', // Innovation
+        'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=800&h=400&fit=crop', // Hackathon
+        'https://images.unsplash.com/photo-1521791136064-7986c2920216?w=800&h=400&fit=crop', // Career fair
+        'https://images.unsplash.com/photo-1511988617509-a57c8a288659?w=800&h=400&fit=crop', // Party/social
+        'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&h=400&fit=crop'  // General event
+    ];
+    
     const eventNames = [
         'CS Hackathon',
         'Career Fair',
@@ -284,6 +307,7 @@ async function createEvents(users) {
                 pointsRemain: 3000 + i * 500,
                 pointsAwarded: 200 * i,
                 published: true,
+                backgroundUrl: eventBackgrounds[i % eventBackgrounds.length],
                 organizers: {
                     connect: [
                         { id: users.managers[i % users.managers.length].id },
@@ -344,6 +368,7 @@ async function createEvents(users) {
                 pointsRemain: 2000 + i * 500,
                 pointsAwarded: 0,
                 published: true,
+                backgroundUrl: eventBackgrounds[(i + 5) % eventBackgrounds.length],
                 organizers: {
                     connect: [
                         { id: users.managers[i % users.managers.length].id },
@@ -389,6 +414,7 @@ async function createEvents(users) {
                 pointsRemain: totalPoints - pointsAwarded,
                 pointsAwarded,
                 published: true,
+                backgroundUrl: eventBackgrounds[(i + 10) % eventBackgrounds.length],
                 organizers: {
                     connect: [
                         { id: users.managers[i % users.managers.length].id },
@@ -449,6 +475,7 @@ async function createEvents(users) {
                 pointsRemain: 5000 + i * 1000,
                 pointsAwarded: 0,
                 published: false,
+                backgroundUrl: eventBackgrounds[(i + 15) % eventBackgrounds.length],
                 organizers: {
                     connect: [
                         { id: users.managers[i % users.managers.length].id }

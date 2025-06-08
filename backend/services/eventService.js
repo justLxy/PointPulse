@@ -10,7 +10,7 @@ const createEvent = async (eventData) => {
     console.log('\n===== EVENT SERVICE: CREATE EVENT =====');
     console.log('Event data:', JSON.stringify(eventData, null, 2));
     
-    const { name, description, location, startTime, endTime, capacity, points, creatorId } = eventData;
+    const { name, description, location, startTime, endTime, capacity, points, creatorId, backgroundUrl } = eventData;
 
     // Validate inputs
     if (!name || name.trim() === '') {
@@ -88,6 +88,7 @@ const createEvent = async (eventData) => {
                 pointsRemain: parseInt(points),
                 pointsAwarded: 0,
                 published: false,
+                backgroundUrl: backgroundUrl || null,
                 organizers: {
                     connect: [{ id: creatorId }]
                 }
@@ -149,6 +150,7 @@ const createEvent = async (eventData) => {
             pointsRemain: event.pointsRemain,
             pointsAwarded: event.pointsAwarded,
             published: event.published,
+            backgroundUrl: event.backgroundUrl,
             organizers: event.organizers.map(org => ({ id: org.id })),
             guests: []
         };
@@ -347,6 +349,7 @@ const getEvents = async (filters = {}, isManager = false, page = 1, limit = 10, 
                 capacity: event.capacity,
                 numGuests: event.guests.length,
                 published: event.published,
+                backgroundUrl: event.backgroundUrl,
                 isOrganizer: userId ? event.organizers.some(org => org.id === parseInt(userId)) : false,
                 isAttending: isUserAttending,
                 checkedIn: isUserCheckedIn
@@ -422,6 +425,7 @@ const getEvent = async (eventId, userId = null, isManager = false, isOrganizer =
         startTime: event.startTime.toISOString(),
         endTime: event.endTime.toISOString(),
         capacity: event.capacity,
+        backgroundUrl: event.backgroundUrl,
         organizers: event.organizers,
         published: event.published, // 添加published状态
         isOrganizer: isOrganizer,
@@ -463,7 +467,8 @@ const updateEvent = async (eventId, updateData, isManager = false) => {
         endTime,
         capacity,
         points,
-        published
+        published,
+        backgroundUrl
     } = updateData;
 
     // Get the current event
@@ -660,6 +665,12 @@ const updateEvent = async (eventId, updateData, isManager = false) => {
         console.log('Capacity validated and added to update object:', updateObj.capacity);
     }
 
+    if (backgroundUrl !== undefined) {
+        console.log('Validating backgroundUrl:', backgroundUrl);
+        updateObj.backgroundUrl = backgroundUrl || null;
+        console.log('BackgroundUrl added to update object:', updateObj.backgroundUrl);
+    }
+
     // Manager-only updates
     if (isManager) {
         if (points !== undefined) {
@@ -735,6 +746,7 @@ const updateEvent = async (eventId, updateData, isManager = false) => {
         if ('capacity' in updateObj) result.capacity = updatedEvent.capacity;
         if ('pointsRemain' in updateObj) result.pointsRemain = updatedEvent.pointsRemain;
         if ('published' in updateObj) result.published = updatedEvent.published;
+        if ('backgroundUrl' in updateObj) result.backgroundUrl = updatedEvent.backgroundUrl;
 
         console.log('Returning updated fields:', JSON.stringify(result, null, 2));
         console.log('===== EVENT SERVICE: UPDATE EVENT COMPLETED =====\n');

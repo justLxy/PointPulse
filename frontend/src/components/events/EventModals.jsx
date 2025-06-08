@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled from '@emotion/styled';
 import Modal from '../common/Modal';
 import Button from '../common/Button';
 import Input from '../common/Input';
-import { FaInfo } from 'react-icons/fa';
+import { FaInfo, FaCloudUploadAlt } from 'react-icons/fa';
 import theme from '../../styles/theme';
 
 const ModalContent = styled.div`
@@ -96,6 +96,120 @@ const InfoBox = styled.div`
   }
 `;
 
+const FileInputContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${theme.spacing.sm};
+`;
+
+const FileInputLabel = styled.label`
+  font-size: ${theme.typography.fontSize.sm};
+  font-weight: ${theme.typography.fontWeights.medium};
+  color: ${theme.colors.text.primary};
+  margin-bottom: ${theme.spacing.xs};
+`;
+
+const DropZone = styled.div`
+  width: 100%;
+  min-height: 200px;
+  border: 2px dashed ${props => props.isDragOver ? theme.colors.primary.main : theme.colors.border.light};
+  border-radius: ${theme.radius.lg};
+  background-color: ${props => props.isDragOver ? `${theme.colors.primary.main}10` : theme.colors.background.default};
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  
+  &:hover {
+    border-color: ${theme.colors.primary.main};
+    background-color: ${theme.colors.primary.main}10;
+  }
+  
+  &:hover .image-overlay {
+    opacity: 1;
+  }
+`;
+
+const HiddenFileInput = styled.input`
+  position: absolute;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  z-index: 2;
+`;
+
+const DropZoneContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: ${theme.spacing.sm};
+  text-align: center;
+  padding: ${theme.spacing.lg};
+  
+  svg {
+    color: ${theme.colors.text.secondary};
+    font-size: 48px;
+  }
+`;
+
+const DropZoneText = styled.p`
+  color: ${theme.colors.text.secondary};
+  font-size: ${theme.typography.fontSize.sm};
+  margin: 0;
+  
+  .highlight {
+    color: ${theme.colors.primary.main};
+    font-weight: ${theme.typography.fontWeights.medium};
+  }
+`;
+
+const ImagePreview = styled.div`
+  width: 100%;
+  height: 100%;
+  background: ${props => props.backgroundUrl 
+    ? `url(${props.backgroundUrl})`
+    : 'none'};
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: ${theme.radius.lg};
+  pointer-events: none;
+  z-index: 0;
+`;
+
+const ImageOverlay = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: ${theme.radius.lg};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 1;
+`;
+
+const ChangeImageText = styled.span`
+  color: white;
+  font-weight: ${theme.typography.fontWeights.medium};
+  font-size: ${theme.typography.fontSize.sm};
+`;
+
 export const CreateEventModal = ({ 
   isOpen, 
   onClose, 
@@ -103,8 +217,53 @@ export const CreateEventModal = ({
   handleFormChange, 
   handleCreateEvent, 
   isCreating,
-  isManager
+  isManager,
+  backgroundFile,
+  setBackgroundFile,
+  backgroundPreview,
+  setBackgroundPreview
 }) => {
+  const [isDragOver, setIsDragOver] = useState(false);
+  
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file && file.type.startsWith('image/')) {
+      setBackgroundFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setBackgroundPreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      const file = files[0];
+      if (file.type.startsWith('image/')) {
+        setBackgroundFile(file);
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setBackgroundPreview(e.target.result);
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+  };
+
   return (
     <Modal
       isOpen={isOpen}
@@ -169,6 +328,39 @@ export const CreateEventModal = ({
             />
           </FormGroup>
           
+          <FileInputContainer>
+            <FileInputLabel>Background Image</FileInputLabel>
+            <DropZone
+              isDragOver={isDragOver}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              <HiddenFileInput
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+              />
+              
+              {(backgroundPreview || eventData.backgroundUrl) ? (
+                <>
+                  <ImagePreview backgroundUrl={backgroundPreview || eventData.backgroundUrl} />
+                  <ImageOverlay className="image-overlay">
+                    <ChangeImageText>Click or drag to change image</ChangeImageText>
+                  </ImageOverlay>
+                </>
+              ) : (
+                <DropZoneContent>
+                  <FaCloudUploadAlt />
+                  <DropZoneText>
+                    <span className="highlight">Click to upload</span> or drag and drop<br />
+                    PNG, JPG, GIF up to 10MB
+                  </DropZoneText>
+                </DropZoneContent>
+              )}
+            </DropZone>
+          </FileInputContainer>
+          
           {isManager && (
             <FormGroup>
               <StyledInput
@@ -219,8 +411,53 @@ export const EditEventModal = ({
   handleUpdateEvent, 
   isUpdating,
   isManager,
-  isDisabled
+  isDisabled,
+  backgroundFile,
+  setBackgroundFile,
+  backgroundPreview,
+  setBackgroundPreview
 }) => {
+  const [isDragOver, setIsDragOver] = useState(false);
+  
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file && file.type.startsWith('image/')) {
+      setBackgroundFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setBackgroundPreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      const file = files[0];
+      if (file.type.startsWith('image/')) {
+        setBackgroundFile(file);
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setBackgroundPreview(e.target.result);
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+  };
+
   // Add console logs to debug
   React.useEffect(() => {
     if (isOpen && selectedEvent) {
@@ -294,6 +531,39 @@ export const EditEventModal = ({
             />
           </FormGroup>
           
+          <FileInputContainer>
+            <FileInputLabel>Background Image</FileInputLabel>
+            <DropZone
+              isDragOver={isDragOver}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              <HiddenFileInput
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+              />
+              
+              {(backgroundPreview || eventData.backgroundUrl) ? (
+                <>
+                  <ImagePreview backgroundUrl={backgroundPreview || eventData.backgroundUrl} />
+                  <ImageOverlay className="image-overlay">
+                    <ChangeImageText>Click or drag to change image</ChangeImageText>
+                  </ImageOverlay>
+                </>
+              ) : (
+                <DropZoneContent>
+                  <FaCloudUploadAlt />
+                  <DropZoneText>
+                    <span className="highlight">Click to upload</span> or drag and drop<br />
+                    PNG, JPG, GIF up to 10MB
+                  </DropZoneText>
+                </DropZoneContent>
+              )}
+            </DropZone>
+          </FileInputContainer>
+          
           {isManager && (
             <FormGroup>
               <StyledInput
@@ -316,19 +586,20 @@ export const EditEventModal = ({
               backgroundColor: theme.colors.background.default,
               borderRadius: theme.radius.md
             }}>
-              <input
-                type="checkbox"
-                id="published"
-                checked={eventData.published}
-                onChange={(e) => handleFormChange('published', e.target.checked)}
-                style={{ marginRight: theme.spacing.sm }}
-                disabled={selectedEvent?.published} // Disable if already published
-              />
+              {!selectedEvent?.published && (
+                <input
+                  type="checkbox"
+                  id="published"
+                  checked={eventData.published}
+                  onChange={(e) => handleFormChange('published', e.target.checked)}
+                  style={{ marginRight: theme.spacing.sm }}
+                />
+              )}
               <label htmlFor="published" style={{ 
                 fontSize: theme.typography.fontSize.sm,
                 display: 'flex',
                 alignItems: 'center',
-                cursor: selectedEvent?.published ? 'not-allowed' : 'pointer'
+                cursor: selectedEvent?.published ? 'default' : 'pointer'
               }}>
                 {selectedEvent?.published ? (
                   <>
