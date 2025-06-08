@@ -238,11 +238,10 @@ async function createEvents(users) {
     ];
     
     const eventBackgrounds = [
-        'https://unsplash.com/photos/white-and-gray-office-rolling-chairs-bIZJRVBLfOM', // Conference room
+        'https://images.unsplash.com/photo-1582653291997-079a1c04e5a1?q=80&w=3870&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // Conference room
         'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&h=400&fit=crop', // Auditorium
         'https://images.unsplash.com/photo-1556761175-4b46a572b786?w=800&h=400&fit=crop', // Office meeting
         'https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=800&h=400&fit=crop', // Tech conference
-        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=400&fit=crop', // Workshop
         'https://images.unsplash.com/photo-1496024840928-4c417912ee90?w=800&h=400&fit=crop', // University lecture
         'https://images.unsplash.com/photo-1543269865-cbf427effbad?w=800&h=400&fit=crop', // Graduation
         'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&h=400&fit=crop', // Computer lab
