@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import styled from '@emotion/styled';
 import { css } from '@emotion/react';
+import { toast } from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import useUserProfile from '../../hooks/useUserProfile';
 import Card from '../../components/common/Card';
@@ -449,6 +450,19 @@ const Profile = () => {
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please select an image file');
+        return;
+      }
+      
+      // Validate file size (50MB limit)
+      const maxSize = 50 * 1024 * 1024; // 50MB in bytes
+      if (file.size > maxSize) {
+        toast.error('File size must be less than 50MB');
+        return;
+      }
+      
       // Show local preview
       const reader = new FileReader();
       reader.onload = () => {
@@ -840,6 +854,7 @@ const Profile = () => {
                   style={{ display: 'none' }}
                   accept="image/*"
                   disabled={isUpdatingAvatar}
+                  data-testid="avatar-input"
                 />
               </Avatar>
               

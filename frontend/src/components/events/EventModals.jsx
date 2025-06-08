@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import styled from '@emotion/styled';
+import { toast } from 'react-hot-toast';
 import Modal from '../common/Modal';
 import Button from '../common/Button';
 import Input from '../common/Input';
@@ -227,7 +228,22 @@ export const CreateEventModal = ({
   
   const handleFileChange = (e) => {
     const file = e.target.files[0];
-    if (file && file.type.startsWith('image/')) {
+    if (file) {
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please select a valid image file (PNG, JPG, or GIF)');
+        e.target.value = ''; // Clear the input
+        return;
+      }
+      
+      // Check file size (50MB = 50 * 1024 * 1024 bytes)
+      const maxSize = 50 * 1024 * 1024; // 50MB
+      if (file.size > maxSize) {
+        toast.error('File size exceeds 50MB limit. Please choose a smaller image.');
+        e.target.value = ''; // Clear the input
+        return;
+      }
+      
       setBackgroundFile(file);
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -253,14 +269,26 @@ export const CreateEventModal = ({
     const files = e.dataTransfer.files;
     if (files.length > 0) {
       const file = files[0];
-      if (file.type.startsWith('image/')) {
-        setBackgroundFile(file);
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          setBackgroundPreview(e.target.result);
-        };
-        reader.readAsDataURL(file);
+      
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please select a valid image file (PNG, JPG, or GIF)');
+        return;
       }
+      
+      // Check file size (50MB = 50 * 1024 * 1024 bytes)
+      const maxSize = 50 * 1024 * 1024; // 50MB
+      if (file.size > maxSize) {
+        toast.error('File size exceeds 50MB limit. Please choose a smaller image.');
+        return;
+      }
+      
+      setBackgroundFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setBackgroundPreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -354,7 +382,7 @@ export const CreateEventModal = ({
                   <FaCloudUploadAlt />
                   <DropZoneText>
                     <span className="highlight">Click to upload</span> or drag and drop<br />
-                    PNG, JPG, GIF up to 10MB
+                    PNG, JPG, GIF up to 50MB
                   </DropZoneText>
                 </DropZoneContent>
               )}
@@ -421,7 +449,22 @@ export const EditEventModal = ({
   
   const handleFileChange = (e) => {
     const file = e.target.files[0];
-    if (file && file.type.startsWith('image/')) {
+    if (file) {
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please select a valid image file (PNG, JPG, or GIF)');
+        e.target.value = ''; // Clear the input
+        return;
+      }
+      
+      // Check file size (50MB = 50 * 1024 * 1024 bytes)
+      const maxSize = 50 * 1024 * 1024; // 50MB
+      if (file.size > maxSize) {
+        toast.error('File size exceeds 50MB limit. Please choose a smaller image.');
+        e.target.value = ''; // Clear the input
+        return;
+      }
+      
       setBackgroundFile(file);
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -447,14 +490,26 @@ export const EditEventModal = ({
     const files = e.dataTransfer.files;
     if (files.length > 0) {
       const file = files[0];
-      if (file.type.startsWith('image/')) {
-        setBackgroundFile(file);
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          setBackgroundPreview(e.target.result);
-        };
-        reader.readAsDataURL(file);
+      
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please select a valid image file (PNG, JPG, or GIF)');
+        return;
       }
+      
+      // Check file size (50MB = 50 * 1024 * 1024 bytes)
+      const maxSize = 50 * 1024 * 1024; // 50MB
+      if (file.size > maxSize) {
+        toast.error('File size exceeds 50MB limit. Please choose a smaller image.');
+        return;
+      }
+      
+      setBackgroundFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setBackgroundPreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -557,7 +612,7 @@ export const EditEventModal = ({
                   <FaCloudUploadAlt />
                   <DropZoneText>
                     <span className="highlight">Click to upload</span> or drag and drop<br />
-                    PNG, JPG, GIF up to 10MB
+                    PNG, JPG, GIF up to 50MB
                   </DropZoneText>
                 </DropZoneContent>
               )}

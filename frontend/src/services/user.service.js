@@ -67,7 +67,7 @@ const UserService = {
         }
         
         if (status === 413) {
-          throw new Error('Avatar file is too large. Please upload a smaller image (max 5MB).');
+          throw new Error('Avatar file is too large. Please upload a smaller image (max 50MB).');
         }
         
         throw new Error(data.message || 'Failed to update profile');
@@ -102,7 +102,7 @@ const UserService = {
         }
         
         if (status === 413) {
-          throw new Error('Avatar file is too large. Please upload a smaller image (max 5MB).');
+          throw new Error('Avatar file is too large. Please upload a smaller image (max 50MB).');
         }
         
         throw new Error(data.message || 'Failed to update avatar');

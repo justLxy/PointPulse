@@ -1,11 +1,20 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { toast } from 'react-hot-toast';
 import {
   CreateEventModal,
   EditEventModal,
   DeleteEventModal,
   RsvpEventModal
 } from '../../../components/events/EventModals';
+
+// Mock react-hot-toast
+jest.mock('react-hot-toast', () => ({
+  toast: {
+    error: jest.fn(),
+    success: jest.fn()
+  }
+}));
 
 // Mock the common components
 jest.mock('../../../components/common/Modal', () => ({ 
@@ -99,6 +108,8 @@ describe('CreateEventModal', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    toast.error.mockClear();
+    toast.success.mockClear();
   });
 
   it('renders when open and not when closed', () => {
@@ -139,6 +150,39 @@ describe('CreateEventModal', () => {
     rerender(<CreateEventModal {...defaultProps} isCreating={true} />);
     expect(screen.getByText('Loading...')).toBeInTheDocument();
   });
+
+  it('validates file type when uploading background image', () => {
+    const { container } = render(<CreateEventModal {...defaultProps} />);
+    
+    const fileInput = container.querySelector('input[type="file"]');
+    const invalidFile = new File(['test'], 'test.txt', { type: 'text/plain' });
+    
+    Object.defineProperty(fileInput, 'files', {
+      value: [invalidFile],
+      writable: false,
+    });
+    
+    fireEvent.change(fileInput);
+    
+    expect(toast.error).toHaveBeenCalledWith('Please select a valid image file (PNG, JPG, or GIF)');
+  });
+
+  it('validates file size when uploading background image', () => {
+    const { container } = render(<CreateEventModal {...defaultProps} />);
+    
+    const fileInput = container.querySelector('input[type="file"]');
+    // Create a file larger than 50MB (50 * 1024 * 1024 bytes)
+    const largeFile = new File(['x'.repeat(51 * 1024 * 1024)], 'large.jpg', { type: 'image/jpeg' });
+    
+    Object.defineProperty(fileInput, 'files', {
+      value: [largeFile],
+      writable: false,
+    });
+    
+    fireEvent.change(fileInput);
+    
+    expect(toast.error).toHaveBeenCalledWith('File size exceeds 50MB limit. Please choose a smaller image.');
+  });
 });
 
 describe('EditEventModal', () => {
@@ -156,6 +200,8 @@ describe('EditEventModal', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    toast.error.mockClear();
+    toast.success.mockClear();
   });
 
   it('renders with event name in title', () => {
@@ -186,6 +232,23 @@ describe('EditEventModal', () => {
     fireEvent.click(updateButton);
     
     expect(defaultProps.handleUpdateEvent).toHaveBeenCalled();
+  });
+
+  it('validates file size when uploading background image in edit mode', () => {
+    const { container } = render(<EditEventModal {...defaultProps} />);
+    
+    const fileInput = container.querySelector('input[type="file"]');
+    // Create a file larger than 50MB
+    const largeFile = new File(['x'.repeat(51 * 1024 * 1024)], 'large.jpg', { type: 'image/jpeg' });
+    
+    Object.defineProperty(fileInput, 'files', {
+      value: [largeFile],
+      writable: false,
+    });
+    
+    fireEvent.change(fileInput);
+    
+    expect(toast.error).toHaveBeenCalledWith('File size exceeds 50MB limit. Please choose a smaller image.');
   });
 });
 
