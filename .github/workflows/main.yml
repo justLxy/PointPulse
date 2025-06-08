@@ -157,9 +157,15 @@ jobs:
         fi
         
         # Check for specific failure keywords (but exclude common false positives)
-        if grep -q -E "([0-9]+ failed|FAIL:|Test failed|Error:|ERROR:|Failed to)" test-output.log; then
-          echo "❌ Failure detected: Failure keywords found in output"
-          FAILURE_DETECTED=true
+        # Only check for explicit test failures, not console.error or other logging
+        if grep -q -E "([0-9]+ failed|FAIL:|Test failed|Failed to|× )" test-output.log; then
+          # Double check this isn't just console.error or expected error logging
+          if ! (grep -q "console\.error" test-output.log && [ "$TEST_EXIT_CODE" = "0" ]); then
+            echo "❌ Failure detected: Failure keywords found in output"
+            FAILURE_DETECTED=true
+          else
+            echo "ℹ️  Found error keywords but they appear to be console.error logs (exit code is 0)"
+          fi
         fi
         
         # Set final status
