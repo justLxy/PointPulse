@@ -87,36 +87,28 @@ jobs:
         cat test-output.log
         echo "=== End of test output ==="
         
-        # Parse test suites - more robust parsing
+        # Parse test suites - Jest format: "Test Suites: X passed, Y total"
         if grep -q "Test Suites:" test-output.log; then
           SUITES_LINE=$(grep "Test Suites:" test-output.log | tail -1)
           echo "Suites line: $SUITES_LINE"
           
-          # Extract passed suites
-          if echo "$SUITES_LINE" | grep -q "passed"; then
-            SUITES_PASSED=$(echo "$SUITES_LINE" | sed -n 's/.*\([0-9]\+\) passed.*/\1/p')
-          fi
+          # Extract passed suites (format: "X passed")
+          SUITES_PASSED=$(echo "$SUITES_LINE" | grep -o '[0-9]\+ passed' | grep -o '[0-9]\+' | head -1)
           
-          # Extract total suites
-          if echo "$SUITES_LINE" | grep -q "total"; then
-            SUITES_TOTAL=$(echo "$SUITES_LINE" | sed -n 's/.* \([0-9]\+\) total.*/\1/p')
-          fi
+          # Extract total suites (format: "Y total")
+          SUITES_TOTAL=$(echo "$SUITES_LINE" | grep -o '[0-9]\+ total' | grep -o '[0-9]\+' | head -1)
         fi
         
-        # Parse individual tests - more robust parsing
+        # Parse individual tests - Jest format: "Tests: X passed, Y total"
         if grep -q "Tests:" test-output.log; then
           TESTS_LINE=$(grep "Tests:" test-output.log | tail -1)
           echo "Tests line: $TESTS_LINE"
           
-          # Extract passed tests
-          if echo "$TESTS_LINE" | grep -q "passed"; then
-            TESTS_PASSED=$(echo "$TESTS_LINE" | sed -n 's/.*\([0-9]\+\) passed.*/\1/p')
-          fi
+          # Extract passed tests (format: "X passed")
+          TESTS_PASSED=$(echo "$TESTS_LINE" | grep -o '[0-9]\+ passed' | grep -o '[0-9]\+' | head -1)
           
-          # Extract total tests
-          if echo "$TESTS_LINE" | grep -q "total"; then
-            TESTS_TOTAL=$(echo "$TESTS_LINE" | sed -n 's/.* \([0-9]\+\) total.*/\1/p')
-          fi
+          # Extract total tests (format: "Y total")
+          TESTS_TOTAL=$(echo "$TESTS_LINE" | grep -o '[0-9]\+ total' | grep -o '[0-9]\+' | head -1)
         fi
         
         # Parse coverage
@@ -143,26 +135,29 @@ jobs:
         # Determine status - multiple failure conditions
         FAILURE_DETECTED=false
         
-        # Check exit code
+        # Primary check: exit code (most reliable)
         if [ "$TEST_EXIT_CODE" != "0" ]; then
           echo "❌ Failure detected: Non-zero exit code ($TEST_EXIT_CODE)"
           FAILURE_DETECTED=true
         fi
         
-        # Check if any tests failed (when totals are available)
-        if [ "$TESTS_TOTAL" -gt "0" ] && [ "$TESTS_PASSED" -lt "$TESTS_TOTAL" ]; then
-          echo "❌ Failure detected: Not all tests passed ($TESTS_PASSED/$TESTS_TOTAL)"
-          FAILURE_DETECTED=true
+        # Secondary checks only if we have valid parsing results
+        if [ -n "$TESTS_TOTAL" ] && [ "$TESTS_TOTAL" -gt "0" ] && [ -n "$TESTS_PASSED" ]; then
+          if [ "$TESTS_PASSED" -lt "$TESTS_TOTAL" ]; then
+            echo "❌ Failure detected: Not all tests passed ($TESTS_PASSED/$TESTS_TOTAL)"
+            FAILURE_DETECTED=true
+          fi
         fi
         
-        # Check if any suites failed (when totals are available)
-        if [ "$SUITES_TOTAL" -gt "0" ] && [ "$SUITES_PASSED" -lt "$SUITES_TOTAL" ]; then
-          echo "❌ Failure detected: Not all suites passed ($SUITES_PASSED/$SUITES_TOTAL)"
-          FAILURE_DETECTED=true
+        if [ -n "$SUITES_TOTAL" ] && [ "$SUITES_TOTAL" -gt "0" ] && [ -n "$SUITES_PASSED" ]; then
+          if [ "$SUITES_PASSED" -lt "$SUITES_TOTAL" ]; then
+            echo "❌ Failure detected: Not all suites passed ($SUITES_PASSED/$SUITES_TOTAL)"
+            FAILURE_DETECTED=true
+          fi
         fi
         
-        # Check for specific failure keywords
-        if grep -q -E "(FAIL|Failed|Error|ERROR|failed)" test-output.log; then
+        # Check for specific failure keywords (but exclude common false positives)
+        if grep -q -E "([0-9]+ failed|FAIL:|Test failed|Error:|ERROR:|Failed to)" test-output.log; then
           echo "❌ Failure detected: Failure keywords found in output"
           FAILURE_DETECTED=true
         fi
