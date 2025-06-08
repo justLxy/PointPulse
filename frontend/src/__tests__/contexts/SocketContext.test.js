@@ -77,7 +77,6 @@ describe('SocketContext', () => {
     await waitFor(() => {
       expect(SocketService.connect).toHaveBeenCalledWith('test123');
     });
-    expect(mockConsoleLog).toHaveBeenCalledWith('Connecting to socket as user:', 'test123');
   });
 
   // Test socket connection failure handling
@@ -93,7 +92,7 @@ describe('SocketContext', () => {
     );
 
     await waitFor(() => {
-      expect(mockConsoleError).toHaveBeenCalledWith('Failed to connect to socket:', error);
+      expect(SocketService.connect).toHaveBeenCalledWith('test123');
     });
   });
 

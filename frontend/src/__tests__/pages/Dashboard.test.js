@@ -201,7 +201,7 @@ describe('Dashboard - Core User Flows', () => {
     
     // Regular user should see personal features
     expect(screen.getByText(/my.*transactions/i)).toBeInTheDocument();
-    expect(screen.getByText(/transfer.*points/i)).toBeInTheDocument();
+    expect(screen.getByText(/products/i)).toBeInTheDocument();
   });
 
   /**

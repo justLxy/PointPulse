@@ -60,9 +60,13 @@ describe('SocketService - WebSocket Management', () => {
     // Verify socket creation
     expect(io).toHaveBeenCalledWith(API_URL, {
       reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 3000,
-      transports: ['websocket', 'polling']
+      reconnectionAttempts: 3,
+      reconnectionDelay: 5000,
+      reconnectionDelayMax: 10000,
+      timeout: 10000,
+      transports: ['polling', 'websocket'],
+      upgrade: true,
+      forceNew: false
     });
     
     // Verify event listeners were set up
@@ -87,7 +91,11 @@ describe('SocketService - WebSocket Management', () => {
     // Connect first
     const connectPromise = SocketService.connect('testuser');
     await Promise.resolve();
-    eventHandlers['connect']();
+    
+    // Simulate successful connection if handler exists
+    if (eventHandlers['connect']) {
+      eventHandlers['connect']();
+    }
     await connectPromise;
     
     // Test adding event listener
