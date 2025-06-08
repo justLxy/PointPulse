@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from '@emotion/styled';
 import Card from '../common/Card';
 import Button from '../common/Button';
@@ -259,13 +259,19 @@ const EventCardItem = ({
   const { activeRole } = useAuth();
   const isManagerOrHigher = ['manager', 'superuser'].includes(activeRole);
   const [imageError, setImageError] = useState(false);
-  const [imageLoading, setImageLoading] = useState(true);
+  // Start with imageLoading as false to prevent initial blue background flash
+  const [imageLoading, setImageLoading] = useState(false);
 
   // Reset image state when backgroundUrl changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (event?.backgroundUrl) {
       setImageError(false);
-      setImageLoading(true);
+      // Don't force loading state - let the image load naturally
+      setImageLoading(false);
+    } else {
+      // No background URL, so no loading and no error
+      setImageLoading(false);
+      setImageError(false);
     }
   }, [event?.backgroundUrl]);
 
@@ -307,12 +313,12 @@ const EventCardItem = ({
             onLoad={handleImageLoad}
             onError={handleImageError}
             style={{ 
-              opacity: imageLoading ? 0 : 1
+              opacity: 1 // Always show the image immediately
             }}
           />
         ) : null}
         
-        {(!backgroundUrl || imageError) && !imageLoading && (
+        {(!backgroundUrl || imageError) && (
           <ImagePlaceholder>
             <FaImage />
             <span className="placeholder-text">No Image</span>
@@ -434,7 +440,7 @@ const EventCardItem = ({
                   </Button>
                 )}
                 
-                {(isManagerOrHigher || event.isOrganizer) && eventStatus.text !== 'Past' && (
+                {(isManagerOrHigher || event.isOrganizer) && eventStatus.text === 'Upcoming' && (
                   <Button 
                     size="small" 
                     variant="outlined" 

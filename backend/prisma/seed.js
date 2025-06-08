@@ -282,6 +282,54 @@ async function createEvents(users) {
         'Semester Party'
     ];
 
+    // Event descriptions for different categories
+    const ongoingDescriptions = [
+        'This event is happening now! Join us for workshops, talks, and networking.',
+        'Currently live with great speakers and hands-on activities. Come join us!',
+        'Event in progress! Interactive sessions and networking opportunities available.',
+        'Live event with expert speakers and collaborative workshops.',
+        'Multi-day event underway. Great discussions and networking happening now.'
+    ];
+
+    const upcomingDescriptions = [
+        'Join industry leaders and students for learning and networking.',
+        'Expert speakers, interactive sessions, and valuable networking opportunities.',
+        'Connect with professionals and explore cutting-edge topics.',
+        'Educational content and meaningful connections await you.',
+        'Engaging presentations and networking with peers and mentors.',
+        'Expert insights, skill-building workshops, and networking opportunities.',
+        'Learn from thought leaders and expand your professional network.',
+        'Quality content and networking in a collaborative environment.',
+        'Interactive workshops and opportunities to build relationships.',
+        'Insightful presentations and networking that opens doors.'
+    ];
+
+    const pastDescriptions = [
+        'Great event with inspiring speakers and valuable networking.',
+        'Successful gathering with educational content and lasting connections.',
+        'Participants gained insights and formed professional relationships.',
+        'Fantastic celebration of learning with motivated attendees.',
+        'Outstanding speakers and networking made this event special.',
+        'Diverse topics and welcoming atmosphere created great conversations.',
+        'Practical knowledge sharing with meaningful connections.',
+        'Expert insights and peer collaboration made this memorable.',
+        'High-quality content and networking with industry leaders.',
+        'Perfect blend of education and networking that participants loved.'
+    ];
+
+    const unpublishedDescriptions = [
+        'Exciting event in planning! Stay tuned for speaker announcements.',
+        'Big plans taking shape with expert presenters and great topics.',
+        'Special event being designed for maximum learning and networking.',
+        'Planning an unforgettable experience with education and inspiration.',
+        'Preparations underway for an event with amazing speakers.',
+        'Great things coming! Learning opportunities and expert perspectives.',
+        'Developing a remarkable event with exceptional value.',
+        'Team working on an educational and transformative experience.',
+        'Exciting developments! Innovative formats and expert content coming.',
+        'Something amazing in the works! Great speakers and topics ahead.'
+    ];
+
     // Create 5 ongoing events (started in the past, ends in the future)
     const ongoingEvents = [];
     for (let i = 0; i < 5; i++) {
@@ -298,7 +346,7 @@ async function createEvents(users) {
         const ongoingEvent = await prisma.event.create({
             data: {
                 name,
-                description: `This event is currently in progress! ${name} features interactive sessions and networking opportunities over multiple days.`,
+                description: ongoingDescriptions[i % ongoingDescriptions.length],
                 location: eventLocations[(i + 7) % eventLocations.length],
                 startTime,
                 endTime,
@@ -359,7 +407,7 @@ async function createEvents(users) {
         const upcomingEvent = await prisma.event.create({
             data: {
                 name,
-                description: `Join us for ${name}, where students can engage with industry professionals and academic experts.`,
+                description: upcomingDescriptions[i % upcomingDescriptions.length],
                 location: eventLocations[i % eventLocations.length],
                 startTime,
                 endTime,
@@ -405,7 +453,7 @@ async function createEvents(users) {
         const pastEvent = await prisma.event.create({
             data: {
                 name,
-                description: `This event featured presentations, networking, and opportunities for professional development.`,
+                description: pastDescriptions[i % pastDescriptions.length],
                 location: eventLocations[(i + 5) % eventLocations.length],
                 startTime,
                 endTime,
@@ -466,7 +514,7 @@ async function createEvents(users) {
         const unpublishedEvent = await prisma.event.create({
             data: {
                 name,
-                description: `Planning is underway for this exciting event. Stay tuned for more details.`,
+                description: unpublishedDescriptions[i % unpublishedDescriptions.length],
                 location: eventLocations[(i + 2) % eventLocations.length],
                 startTime,
                 endTime,

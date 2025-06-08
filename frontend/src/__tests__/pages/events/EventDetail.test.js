@@ -182,4 +182,23 @@ describe('EventDetail Page', () => {
     renderEventDetail('manager');
     expect(screen.getByText('Edit')).toBeInTheDocument();
   });
+
+  it('hides edit button for ongoing events', () => {
+    // Create an ongoing event (started but not ended)
+    const ongoingStartTime = new Date();
+    ongoingStartTime.setHours(ongoingStartTime.getHours() - 1); // 1 hour ago
+    const ongoingEndTime = new Date();
+    ongoingEndTime.setHours(ongoingEndTime.getHours() + 1); // 1 hour from now
+    
+    const ongoingEvent = {
+      ...mockEvent,
+      startTime: ongoingStartTime.toISOString(),
+      endTime: ongoingEndTime.toISOString(),
+    };
+
+    renderEventDetail('manager', ongoingEvent);
+    
+    expect(screen.getByText('Test Event')).toBeInTheDocument();
+    expect(screen.queryByText('Edit')).not.toBeInTheDocument();
+  });
 }); 

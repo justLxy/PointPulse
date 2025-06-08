@@ -379,4 +379,42 @@ describe('EventCardItem', () => {
     expect(screen.getByText('0 attendees (max: 100)')).toBeInTheDocument();
     expect(screen.getByText('0 points available')).toBeInTheDocument();
   });
+
+  it('hides edit button for ongoing events', () => {
+    mockAuthContext.activeRole = 'manager';
+    
+    // Mock the getEventStatus to return 'Ongoing'
+    const mockGetEventStatusOngoing = jest.fn(() => ({ text: 'Ongoing', color: '#ffa500' }));
+    
+    renderWithRouter(
+      <EventCardItem 
+        {...defaultProps} 
+        isManager={true}
+        getEventStatus={mockGetEventStatusOngoing}
+      />
+    );
+    
+    // Should not have edit button for ongoing events
+    const buttons = screen.getAllByTestId('button');
+    expect(buttons.length).toBe(2); // Only View Details and RSVP (no edit button)
+  });
+
+  it('hides edit button for past events', () => {
+    mockAuthContext.activeRole = 'manager';
+    
+    // Mock the getEventStatus to return 'Past'
+    const mockGetEventStatusPast = jest.fn(() => ({ text: 'Past', color: '#6c757d' }));
+    
+    renderWithRouter(
+      <EventCardItem 
+        {...defaultProps} 
+        isManager={true}
+        getEventStatus={mockGetEventStatusPast}
+      />
+    );
+    
+    // For past events, only View Details button should be shown (full width)
+    const buttons = screen.getAllByTestId('button');
+    expect(buttons.length).toBe(1); // Only View Details button
+  });
 }); 

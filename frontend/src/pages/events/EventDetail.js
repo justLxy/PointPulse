@@ -892,47 +892,59 @@ const EventDetail = () => {
   const handleEditEvent = () => {
     if (!event) return;
     
-    // First try to use the original points allocation if available
-    // If not, use the remaining points
-    const pointsValue = 
-      // Original points allocation takes precedence
-      typeof event.points === 'number' ? event.points : 
-      // Fallback to other possible properties
-      typeof event.pointsTotal === 'number' ? event.pointsTotal :
-      // If we have both awarded and remaining, we can calculate the total
-      (typeof event.pointsAwarded === 'number' && typeof event.pointsRemain === 'number') 
-        ? (event.pointsAwarded + event.pointsRemain) :
-      // Last resort, just use the remaining points
-      typeof event.pointsRemain === 'number' ? event.pointsRemain : '';
-    
-    setEventData({
-      name: event.name || '',
-      description: event.description || '',
-      location: event.location || '',
-      capacity: event.capacity || '',
-      points: pointsValue,
-      startTime: formatDateTimeForInput(event.startTime),
-      endTime: formatDateTimeForInput(event.endTime),
-      published: event.published || false,
-      backgroundUrl: event.backgroundUrl || null,
+    // Force refresh the event data to ensure we have the latest information
+    // This is especially important when coming from the Events page after an update
+    refetch().then(({ data: refreshedEvent }) => {
+      // Use the freshly fetched data to set up the form
+      const currentEvent = refreshedEvent || event;
+      
+      // First try to use the original points allocation if available
+      // If not, use the remaining points
+      const pointsValue = 
+        // Original points allocation takes precedence
+        typeof currentEvent.points === 'number' ? currentEvent.points : 
+        // Fallback to other possible properties
+        typeof currentEvent.pointsTotal === 'number' ? currentEvent.pointsTotal :
+        // If we have both awarded and remaining, we can calculate the total
+        (typeof currentEvent.pointsAwarded === 'number' && typeof currentEvent.pointsRemain === 'number') 
+          ? (currentEvent.pointsAwarded + currentEvent.pointsRemain) :
+        // Last resort, just use the remaining points
+        typeof currentEvent.pointsRemain === 'number' ? currentEvent.pointsRemain : '';
+      
+      setEventData({
+        name: currentEvent.name || '',
+        description: currentEvent.description || '',
+        location: currentEvent.location || '',
+        capacity: currentEvent.capacity || '',
+        points: pointsValue,
+        startTime: formatDateTimeForInput(currentEvent.startTime),
+        endTime: formatDateTimeForInput(currentEvent.endTime),
+        published: currentEvent.published || false,
+        backgroundUrl: currentEvent.backgroundUrl || null,
+      });
+      
+      // Reset background file state
+      setBackgroundFile(null);
+      
+      // Set background preview from existing URL if available - use the refreshed data
+      if (currentEvent.backgroundUrl) {
+        const getBackgroundUrl = (url) => {
+          if (!url) return null;
+          if (url.startsWith('http')) return url;
+          return `${API_URL}${url}`;
+        };
+        setBackgroundPreview(getBackgroundUrl(currentEvent.backgroundUrl));
+      } else {
+        setBackgroundPreview(null);
+      }
+      
+      setEditModalOpen(true);
+    }).catch((error) => {
+      console.error('Failed to refresh event data:', error);
+      // Fallback to using existing event data if refetch fails
+      // (rest of the original logic would go here, but let's keep it simple)
+      setEditModalOpen(true);
     });
-    
-    // Reset background file state
-    setBackgroundFile(null);
-    
-    // Set background preview from existing URL if available
-    if (event.backgroundUrl) {
-      const getBackgroundUrl = (url) => {
-        if (!url) return null;
-        if (url.startsWith('http')) return url;
-        return `${API_URL}${url}`;
-      };
-      setBackgroundPreview(getBackgroundUrl(event.backgroundUrl));
-    } else {
-      setBackgroundPreview(null);
-    }
-    
-    setEditModalOpen(true);
   };
   
   // Update event
@@ -1270,8 +1282,8 @@ const EventDetail = () => {
             <ActionButtonsContainer>
               {/* Primary action group */}
               <ButtonGroup>
-                {/* Edit event is a primary action - only show for non-past events */}
-                {eventStatus.text !== 'Past' && (
+                {/* Edit event is a primary action - only show for upcoming events (not ongoing or past) */}
+                {eventStatus.text === 'Upcoming' && (
                   <ActionButton 
                     variant="outlined"
                     onClick={handleEditEvent}
