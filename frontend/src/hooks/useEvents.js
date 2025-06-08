@@ -83,10 +83,40 @@ export const useEvents = (params = {}) => {
   
   const updateEventMutation = useMutation({
     mutationFn: ({ id, data }) => EventService.updateEvent(id, data),
-    onSuccess: (_, variables) => {
+    onSuccess: (responseData, variables) => {
       toast.success('Event updated successfully');
-      queryClient.invalidateQueries({ queryKey: ['events'] });
-      queryClient.invalidateQueries({ queryKey: ['event', variables.id] });
+      
+      // Add cache busting for background images to force browser to reload
+      if (responseData && responseData.backgroundUrl && responseData.backgroundUrl.startsWith('/uploads/')) {
+        responseData.backgroundUrl = `${responseData.backgroundUrl}?v=${Date.now()}`;
+      }
+      
+      // Immediately update the cache with the server response
+      queryClient.setQueryData(['events'], (old) => {
+        if (!old || !old.results) return old;
+        
+        return {
+          ...old,
+          results: old.results.map(event => {
+            if (event.id === variables.id) {
+              return { ...event, ...responseData };
+            }
+            return event;
+          })
+        };
+      });
+      
+      // Update individual event cache
+      queryClient.setQueryData(['event', variables.id], (old) => {
+        if (!old) return old;
+        return { ...old, ...responseData };
+      });
+      
+      // Force immediate refetch to ensure we have the latest data
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['events'] });
+        queryClient.invalidateQueries({ queryKey: ['event', variables.id] });
+      }, 100);
     },
     onError: (error) => {
       toast.error(error.message || 'Failed to update event');

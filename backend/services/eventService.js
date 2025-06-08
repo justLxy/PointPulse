@@ -1,7 +1,30 @@
 'use strict';
 
 const { PrismaClient } = require('@prisma/client');
+const fs = require('fs');
+const path = require('path');
 const prisma = new PrismaClient();
+
+/**
+ * Helper function to delete old event background image
+ */
+const deleteOldBackgroundImage = (backgroundUrl) => {
+    if (!backgroundUrl) return;
+    
+    // Only delete files that are stored locally (start with /uploads/events/)
+    if (backgroundUrl.startsWith('/uploads/events/')) {
+        const filePath = path.join(__dirname, '..', backgroundUrl);
+        
+        try {
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+                console.log('Old background image deleted:', filePath);
+            }
+        } catch (error) {
+            console.log('Warning: Failed to delete old background image:', error.message);
+        }
+    }
+};
 
 /**
  * Create a new event
@@ -668,6 +691,13 @@ const updateEvent = async (eventId, updateData, isManager = false) => {
 
     if (backgroundUrl !== undefined) {
         console.log('Validating backgroundUrl:', backgroundUrl);
+        
+        // Delete old background image if we're uploading a new one or clearing the background
+        if (event.backgroundUrl && (backgroundUrl !== event.backgroundUrl)) {
+            console.log('Deleting old background image:', event.backgroundUrl);
+            deleteOldBackgroundImage(event.backgroundUrl);
+        }
+        
         updateObj.backgroundUrl = backgroundUrl || null;
         console.log('BackgroundUrl added to update object:', updateObj.backgroundUrl);
     }
@@ -794,6 +824,13 @@ const deleteEvent = async (eventId) => {
 
     try {
         console.log('Deleting event from database');
+        
+        // Delete background image if it exists
+        if (event.backgroundUrl) {
+            console.log('Deleting background image:', event.backgroundUrl);
+            deleteOldBackgroundImage(event.backgroundUrl);
+        }
+        
         await prisma.event.delete({
             where: { id: parseInt(eventId) }
         });

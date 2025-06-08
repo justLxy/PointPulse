@@ -22,6 +22,8 @@ const EventCard = styled(Card)`
   height: 100%;
   transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
   
   &:hover {
     transform: translateY(-5px);
@@ -191,11 +193,23 @@ const EventDetail = styled.div`
   }
 `;
 
+const EventCardBody = styled(Card.Body)`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+`;
+
+const EventContent = styled.div`
+  flex-grow: 1;
+`;
+
 const EventActions = styled.div`
   display: flex;
   justify-content: space-between;
   gap: ${theme.spacing.sm};
   margin-top: ${theme.spacing.md};
+  flex-shrink: 0; /* Prevent actions from shrinking */
 `;
 
 const BadgeContainer = styled.div`
@@ -246,6 +260,14 @@ const EventCardItem = ({
   const isManagerOrHigher = ['manager', 'superuser'].includes(activeRole);
   const [imageError, setImageError] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
+
+  // Reset image state when backgroundUrl changes
+  React.useEffect(() => {
+    if (event?.backgroundUrl) {
+      setImageError(false);
+      setImageLoading(true);
+    }
+  }, [event?.backgroundUrl]);
 
   if (!event) return null; // Skip null/undefined events
   
@@ -332,51 +354,52 @@ const EventCardItem = ({
           </div>
         </EventBackgroundContent>
       </EventBackgroundContainer>
-      <Card.Body>
-        
-        {event.description && (
-        <EventDescription>
-            {event.description}
-        </EventDescription>
-        )}
-        
-        <EventDetails>
-          <EventDetail>
-            <FaMapMarkerAlt />
-            <span>{event.location || 'No location specified'}</span>
-          </EventDetail>
-          
-          <EventDetail>
-            <FaCalendarAlt />
-            <span>
-              {formatCompactDate(event.startTime)}
-              {event.endTime && new Date(event.startTime).toDateString() !== new Date(event.endTime).toDateString() && 
-                ` - ${formatCompactDate(event.endTime)}`}
-            </span>
-          </EventDetail>
-          
-          <EventDetail>
-            <FaClock />
-            <span>
-              {formatTime(event.startTime)} - {event.endTime ? formatTime(event.endTime) : 'TBD'}
-            </span>
-          </EventDetail>
-          
-          <EventDetail>
-            <FaUsers />
-            <span>
-              {event.numGuests ?? (event.guests?.length ?? 0)} attendees
-              {event.capacity ? ` (max: ${event.capacity})` : ''}
-            </span>
-          </EventDetail>
-          
-          {isManagerOrHigher && (
-            <EventDetail>
-              <FaCoins />
-              <span>{event.pointsRemain ?? 0} points available</span>
-            </EventDetail>
+      <EventCardBody>
+        <EventContent>
+          {event.description && (
+          <EventDescription>
+              {event.description}
+          </EventDescription>
           )}
-        </EventDetails>
+          
+          <EventDetails>
+            <EventDetail>
+              <FaMapMarkerAlt />
+              <span>{event.location || 'No location specified'}</span>
+            </EventDetail>
+            
+            <EventDetail>
+              <FaCalendarAlt />
+              <span>
+                {formatCompactDate(event.startTime)}
+                {event.endTime && new Date(event.startTime).toDateString() !== new Date(event.endTime).toDateString() && 
+                  ` - ${formatCompactDate(event.endTime)}`}
+              </span>
+            </EventDetail>
+            
+            <EventDetail>
+              <FaClock />
+              <span>
+                {formatTime(event.startTime)} - {event.endTime ? formatTime(event.endTime) : 'TBD'}
+              </span>
+            </EventDetail>
+            
+            <EventDetail>
+              <FaUsers />
+              <span>
+                {event.numGuests ?? (event.guests?.length ?? 0)} attendees
+                {event.capacity ? ` (max: ${event.capacity})` : ''}
+              </span>
+            </EventDetail>
+            
+            {isManagerOrHigher && (
+              <EventDetail>
+                <FaCoins />
+                <span>{event.pointsRemain ?? 0} points available</span>
+              </EventDetail>
+            )}
+          </EventDetails>
+        </EventContent>
         
         <EventActions>
           <div>
@@ -422,7 +445,7 @@ const EventCardItem = ({
             )}
           </div>
         </EventActions>
-      </Card.Body>
+      </EventCardBody>
     </EventCard>
   );
 };

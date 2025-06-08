@@ -494,7 +494,13 @@ const Events = () => {
     updateEvent(
       { id: selectedEvent.id, data: submitData },
       {
-        onSuccess: () => {
+        onSuccess: (responseData) => {
+          // Update local preview state if background was updated
+          if (backgroundFile && responseData && responseData.backgroundUrl) {
+            // Clear the background preview since we now have the real URL
+            setBackgroundPreview(null);
+          }
+          
           setEditModalOpen(false);
           resetForm();
         },
