@@ -911,7 +911,7 @@ const EventDetail = () => {
     // Format data for API
     let formattedData = {
       ...eventData,
-      capacity: eventData.capacity ? parseInt(eventData.capacity) : null,
+      capacity: eventData.capacity && eventData.capacity.trim() !== '' ? parseInt(eventData.capacity) : null,
     };
     
     // Only admins can update points and published status

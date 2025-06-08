@@ -104,10 +104,22 @@ const EventBackgroundContent = styled.div`
   color: white;
   width: 100%;
   display: flex;
-  align-items: center;
+  align-items: flex-end; /* Change from center to flex-end to push content down */
   gap: ${theme.spacing.md};
   position: relative;
   z-index: 4;
+  
+  /* Ensure the date container doesn't shrink */
+  & > div:first-of-type {
+    flex-shrink: 0;
+  }
+  
+  /* Allow the content area to be flexible but prevent overflow */
+  & > div:last-of-type {
+    flex: 1;
+    min-width: 0; /* Important for text truncation */
+    margin-bottom: ${theme.spacing.xs}; /* Add bottom margin to push text up slightly from the very bottom */
+  }
 `;
 
 const EventDate = styled.div`
@@ -138,8 +150,13 @@ const EventDate = styled.div`
 const EventTitle = styled.h3`
   font-size: ${theme.typography.fontSize.lg};
   font-weight: ${theme.typography.fontWeights.semiBold};
-  margin-bottom: ${theme.spacing.xs};
+  margin-bottom: ${theme.spacing.xs}; /* Keep original spacing between title and badges */
   color: inherit;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 `;
 
 const EventDescription = styled.p`
@@ -183,17 +200,27 @@ const EventActions = styled.div`
 
 const BadgeContainer = styled.div`
   display: flex;
-  gap: ${theme.spacing.xs};
-  margin-top: ${theme.spacing.sm};
+  gap: 4px; /* Smaller gap between badges */
+  margin-top: ${theme.spacing.sm}; /* Keep original spacing between title and badges */
+  flex-wrap: wrap;
+  max-width: 100%;
+  overflow: hidden;
+`;
+
+// Create a compact badge base style for event cards
+const CompactBadge = styled(Badge)`
+  /* Extra compact padding for event card badges */
+  padding: 2px 6px; /* Very compact padding */
+  font-size: 10px; /* Smaller font size */
+  font-weight: ${theme.typography.fontWeights.medium};
+  white-space: nowrap;
+  line-height: 1.2;
+  border-radius: ${theme.radius.sm}; /* Smaller border radius */
 `;
 
 // Create a custom Badge component that accepts hex color values
-const ColoredBadge = styled(Badge)`
+const ColoredBadge = styled(CompactBadge)`
   background-color: ${props => props.customColor || theme.colors.primary.main};
-  color: white;
-  font-weight: ${theme.typography.fontWeights.medium};
-  
-  /* All badges should have white text */
   color: white;
 `;
 
@@ -247,7 +274,7 @@ const EventCardItem = ({
   };
 
   const backgroundUrl = getBackgroundUrl(event.backgroundUrl);
-
+  
   return (
     <EventCard>
       <EventBackgroundContainer>
@@ -284,22 +311,22 @@ const EventCardItem = ({
               
               {isUserRsvpd && (
                 isUserCheckedIn ? (
-                  <Badge color="success" style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                  <CompactBadge color="success" style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
                     <FaCheckCircle size={12} /> Checked In
-                  </Badge>
+                  </CompactBadge>
                 ) : (
-                  <Badge color="info">RSVP'd</Badge>
+                  <CompactBadge color="info">RSVP'd</CompactBadge>
                 )
               )}
               
               {event.isOrganizer && (
-                <Badge color="primary">Organizer</Badge>
+                <CompactBadge color="primary">Organizer</CompactBadge>
               )}
               
               {isManagerOrHigher && (
                 event.published ? 
-                <Badge color="success">Published</Badge> : 
-                <Badge color="warning">Unpublished</Badge>
+                <CompactBadge color="success">Published</CompactBadge> : 
+                <CompactBadge color="warning">Unpublished</CompactBadge>
               )}
             </BadgeContainer>
           </div>
@@ -308,9 +335,9 @@ const EventCardItem = ({
       <Card.Body>
         
         {event.description && (
-          <EventDescription>
+        <EventDescription>
             {event.description}
-          </EventDescription>
+        </EventDescription>
         )}
         
         <EventDetails>

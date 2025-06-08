@@ -419,7 +419,7 @@ const Events = () => {
     // Format data for API
     const formattedData = {
       ...eventData,
-      capacity: eventData.capacity ? parseInt(eventData.capacity) : null,
+      capacity: eventData.capacity && eventData.capacity.trim() !== '' ? parseInt(eventData.capacity) : null,
       points: eventData.points ? parseInt(eventData.points) : 0,
     };
     
@@ -428,6 +428,10 @@ const Events = () => {
     if (backgroundFile) {
       submitData = new FormData();
       Object.keys(formattedData).forEach(key => {
+        // Don't append null capacity to FormData - let backend handle missing field
+        if (key === 'capacity' && formattedData[key] === null) {
+          return;
+        }
         if (formattedData[key] !== null && formattedData[key] !== undefined) {
           submitData.append(key, formattedData[key]);
         }
@@ -452,7 +456,7 @@ const Events = () => {
     // Format data for API
     let formattedData = {
       ...eventData,
-      capacity: eventData.capacity ? parseInt(eventData.capacity) : null,
+      capacity: eventData.capacity && eventData.capacity.trim() !== '' ? parseInt(eventData.capacity) : null,
     };
     
     // Only managers can update points and publication status
@@ -474,6 +478,10 @@ const Events = () => {
     if (backgroundFile) {
       submitData = new FormData();
       Object.keys(formattedData).forEach(key => {
+        // Don't append null capacity to FormData - let backend handle missing field
+        if (key === 'capacity' && formattedData[key] === null) {
+          return;
+        }
         if (formattedData[key] !== null && formattedData[key] !== undefined) {
           submitData.append(key, formattedData[key]);
         }

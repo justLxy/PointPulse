@@ -587,13 +587,13 @@ export const EditEventModal = ({
               borderRadius: theme.radius.md
             }}>
               {!selectedEvent?.published && (
-                <input
-                  type="checkbox"
-                  id="published"
-                  checked={eventData.published}
-                  onChange={(e) => handleFormChange('published', e.target.checked)}
-                  style={{ marginRight: theme.spacing.sm }}
-                />
+              <input
+                type="checkbox"
+                id="published"
+                checked={eventData.published}
+                onChange={(e) => handleFormChange('published', e.target.checked)}
+                style={{ marginRight: theme.spacing.sm }}
+              />
               )}
               <label htmlFor="published" style={{ 
                 fontSize: theme.typography.fontSize.sm,

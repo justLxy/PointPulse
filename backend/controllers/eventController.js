@@ -55,7 +55,7 @@ const createEvent = async (req, res) => {
             location: req.body.location,
             startTime: req.body.startTime,
             endTime: req.body.endTime,
-            capacity: req.body.capacity,
+            capacity: req.body.capacity !== undefined ? req.body.capacity : null,
             points: req.body.points,
             creatorId: req.auth.id,
             backgroundUrl: backgroundUrl

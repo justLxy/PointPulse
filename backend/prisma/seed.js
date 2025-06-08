@@ -238,7 +238,7 @@ async function createEvents(users) {
     ];
     
     const eventBackgrounds = [
-        'https://images.unsplash.com/photo-1519751138087-5bf79df62d5b?w=800&h=400&fit=crop', // Conference room
+        'https://unsplash.com/photos/white-and-gray-office-rolling-chairs-bIZJRVBLfOM', // Conference room
         'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&h=400&fit=crop', // Auditorium
         'https://images.unsplash.com/photo-1556761175-4b46a572b786?w=800&h=400&fit=crop', // Office meeting
         'https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=800&h=400&fit=crop', // Tech conference
