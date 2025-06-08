@@ -9,6 +9,7 @@ import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Modal from '../../components/common/Modal';
 import Badge from '../../components/common/Badge';
+import { EditEventModal } from '../../components/events/EventModals';
 import theme from '../../styles/theme';
 import { API_URL } from '../../services/api';
 import { Tooltip } from 'react-tooltip';
@@ -687,6 +688,10 @@ const EventDetail = () => {
     published: false,
   });
   
+  // Background image state for edit
+  const [backgroundFile, setBackgroundFile] = useState(null);
+  const [backgroundPreview, setBackgroundPreview] = useState(null);
+  
   // Fetch event details
   const { 
     getEvent, 
@@ -899,7 +904,12 @@ const EventDetail = () => {
       startTime: event.startTime ? new Date(event.startTime).toISOString().slice(0, 16) : '',
       endTime: event.endTime ? new Date(event.endTime).toISOString().slice(0, 16) : '',
       published: event.published || false,
+      backgroundUrl: event.backgroundUrl || null,
     });
+    
+    // Reset background file states
+    setBackgroundFile(null);
+    setBackgroundPreview(null);
     
     setEditModalOpen(true);
   };
@@ -911,7 +921,7 @@ const EventDetail = () => {
     // Format data for API
     let formattedData = {
       ...eventData,
-      capacity: eventData.capacity && eventData.capacity.trim() !== '' ? parseInt(eventData.capacity) : null,
+      capacity: eventData.capacity && String(eventData.capacity).trim() !== '' ? parseInt(eventData.capacity) : null,
     };
     
     // Only admins can update points and published status
@@ -928,11 +938,40 @@ const EventDetail = () => {
       delete formattedData.published;
     }
     
+    // Create FormData if there's a file to upload
+    let submitData;
+    if (backgroundFile) {
+      submitData = new FormData();
+      Object.keys(formattedData).forEach(key => {
+        // Don't append null capacity to FormData - let backend handle missing field
+        if (key === 'capacity' && formattedData[key] === null) {
+          return;
+        }
+        if (formattedData[key] !== null && formattedData[key] !== undefined) {
+          submitData.append(key, formattedData[key]);
+        }
+      });
+      submitData.append('background', backgroundFile);
+    } else {
+      submitData = formattedData;
+    }
+    
     updateEvent(
-      { id: eventId, data: formattedData },
+      { id: eventId, data: submitData },
       {
-        onSuccess: () => {
+        onSuccess: (responseData) => {
+          // Update local preview state if background was updated
+          if (backgroundFile && responseData && responseData.backgroundUrl) {
+            // Clear the background preview since we now have the real URL
+            setBackgroundPreview(null);
+          }
+          
           setEditModalOpen(false);
+          
+          // Reset background states
+          setBackgroundFile(null);
+          setBackgroundPreview(null);
+          
           refetch();
         },
       }
@@ -1210,13 +1249,15 @@ const EventDetail = () => {
             <ActionButtonsContainer>
               {/* Primary action group */}
               <ButtonGroup>
-                {/* Edit event is a primary action */}
-                <ActionButton 
-                  variant="outlined"
-                  onClick={handleEditEvent}
-                >
-                  <FaEdit /> Edit
-                </ActionButton>
+                {/* Edit event is a primary action - only show for non-past events */}
+                {eventStatus.text !== 'Past' && (
+                  <ActionButton 
+                    variant="outlined"
+                    onClick={handleEditEvent}
+                  >
+                    <FaEdit /> Edit
+                  </ActionButton>
+                )}
                 
                 {/* Publish is an important action for managers */}
                 {isManager && !event.published && (
@@ -1991,143 +2032,25 @@ const EventDetail = () => {
       </Modal>
       
       {/* Edit Event Modal */}
-      <Modal
+      <EditEventModal
         isOpen={editModalOpen}
         onClose={() => {
           setEditModalOpen(false);
+          // Reset background states
+          setBackgroundFile(null);
+          setBackgroundPreview(null);
         }}
-        title={`Edit Event: ${event?.name || ''}`}
-        size="large"
-      >
-        <ModalContent>
-          <ModalForm>
-            <Input
-              label="Event Name"
-              value={eventData.name}
-              onChange={(e) => handleFormChange('name', e.target.value)}
-              placeholder="Enter event name"
-              required
-            />
-            
-            <Input
-              label="Description"
-              value={eventData.description}
-              onChange={(e) => handleFormChange('description', e.target.value)}
-              placeholder="Enter event description"
-              multiline
-              rows={3}
-              required
-              key={`description-${editModalOpen}-${eventData.description}`}
-            />
-            
-            <Input
-              label="Location"
-              value={eventData.location}
-              onChange={(e) => handleFormChange('location', e.target.value)}
-              placeholder="Enter event location"
-              required
-            />
-            
-            <FormGroup>
-              <Input
-                label="Start Time"
-                type="datetime-local"
-                value={eventData.startTime}
-                onChange={(e) => handleFormChange('startTime', e.target.value)}
-                required
-              />
-              
-              <Input
-                label="End Time"
-                type="datetime-local"
-                value={eventData.endTime}
-                onChange={(e) => handleFormChange('endTime', e.target.value)}
-                required
-              />
-            </FormGroup>
-            
-            <FormGroup>
-              <Input
-                label="Capacity"
-                type="number"
-                value={eventData.capacity}
-                onChange={(e) => handleFormChange('capacity', e.target.value)}
-                placeholder="Max number of attendees (optional)"
-                helperText="Leave empty for no limit"
-              />
-            </FormGroup>
-            
-            {isManager && (
-              <FormGroup>
-                <Input
-                  label="Points"
-                  type="number"
-                  value={eventData.points}
-                  onChange={(e) => handleFormChange('points', e.target.value)}
-                  placeholder="Points to award to attendees"
-                  required
-                />
-              </FormGroup>
-            )}
-            
-            {isManager && (
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                marginTop: theme.spacing.sm,
-                padding: theme.spacing.sm,
-                backgroundColor: theme.colors.background.default,
-                borderRadius: theme.radius.md
-              }}>
-                <input
-                  type="checkbox"
-                  id="published"
-                  checked={eventData.published}
-                  onChange={(e) => handleFormChange('published', e.target.checked)}
-                  style={{ marginRight: theme.spacing.sm }}
-                  disabled={event?.published} // Disable if already published
-                />
-                <label htmlFor="published" style={{ 
-                  fontSize: theme.typography.fontSize.sm,
-                  display: 'flex',
-                  alignItems: 'center',
-                  cursor: event?.published ? 'not-allowed' : 'pointer'
-                }}>
-                  {event?.published ? (
-                    <>
-                      <span style={{ 
-                        color: theme.colors.success.main, 
-                        marginRight: theme.spacing.xs 
-                      }}>✓</span> 
-                      This event is published and visible to users
-                    </>
-                  ) : (
-                    <>Publish this event and make it visible to users</>
-                  )}
-                </label>
-              </div>
-            )}
-          </ModalForm>
-          
-          <ModalActions>
-            <Button
-              variant="outlined"
-              onClick={() => {
-                setEditModalOpen(false);
-              }}
-              disabled={isUpdating}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleUpdateEvent}
-              loading={isUpdating}
-            >
-              Update Event
-            </Button>
-          </ModalActions>
-        </ModalContent>
-      </Modal>
+        eventData={eventData}
+        selectedEvent={event}
+        handleFormChange={handleFormChange}
+        handleUpdateEvent={handleUpdateEvent}
+        isUpdating={isUpdating}
+        isManager={isManager}
+        backgroundFile={backgroundFile}
+        setBackgroundFile={setBackgroundFile}
+        backgroundPreview={backgroundPreview}
+        setBackgroundPreview={setBackgroundPreview}
+      />
       
       {/* Delete Event Confirmation Modal */}
       <Modal

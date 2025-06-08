@@ -419,7 +419,7 @@ const Events = () => {
     // Format data for API
     const formattedData = {
       ...eventData,
-      capacity: eventData.capacity && eventData.capacity.trim() !== '' ? parseInt(eventData.capacity) : null,
+      capacity: eventData.capacity && String(eventData.capacity).trim() !== '' ? parseInt(eventData.capacity) : null,
       points: eventData.points ? parseInt(eventData.points) : 0,
     };
     
@@ -456,7 +456,7 @@ const Events = () => {
     // Format data for API
     let formattedData = {
       ...eventData,
-      capacity: eventData.capacity && eventData.capacity.trim() !== '' ? parseInt(eventData.capacity) : null,
+      capacity: eventData.capacity && String(eventData.capacity).trim() !== '' ? parseInt(eventData.capacity) : null,
     };
     
     // Only managers can update points and publication status

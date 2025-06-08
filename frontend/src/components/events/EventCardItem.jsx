@@ -423,7 +423,7 @@ const EventCardItem = ({
               </Button>
             )}
             
-            {(isManagerOrHigher || event.isOrganizer) && (
+            {(isManagerOrHigher || event.isOrganizer) && eventStatus.text !== 'Past' && (
               <Button 
                 size="small" 
                 variant="outlined" 

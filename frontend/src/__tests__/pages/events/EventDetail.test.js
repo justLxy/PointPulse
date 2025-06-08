@@ -5,6 +5,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import EventDetail from '../../../pages/events/EventDetail';
 
 // Mock hooks and context
+// Create future dates for the test event
+const futureStartTime = new Date();
+futureStartTime.setDate(futureStartTime.getDate() + 7); // 7 days from now
+const futureEndTime = new Date(futureStartTime);
+futureEndTime.setHours(futureEndTime.getHours() + 2); // 2 hours after start
+
 const mockEvent = {
   id: 1,
   name: 'Test Event',
@@ -12,8 +18,8 @@ const mockEvent = {
   location: 'Test Location',
   capacity: 100,
   points: 10,
-  startTime: '2024-06-01T10:00:00Z',
-  endTime: '2024-06-01T12:00:00Z',
+  startTime: futureStartTime.toISOString(),
+  endTime: futureEndTime.toISOString(),
   published: true,
   isOrganizer: true,
   isAttending: false,
@@ -35,30 +41,33 @@ const mockAuthContext = {
   currentUser: { id: 1, name: 'Alice', utorid: 'alice123' }
 };
 
+// Create a mock that can be updated with beforeEach
+const mockUseEvents = {
+  getEvent: jest.fn(() => ({
+    data: mockEvent,
+    isLoading: false,
+    error: null,
+    refetch: jest.fn(),
+  })),
+  rsvpToEvent: jest.fn(),
+  cancelRsvp: jest.fn(),
+  addOrganizer: jest.fn(),
+  removeOrganizer: jest.fn(),
+  addGuest: jest.fn(),
+  removeGuest: jest.fn(),
+  awardPoints: jest.fn(),
+  isRsvping: false,
+  isCancellingRsvp: false,
+  isAwardingPoints: false,
+  updateEvent: jest.fn(),
+  deleteEvent: jest.fn(),
+  isUpdating: false,
+  isDeleting: false,
+  removeAllGuests: jest.fn(),
+};
+
 jest.mock('../../../hooks/useEvents', () => ({
-  useEvents: () => ({
-    getEvent: () => ({
-      data: mockEvent,
-      isLoading: false,
-      error: null,
-      refetch: jest.fn(),
-    }),
-    rsvpToEvent: jest.fn(),
-    cancelRsvp: jest.fn(),
-    addOrganizer: jest.fn(),
-    removeOrganizer: jest.fn(),
-    addGuest: jest.fn(),
-    removeGuest: jest.fn(),
-    awardPoints: jest.fn(),
-    isRsvping: false,
-    isCancellingRsvp: false,
-    isAwardingPoints: false,
-    updateEvent: jest.fn(),
-    deleteEvent: jest.fn(),
-    isUpdating: false,
-    isDeleting: false,
-    removeAllGuests: jest.fn(),
-  })
+  useEvents: () => mockUseEvents
 }));
 
 jest.mock('../../../hooks/useUsers', () => ({
@@ -75,6 +84,14 @@ jest.mock('../../../components/common/LoadingSpinner', () => ({ text }) => (
 
 const renderEventDetail = (role = 'manager', event = mockEvent) => {
   mockAuthContext.activeRole = role;
+  // Update the mock event for this test
+  mockUseEvents.getEvent.mockReturnValue({
+    data: event,
+    isLoading: false,
+    error: null,
+    refetch: jest.fn(),
+  });
+  
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } }
   });
@@ -140,5 +157,29 @@ describe('EventDetail Page', () => {
     renderEventDetail('regular');
     expect(screen.queryByRole('button', { name: /organizers/i })).not.toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /guests/i })[0]).toBeInTheDocument();
+  });
+
+  it('hides edit button for past events', () => {
+    // Create a past event
+    const pastStartTime = new Date();
+    pastStartTime.setDate(pastStartTime.getDate() - 7); // 7 days ago
+    const pastEndTime = new Date(pastStartTime);
+    pastEndTime.setHours(pastEndTime.getHours() + 2); // 2 hours after start
+    
+    const pastEvent = {
+      ...mockEvent,
+      startTime: pastStartTime.toISOString(),
+      endTime: pastEndTime.toISOString(),
+    };
+
+    renderEventDetail('manager', pastEvent);
+    
+    expect(screen.getByText('Test Event')).toBeInTheDocument();
+    expect(screen.queryByText('Edit')).not.toBeInTheDocument();
+  });
+
+  it('shows edit button for upcoming events', () => {
+    renderEventDetail('manager');
+    expect(screen.getByText('Edit')).toBeInTheDocument();
   });
 }); 
