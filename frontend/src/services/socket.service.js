@@ -20,7 +20,6 @@ const SocketService = {
         if (socket && isConnected) {
           // If already connected, just join the user's room
           socket.emit('join', utorid);
-          console.log('Already connected, joined room for:', utorid);
           resolve();
           return;
         }
@@ -28,55 +27,55 @@ const SocketService = {
         // Create a new socket connection
         socket = io(API_URL, {
           reconnection: true,
-          reconnectionAttempts: 5,
-          reconnectionDelay: 3000,
-          transports: ['websocket', 'polling'],
+          reconnectionAttempts: 3,
+          reconnectionDelay: 5000,
+          reconnectionDelayMax: 10000,
+          timeout: 10000,
+          transports: ['polling', 'websocket'], // Try polling first, then websocket
+          upgrade: true,
+          forceNew: false,
         });
         
         // Connection events
         socket.on('connect', () => {
-          console.log('Socket connected:', socket.id);
           isConnected = true;
           
           // Join user's room using their UTORid as the room name
           if (utorid) {
             socket.emit('join', utorid);
-            console.log('Joined room for:', utorid);
           }
           
           resolve();
         });
         
         socket.on('connect_error', (error) => {
-          console.error('Socket connection error:', error);
+          // Silently handle connection errors - WebSocket is optional
           if (!isConnected) {
-            reject(error);
+            // Don't reject - just resolve to allow the app to continue
+            resolve();
           }
         });
         
         socket.on('disconnect', (reason) => {
-          console.log('Socket disconnected:', reason);
           isConnected = false;
         });
         
         // Set up checkin-success listener for event check-ins
         socket.on('checkin-success', (data) => {
-          console.log('Received check-in confirmation:', data);
-          
           // Notify registered listeners
           if (listeners['checkin-success']) {
             listeners['checkin-success'].forEach(callback => {
               try {
                 callback(data);
               } catch (err) {
-                console.error('Error in checkin-success listener callback:', err);
+                // Silently handle callback errors
               }
             });
           }
         });
       } catch (error) {
-        console.error('Error initializing socket:', error);
-        reject(error);
+        // Silently handle initialization errors - WebSocket is optional
+        resolve();
       }
     });
   },
@@ -89,7 +88,6 @@ const SocketService = {
       socket.disconnect();
       socket = null;
       isConnected = false;
-      console.log('Socket disconnected');
     }
   },
   

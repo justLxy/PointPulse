@@ -47,7 +47,7 @@ const QRCodeLabel = styled.div`
   margin-bottom: ${theme.spacing.xs};
 `;
 
-const QRCode = ({ value, size = 200, level = 'H', label, renderAs = 'canvas', includeMargin = true, showValue = true }) => {
+const QRCode = ({ value, size = 200, level = 'H', label, includeMargin = true, showValue = true }) => {
   const qrRef = useRef();
   
   const downloadQRCode = () => {
@@ -72,7 +72,6 @@ const QRCode = ({ value, size = 200, level = 'H', label, renderAs = 'canvas', in
           value={value}
           size={size}
           level={level}
-          renderAs={renderAs}
           includeMargin={includeMargin}
           bgColor="#FFFFFF"
           fgColor="#000000"

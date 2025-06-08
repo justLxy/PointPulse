@@ -228,7 +228,6 @@ const Login = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && !loading) {
-      console.log('Already authenticated, redirecting to', from || 'dashboard');
       navigate(from || '/', { replace: true });
     }
   }, [isAuthenticated, loading, navigate, from]);
@@ -248,7 +247,6 @@ const Login = () => {
 
       
       if (success) {
-        console.log('Login successful, redirecting to:', from);
         navigate(from, { replace: true });
       } else {
         if (error?.status === 401) {

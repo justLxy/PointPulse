@@ -57,7 +57,6 @@ const QRCodeDescription = styled.div`
 const UniversalQRCode = ({ 
   size = 200, 
   level = 'H', 
-  renderAs = 'canvas', 
   includeMargin = true,
   label = "",
   description,
@@ -128,7 +127,6 @@ const UniversalQRCode = ({
           value={generateQRData()}
           size={size}
           level={level}
-          renderAs={renderAs}
           includeMargin={includeMargin}
           bgColor="#FFFFFF"
           fgColor="#000000"

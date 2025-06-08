@@ -1320,9 +1320,9 @@ const Dashboard = () => {
               <FaExchangeAlt />
               <span>My Transactions</span>
             </ShortcutCard>
-            <ShortcutCard as="button" onClick={() => setIsTransferModalOpen(true)}>
-              <FaExchangeAlt style={{ color: theme.colors.secondary.main }} />
-              <span>Transfer Points</span>
+            <ShortcutCard to="/products">
+              <FaGift />
+              <span>Products</span>
             </ShortcutCard>
             <ShortcutCard to="/promotions">
               <FaTags />

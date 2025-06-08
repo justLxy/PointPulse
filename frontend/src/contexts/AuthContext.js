@@ -78,40 +78,32 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        console.log('Initializing authentication...');
-        
         // Check if token exists and is valid
         const isTokenValid = AuthService.isAuthenticated();
         setIsAuthenticated(isTokenValid);
         
         if (isTokenValid) {
-          console.log('Token is valid, trying to get user data');
           try {
             const user = await AuthService.getCurrentUser();
             
             if (user) {
-              console.log('User loaded successfully:', user.utorid);
               setCurrentUser(user);
               
               // First try to get active role from localStorage, otherwise use the user's default role
               const savedRole = localStorage.getItem('activeRole');
               setActiveRole(savedRole || user.role);
             } else {
-              console.log('User data not found, logging out');
               AuthService.logout();
               setIsAuthenticated(false);
             }
           } catch (error) {
-            console.error('Error loading user data:', error);
             AuthService.logout();
             setIsAuthenticated(false);
           }
         } else {
-          console.log('No valid token found or token expired');
           setIsAuthenticated(false);
         }
       } catch (error) {
-        console.error('Authentication initialization error:', error);
         AuthService.logout();
         setIsAuthenticated(false);
       } finally {
@@ -127,12 +119,10 @@ export const AuthProvider = ({ children }) => {
     const checkAuthStatus = () => {
       const isValid = AuthService.isAuthenticated();
       if (isAuthenticated !== isValid) {
-        console.log('Auth status changed:', { wasAuthenticated: isAuthenticated, nowAuthenticated: isValid });
         setIsAuthenticated(isValid);
         
         // If no longer authenticated, clear the user state
         if (!isValid && currentUser) {
-          console.log('No longer authenticated, clearing user state');
           setCurrentUser(null);
           setActiveRole(null);
         }
@@ -155,15 +145,12 @@ export const AuthProvider = ({ children }) => {
   const login = async (utorid, password) => {
     try {
       setLoading(true);
-      console.log('Attempting login for:', utorid);
       
       // First get the token
       const authData = await AuthService.login(utorid, password);
-      console.log('Login successful, token received');
       
       // Then fetch user data with the new token (force refresh from API)
       const user = await AuthService.getCurrentUser(true);
-      console.log('User data fetched successfully');
       
       // Update state and localStorage
       setCurrentUser(user);
@@ -174,7 +161,6 @@ export const AuthProvider = ({ children }) => {
       
       return { success: true, user };
     } catch (error) {
-      console.error('Login failed:', error);
       
       // Provide more specific error messages
       let errorMessage = 'Unable to sign in. Please try again.';
@@ -234,7 +220,7 @@ export const AuthProvider = ({ children }) => {
     try {
       localStorage.setItem('user', JSON.stringify(updated));
     } catch (err) {
-      console.warn('Failed to persist updated user to localStorage', err);
+      // Silently handle localStorage errors
     }
   };
   

@@ -19,10 +19,10 @@ export const SocketProvider = ({ children }) => {
   // Connect to socket when user is authenticated
   useEffect(() => {
     if (isAuthenticated && currentUser?.utorid) {
-      console.log('Connecting to socket as user:', currentUser.utorid);
       SocketService.connect(currentUser.utorid)
-        .catch(error => {
-          console.error('Failed to connect to socket:', error);
+        .catch(() => {
+          // Connection failed - real-time features (QR code scanning notifications) won't work
+          // This is expected if backend WebSocket service is not running
         });
       
       // Cleanup on unmount or when auth state changes

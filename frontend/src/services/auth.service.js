@@ -3,26 +3,14 @@ import api from './api';
 const AuthService = {
   login: async (utorid, password) => {
     try {
-      console.log('Attempting login API call for:', utorid);
       const response = await api.post('/auth/tokens', { utorid, password });
-      console.log('Login API response:', response.data);
       
       if (response.data.token) {
-        console.log('Saving token in localStorage');
         localStorage.setItem('token', response.data.token);
-        console.log('Saving token expiry:', response.data.expiresAt);
         localStorage.setItem('tokenExpiry', response.data.expiresAt);
-        
-        // Verify token was saved correctly
-        const savedToken = localStorage.getItem('token');
-        console.log('Verification - Token saved:', !!savedToken);
-        if (savedToken) {
-          console.log('Token (first 10 chars):', savedToken.substring(0, 10) + '...');
-        }
       }
       return response.data;
     } catch (error) {
-      console.error('Login API error:', error);
       
       // Provide more specific error messages
       if (error.response) {
@@ -128,24 +116,20 @@ const AuthService = {
       const cachedUser = localStorage.getItem('user');
       
       if (cachedUser && !forceRefresh) {
-        console.log('Using cached user data');
         const user = JSON.parse(cachedUser);
         return user;
       }
       
       // If not in localStorage or forceRefresh is true, fetch from API
-      console.log('Fetching user data from API');
       const response = await api.get('/users/me');
       
       if (response.data) {
-        console.log('User data received from API');
         localStorage.setItem('user', JSON.stringify(response.data));
         return response.data;
       } else {
         throw new Error('Empty user data received');
       }
     } catch (error) {
-      console.error('Failed to get user:', error);
       localStorage.removeItem('user'); // Clear cached user data if API call fails
       throw error.response ? error.response.data : new Error('Failed to get user');
     }
@@ -200,23 +184,12 @@ const AuthService = {
     const expiry = localStorage.getItem('tokenExpiry');
     const user = localStorage.getItem('user');
     
-    console.log('Auth check:', { 
-      hasToken: !!token, 
-      hasExpiry: !!expiry, 
-      hasUser: !!user,
-      tokenLength: token ? token.length : 0,
-      tokenStart: token ? `${token.substring(0, 10)}...` : 'none',
-      expiry: expiry || 'none'
-    });
-    
     if (!token || !expiry) {
-      console.log('Missing token or expiry date');
       return false;
     }
     
     // Validate token format
     if (!AuthService.isTokenValid(token)) {
-      console.log('Invalid token format, token:', token);
       return false;
     }
     
@@ -225,14 +198,6 @@ const AuthService = {
     const now = new Date();
     
     const isValid = now < expiryDate;
-    if (!isValid) {
-      console.log('Token expired:', { 
-        expiry, 
-        expiryDate: expiryDate.toISOString(),
-        now: now.toISOString(), 
-        difference: (expiryDate - now) / 1000 / 60 + ' minutes'
-      });
-    }
     
     return isValid;
   },

@@ -92,12 +92,10 @@ const ProtectedRoute = ({ children, allowedRoles = ['regular', 'cashier', 'manag
   }
   
   if (!isAuthenticated) {
-    console.log('Not authenticated, redirecting to login');
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
   
   if (!allowedRoles.includes(activeRole)) {
-    console.log('Role not allowed:', activeRole, 'allowed:', allowedRoles);
     return <Navigate to="/" replace />;
   }
   
@@ -106,7 +104,12 @@ const ProtectedRoute = ({ children, allowedRoles = ['regular', 'cashier', 'manag
 
 const App = () => {
   return (
-    <Router>
+    <Router
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      }}
+    >
       <AuthProvider>
         <AppQueryClientProvider>
           <SocketProvider>

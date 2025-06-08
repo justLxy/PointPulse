@@ -3,10 +3,18 @@
 
 require('dotenv').config();
 const port = process.env.PORT || 8000;
+const http = require('http');
 const app = require('./index');
 
-const server = app.listen(port, () => {
+// Create HTTP server
+const server = http.createServer(app);
+
+// Set up Socket.IO
+const io = app.setupSocketIO(server);
+
+server.listen(port, () => {
     console.log(`Server running on port ${port}`);
+    console.log(`WebSocket server is available`);
 });
 
 server.on('error', (err) => {

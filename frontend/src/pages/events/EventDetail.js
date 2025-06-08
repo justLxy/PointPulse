@@ -917,9 +917,20 @@ const EventDetail = () => {
       backgroundUrl: event.backgroundUrl || null,
     });
     
-    // Reset background file states
+    // Reset background file state
     setBackgroundFile(null);
-    setBackgroundPreview(null);
+    
+    // Set background preview from existing URL if available
+    if (event.backgroundUrl) {
+      const getBackgroundUrl = (url) => {
+        if (!url) return null;
+        if (url.startsWith('http')) return url;
+        return `${API_URL}${url}`;
+      };
+      setBackgroundPreview(getBackgroundUrl(event.backgroundUrl));
+    } else {
+      setBackgroundPreview(null);
+    }
     
     setEditModalOpen(true);
   };

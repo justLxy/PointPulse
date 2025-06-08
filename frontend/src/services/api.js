@@ -26,13 +26,6 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     
-    // For debugging - log request details
-    console.log(`API Request: ${config.method.toUpperCase()} ${config.url}`, {
-      headers: config.headers,
-      data: config.data,
-      params: config.params
-    });
-    
     return config;
   },
   (error) => {
