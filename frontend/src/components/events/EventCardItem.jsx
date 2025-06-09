@@ -152,13 +152,18 @@ const EventDate = styled.div`
 const EventTitle = styled.h3`
   font-size: ${theme.typography.fontSize.lg};
   font-weight: ${theme.typography.fontWeights.semiBold};
-  margin-bottom: ${theme.spacing.xs}; /* Keep original spacing between title and badges */
+  margin-bottom: ${theme.spacing.xs};
   color: inherit;
   line-height: 1.3;
+  
+  // Allow text to wrap over two lines before truncating
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 100%;
+  display: -webkit-box;
+  -webkit-line-clamp: 2; // Show up to 2 lines
+  -webkit-box-orient: vertical;
+  word-break: break-word; // Break long words to prevent overflow
+  white-space: normal; // Allow wrapping
 `;
 
 const EventDescription = styled.p`

@@ -80,6 +80,7 @@ const SearchRow = styled.div`
   @media (max-width: 768px) {
     flex-direction: column;
     gap: ${theme.spacing.sm};
+    align-items: stretch;
   }
 `;
 
@@ -179,9 +180,18 @@ const PaymentTypeButton = styled.button`
   
   @media (max-width: 480px) {
     flex-basis: calc(50% - ${theme.spacing.xs});
+    flex-direction: column;
+    gap: 2px;
+    padding: ${theme.spacing.xs};
     
     span {
-      display: none;
+      font-size: 10px;
+      line-height: 1.2;
+      text-align: center;
+    }
+    
+    svg {
+      font-size: 14px;
     }
   }
 `;
@@ -215,6 +225,7 @@ const SearchInputWrapper = styled.div`
   
   @media (max-width: 768px) {
     min-width: auto;
+    width: 100%;
   }
 `;
 

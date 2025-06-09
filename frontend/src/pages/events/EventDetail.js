@@ -169,6 +169,10 @@ const ActionButtonsContainer = styled.div`
 const DropdownContainer = styled.div`
   position: relative;
   display: inline-block;
+  
+  @media (max-width: 768px) {
+    width: 100%;
+  }
 `;
 
 const DropdownButton = styled(Button)`
@@ -177,6 +181,21 @@ const DropdownButton = styled(Button)`
   justify-content: space-between;
   min-width: 120px;
   background-color: ${props => props.isOpen ? `${theme.colors.background.hover}` : undefined};
+  transition: all ${theme.transitions.default};
+  
+  @media (max-width: 768px) {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: ${theme.shadows.sm};
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
   
   svg:last-child {
     margin-left: ${theme.spacing.xs};
@@ -257,6 +276,17 @@ const EventInfo = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${theme.spacing.lg};
+  min-width: 0;
+`;
+
+const Sidebar = styled.div`
+  min-width: 0;
+`;
+
+const GuestActionButtons = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: ${theme.spacing.sm};
 `;
 
 const EventDescription = styled.div`
@@ -461,7 +491,7 @@ const AudienceStage = styled.div`
 
 const AudienceSeats = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
   gap: ${theme.spacing.md};
   padding: ${theme.spacing.md} 0;
 `;
@@ -521,6 +551,7 @@ const AudienceName = styled.div`
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  width: 100%;
 `;
 
 const AudienceRole = styled.div`
@@ -1481,7 +1512,7 @@ const EventDetail = () => {
                   <Card.Title>Guests</Card.Title>
                   {/* Keep internal button logic based on canEditEventDetails */} 
                   {canEditEventDetails && (eventStatus.text === 'Upcoming' || eventStatus.text === 'Ongoing') && ( 
-                    <div style={{ display: 'flex', gap: theme.spacing.sm }}>
+                    <GuestActionButtons>
                       <Button 
                         size="small" 
                         onClick={() => setAddGuestModalOpen(true)}
@@ -1507,7 +1538,7 @@ const EventDetail = () => {
                           <FaTrashAlt /> Delete All
                         </Button>
                       )}
-                    </div>
+                    </GuestActionButtons>
                   )}
                 </Card.Header>
                 <Card.Body>
@@ -1697,7 +1728,7 @@ const EventDetail = () => {
           </TabContainer>
         </EventInfo>
         
-        <div>
+        <Sidebar>
           <SummaryCard>
             <Card.Header>
               <Card.Title>Event Summary</Card.Title>
@@ -1747,7 +1778,7 @@ const EventDetail = () => {
                )}
             </Card.Body>
           </SummaryCard>
-        </div>
+        </Sidebar>
       </ContentGrid>
       
       {/* Add Organizer Modal */}
