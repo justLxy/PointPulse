@@ -693,7 +693,7 @@ const EventDetail = () => {
   const [refreshAfterScan, setRefreshAfterScan] = useState(false);
 
   // State for tabs
-  const [activeTab, setActiveTab] = useState('details');
+  const [activeTab, setActiveTab] = useState('guests');
   
   // Modals state
   const [addOrganizerModalOpen, setAddOrganizerModalOpen] = useState(false);
@@ -1155,6 +1155,15 @@ const EventDetail = () => {
   // Manual check-in modal state
   const [manualCheckinModalOpen, setManualCheckinModalOpen] = useState(false);
   
+  // Set default active tab based on permissions
+  useEffect(() => {
+    if (canManageGuests) {
+      setActiveTab('guests');
+    } else if (isManager) {
+      setActiveTab('organizers');
+    }
+  }, [canManageGuests, isManager]);
+
   // Add an effect to check the rsvp state parameter from location
   useEffect(() => {
     // If we have just RSVPed (from state), or the flag is set, force refetch
@@ -1468,44 +1477,31 @@ const EventDetail = () => {
             </Card.Body>
           </Card>
           
-          <TabContainer>
-            <TabHeader>
-              <TabButton 
-                active={activeTab === 'details'} 
-                onClick={() => setActiveTab('details')}
-              >
-                Details
-              </TabButton>
-              {/* Conditionally render Guests tab */} 
-              {canManageGuests && ( 
-                <TabButton 
-                  active={activeTab === 'guests'} 
-                  onClick={() => setActiveTab('guests')}
-                >
-                  Guests ({event.numGuests ?? event.guests?.length ?? 0})
-                </TabButton>
-              )}
-              {/* Conditionally render Organizers tab */} 
-              {isManager && ( 
-                <TabButton 
-                  active={activeTab === 'organizers'} 
-                  onClick={() => setActiveTab('organizers')}
-                >
-                  Organizers ({event.organizers && Array.isArray(event.organizers) ? event.organizers.length : 0})
-                </TabButton>
-              )}
-            </TabHeader>
-            
-            {activeTab === 'details' && (
-              <Card>
-                <Card.Body>
-                  <h3>About this Event</h3>
-                  <p>{event.description}</p>
-                </Card.Body>
-              </Card>
-            )}
-            
-            {/* Conditionally render Guests tab content */} 
+          {/* Only show tabs if user has permission to see at least one tab */}
+          {(canManageGuests || isManager) && (
+            <TabContainer>
+              <TabHeader>
+                {/* Conditionally render Guests tab */} 
+                {canManageGuests && ( 
+                  <TabButton 
+                    active={activeTab === 'guests'} 
+                    onClick={() => setActiveTab('guests')}
+                  >
+                    Guests ({event.numGuests ?? event.guests?.length ?? 0})
+                  </TabButton>
+                )}
+                {/* Conditionally render Organizers tab */} 
+                {isManager && ( 
+                  <TabButton 
+                    active={activeTab === 'organizers'} 
+                    onClick={() => setActiveTab('organizers')}
+                  >
+                    Organizers ({event.organizers && Array.isArray(event.organizers) ? event.organizers.length : 0})
+                  </TabButton>
+                )}
+              </TabHeader>
+              
+              {/* Conditionally render Guests tab content */} 
             {(activeTab === 'guests' && canManageGuests) && ( 
               <Card>
                 <Card.Header>
@@ -1726,6 +1722,7 @@ const EventDetail = () => {
               </Card>
             )}
           </TabContainer>
+          )}
         </EventInfo>
         
         <Sidebar>
