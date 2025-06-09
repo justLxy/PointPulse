@@ -120,22 +120,25 @@ describe('EventDetail Page', () => {
 
   it('shows guests and organizers tabs and can switch', () => {
     renderEventDetail();
-    // Default is on details tab
-    expect(screen.getByText(/about this event/i)).toBeInTheDocument();
-    // Switch to guests tab
-    const guestsTabBtn = screen.getAllByRole('button', { name: /guests/i })[0];
-    fireEvent.click(guestsTabBtn);
+    // Default tab is guests, verify the tab is present and active
+    expect(screen.getByRole('button', { name: /guests/i })).toBeInTheDocument();
     expect(screen.getByText(/Total Guests/i)).toBeInTheDocument();
+    
     // Switch to organizers tab
-    const orgTabBtn = screen.getAllByRole('button', { name: /organizers/i })[0];
+    const orgTabBtn = screen.getByRole('button', { name: /organizers/i });
     fireEvent.click(orgTabBtn);
     expect(screen.getAllByText(/Organizers/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Charlie/)).toBeInTheDocument();
+    
+    // Switch back to guests tab
+    const guestsTabBtn = screen.getByRole('button', { name: /guests/i });
+    fireEvent.click(guestsTabBtn);
+    expect(screen.getByText(/Total Guests/i)).toBeInTheDocument();
   });
 
   it('can interact with guests tab', () => {
     renderEventDetail('manager');
-    const guestsTabBtn = screen.getAllByRole('button', { name: /guests/i })[0];
+    const guestsTabBtn = screen.getByRole('button', { name: /guests/i });
     fireEvent.click(guestsTabBtn);
     // Verify guests tab is successfully activated
     expect(guestsTabBtn).toBeInTheDocument();
@@ -156,7 +159,7 @@ describe('EventDetail Page', () => {
   it('shows different view for regular user', () => {
     renderEventDetail('regular');
     expect(screen.queryByRole('button', { name: /organizers/i })).not.toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: /guests/i })[0]).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /guests/i })).toBeInTheDocument();
   });
 
   it('hides edit button for past events', () => {

@@ -12,7 +12,6 @@ import {
   FaTimes,
   FaChevronDown,
   FaExchangeAlt,
-  FaHistory,
 } from 'react-icons/fa';
 
 
@@ -159,23 +158,6 @@ const ProfileDropdown = styled.div`
   align-items: center;
 `;
 
-const DropdownToggle = styled.button`
-  background: none;
-  border: none;
-  display: flex;
-  align-items: center;
-  gap: ${theme.spacing.sm};
-  cursor: pointer;
-  font-weight: ${theme.typography.fontWeights.medium};
-  color: ${theme.colors.text.primary};
-  padding: ${theme.spacing.xs} ${theme.spacing.sm};
-  border-radius: ${theme.radius.md};
-  
-  &:hover {
-    background-color: rgba(0, 0, 0, 0.05);
-  }
-`;
-
 const DropdownMenu = styled.div`
   position: absolute;
   top: calc(100% + 10px);
@@ -224,40 +206,10 @@ const DropdownItem = styled(Link)`
   }
 `;
 
-const DropdownButton = styled.button`
-  display: flex;
-  align-items: center;
-  gap: ${theme.spacing.sm};
-  padding: ${theme.spacing.md} ${theme.spacing.lg};
-  width: 100%;
-  text-align: left;
-  background: none;
-  border: none;
-  color: ${theme.colors.text.primary};
-  cursor: pointer;
-  transition: background-color ${theme.transitions.quick};
-  
-  &:hover {
-    background-color: rgba(0, 0, 0, 0.05);
-  }
-`;
-
 const Divider = styled.div`
   height: 1px;
   background-color: ${theme.colors.border.light};
   margin: ${theme.spacing.xs} 0;
-`;
-
-const RoleBadge = styled.div`
-  display: inline-flex;
-  align-items: center;
-  padding: ${theme.spacing.xs} ${theme.spacing.sm};
-  background-color: ${theme.colors.primary.main};
-  color: ${theme.colors.primary.contrastText};
-  border-radius: ${theme.radius.full};
-  font-size: ${theme.typography.fontSize.xs};
-  font-weight: ${theme.typography.fontWeights.medium};
-  margin-left: ${theme.spacing.sm};
 `;
 
 const RoleDropdownToggle = styled.button`

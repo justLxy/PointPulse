@@ -13,7 +13,6 @@ import { EditEventModal } from '../../components/events/EventModals';
 import theme from '../../styles/theme';
 import { API_URL } from '../../services/api';
 import { Tooltip } from 'react-tooltip';
-import QRCode from '../../components/common/QRCode';
 import UniversalQRCode from '../../components/common/UniversalQRCode';
 import ScannerModal from '../../components/event/ScannerModal';
 import ManualCheckinModal from '../../components/event/ManualCheckinModal';
@@ -410,19 +409,6 @@ const EmptyState = styled.div`
   padding: ${theme.spacing.xl};
   text-align: center;
   color: ${theme.colors.text.secondary};
-`;
-
-const FormGroup = styled.div`
-  display: flex;
-  gap: ${theme.spacing.md};
-  
-  & > * {
-    flex: 1;
-  }
-  
-  @media (max-width: 768px) {
-    flex-direction: column;
-  }
 `;
 
 const SummaryCard = styled(Card)`
@@ -1572,16 +1558,6 @@ const EventDetail = () => {
                           ][colorSeed];
                           
                           const pointsAwarded = event.pointsAwardedToGuests?.find(p => p.userId === guest.id)?.points || 0;
-                          
-                          // Add proper null checks for avatarUrl
-                          let avatarPath, baseSrc, src;
-                          if (guest.avatarUrl) {
-                          const version = localStorage.getItem('avatarVersion');
-                          const isAbsolute = /^(?:[a-z]+:)?\/\//i.test(guest.avatarUrl);
-                            avatarPath = guest.avatarUrl.startsWith('/') ? guest.avatarUrl : `/${guest.avatarUrl}`;
-                            baseSrc = isAbsolute ? guest.avatarUrl : `${API_URL}${avatarPath}`;
-                            src = version ? `${baseSrc}?v=${version}` : baseSrc;
-                          }
                           
                           return (
                             <AudienceSeat key={guest.id}>
