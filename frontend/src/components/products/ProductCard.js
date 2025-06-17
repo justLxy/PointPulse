@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import styled from '@emotion/styled';
 import { motion } from 'framer-motion';
-import { FiDollarSign, FiGift, FiStar, FiPackage } from 'react-icons/fi';
+import { FiDollarSign, FiGift, FiPackage } from 'react-icons/fi';
 import theme from '../../styles/theme';
 import Badge from '../common/Badge';
 
@@ -232,17 +232,7 @@ const StockInfo = styled.div`
   color: ${theme.colors.text.secondary};
 `;
 
-const RatingDisplay = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${theme.spacing.xs};
-  font-size: ${theme.typography.fontSize.xs};
-  color: ${theme.colors.accent.main};
-  
-  svg {
-    font-size: 0.875rem;
-  }
-`;
+
 
 const ProductCard = ({ product }) => {
   const {
@@ -255,9 +245,7 @@ const ProductCard = ({ product }) => {
     priceType,
     imageUrl,
     inStock = true,
-    stockQuantity,
-    rating,
-    reviewCount
+    stockQuantity
   } = product;
 
   const [imageError, setImageError] = useState(false);
@@ -387,13 +375,7 @@ const ProductCard = ({ product }) => {
               )}
             </StockInfo>
             
-            {rating && (
-              <RatingDisplay>
-                <FiStar />
-                <span>{rating.toFixed(1)}</span>
-                {reviewCount && <span>({reviewCount})</span>}
-              </RatingDisplay>
-            )}
+
           </ProductMeta>
         </PriceSection>
       </CardContent>
