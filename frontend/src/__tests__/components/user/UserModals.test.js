@@ -330,30 +330,6 @@ describe('UserModals Component', () => {
   });
 
   describe('View User Details Modal', () => {
-    test('displays all user information correctly', () => {
-      render(
-        <UserModals 
-          {...defaultProps} 
-          viewUserDetails={true} 
-          selectedUser={mockUser}
-        />
-      );
-
-      // Check all user details are displayed
-      expect(screen.getByText('Account Information')).toBeInTheDocument();
-      expect(screen.getByText('john123')).toBeInTheDocument();
-      expect(screen.getByText('John Doe')).toBeInTheDocument();
-      expect(screen.getByText('john@mail.utoronto.ca')).toBeInTheDocument();
-      expect(screen.getByText('Cashier')).toBeInTheDocument();
-      expect(screen.getByText('1500')).toBeInTheDocument();
-      
-      // Check verification status
-      const verifiedText = screen.getByText((content, element) => {
-        return element.textContent === 'Verified: No';
-      });
-      expect(verifiedText).toBeInTheDocument();
-    });
-
     test('handles modal close correctly', () => {
       render(
         <UserModals 

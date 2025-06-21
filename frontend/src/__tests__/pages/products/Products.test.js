@@ -10,6 +10,15 @@ import { useCurrentUser } from '../../../hooks/useCurrentUser';
 jest.mock('../../../hooks/useProducts');
 jest.mock('../../../hooks/useCurrentUser');
 
+// Mock window.scrollTo
+beforeAll(() => {
+  window.scrollTo = jest.fn();
+});
+
+afterAll(() => {
+  window.scrollTo.mockRestore();
+});
+
 // Mock framer-motion
 jest.mock('framer-motion', () => ({
   motion: {
