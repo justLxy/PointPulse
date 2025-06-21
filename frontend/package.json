@@ -28,7 +28,13 @@
     "test": "react-scripts test --watchAll=false --testTimeout=10000",
     "test:coverage": "react-scripts test --watchAll=false --testTimeout=10000 --coverage",
     "test:watch": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run",
+    "test:e2e": "cypress run",
+    "test:e2e:open": "cypress open",
+    "test:e2e:local": "cross-env CYPRESS_BASE_URL=http://localhost:3000 cypress run",
+    "test:e2e:local:open": "cross-env CYPRESS_BASE_URL=http://localhost:3000 cypress open"
   },
   "eslintConfig": {
     "extends": [
@@ -56,6 +62,8 @@
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
+    "cross-env": "^7.0.3",
+    "cypress": "^14.5.0",
     "jest": "^27.5.1"
   }
 }
