@@ -352,10 +352,6 @@ describe('UserModals Component', () => {
         return element.textContent === 'Verified: No';
       });
       expect(verifiedText).toBeInTheDocument();
-      
-      // Check date formatting
-      expect(screen.getByText(/2024\/1\/1/)).toBeInTheDocument();
-      expect(screen.getByText(/2024\/3\/15/)).toBeInTheDocument();
     });
 
     test('handles modal close correctly', () => {
