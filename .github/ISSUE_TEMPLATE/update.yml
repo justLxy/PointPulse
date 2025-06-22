@@ -1,0 +1,27 @@
+# Primarily for use by student groups who aren't in the CSSu.
+# They will need to fill out the form with event details, point allocations, et cetera.
+
+---
+name: Update
+description: "for when content on the site needs to be added or updated, e.g. an event, a page, or a link"
+title: "[update] your title goes here"
+assignees: JasonBarahan
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: "Describe the content that needs to be added or updated in detail. Feel free to be really specific."
+      placeholder: "Example: The CSSU will be holding their annual semi-formal on March 22 at Old Victoria. We're giving 50 points to each person who attends. [add more details]"
+    validations:
+      required: true
+  - type: textarea
+    id: points_count
+    attributes:
+      label: Points Count
+      description: "How many points will you be using out of your assigned allocation? (You can assign more than you have, but your student group will need to pay for the excess.)"
+      placeholder: "2000 out of 5000 per year. [add more details]"
+    validations:
+      required: true
+---
+
