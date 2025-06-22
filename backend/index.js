@@ -16,6 +16,7 @@ const userRoutes = require("./routes/userRoutes");
 const transactionRoutes = require("./routes/transactionRoutes");
 const eventRoutes = require("./routes/eventRoutes");
 const promotionRoutes = require("./routes/promotionRoutes");
+const productRoutes = require("./routes/productRoutes");
 
 // Import error handlers
 const { notFoundHandler, errorHandler } = require("./middlewares/errorMiddleware");
@@ -59,6 +60,7 @@ app.use(
     }).unless({
         path: [
             /^\/auth\//,
+            /^\/products\/?.*/,
         ],
     })
 );
@@ -68,6 +70,7 @@ app.use("/users", userRoutes);
 app.use("/transactions", transactionRoutes);
 app.use("/events", eventRoutes);
 app.use("/promotions", promotionRoutes);
+app.use("/products", productRoutes);
 
 // Error handling
 app.use(notFoundHandler);

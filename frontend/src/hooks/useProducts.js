@@ -1,153 +1,108 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState, useMemo } from 'react';
+import productService from '../services/product.service';
 
-// Mock data for development - this will be replaced with real API calls later
-const generateMockProducts = () => {
-  const categories = ['beverages', 'snacks', 'meals', 'accessories', 'electronics'];
-  const priceTypes = ['cash', 'points', 'both'];
-  
-  const products = [];
-  
-  const productNames = {
-    beverages: [
-      'Coca-Cola', 'Pepsi', 'Coffee', 'Green Tea', 'Energy Drink', 'Orange Juice',
-      'Water Bottle', 'Iced Tea', 'Lemonade', 'Sports Drink'
-    ],
-    snacks: [
-      'Potato Chips', 'Chocolate Bar', 'Granola Bar', 'Cookies', 'Crackers',
-      'Trail Mix', 'Popcorn', 'Pretzels', 'Nuts', 'Candy'
-    ],
-    meals: [
-      'Sandwich', 'Salad', 'Pizza Slice', 'Burrito', 'Soup', 'Pasta',
-      'Burger', 'Wrap', 'Rice Bowl', 'Noodles'
-    ],
-    accessories: [
-      'T-Shirt', 'Hoodie', 'Mug', 'Water Bottle', 'Keychain', 'Sticker Pack',
-      'Notebook', 'Pen Set', 'Badge', 'Lanyard'
-    ],
-    electronics: [
-      'Phone Charger', 'USB Cable', 'Headphones', 'Power Bank', 'Phone Case',
-      'Bluetooth Speaker', 'Mouse Pad', 'Screen Cleaner', 'Adapter', 'Webcam'
-    ]
-  };
+// Transform Square catalog objects into the product shape used by the UI
+const transformSquareCatalog = (squareData = {}) => {
+  const objects = squareData.objects || [];
+  const countsArray = squareData.counts || [];
+  const categoriesMap = {};
+  const imagesMap = {};
 
-  const descriptions = {
-    beverages: [
-      'Refreshing drink perfect for any time of day',
-      'Premium quality beverage with natural flavors',
-      'Energizing drink to keep you going',
-      'Healthy and delicious beverage option'
-    ],
-    snacks: [
-      'Crunchy and satisfying snack for quick energy',
-      'Perfect bite-sized treat for studying',
-      'Healthy snack option packed with nutrients',
-      'Delicious snack to satisfy your cravings'
-    ],
-    meals: [
-      'Freshly prepared meal with quality ingredients',
-      'Satisfying and nutritious meal option',
-      'Quick and delicious meal for busy students',
-      'Hearty meal to fuel your day'
-    ],
-    accessories: [
-      'High-quality CSSU branded merchandise',
-      'Essential accessory for every student',
-      'Stylish and functional item',
-      'Perfect gift or personal use item'
-    ],
-    electronics: [
-      'Essential tech accessory for students',
-      'High-quality electronic item',
-      'Convenient and reliable device',
-      'Perfect for your tech needs'
-    ]
-  };
+  // Build counts map variationId -> quantity number
+  const countsMap = countsArray.reduce((acc, c) => {
+    acc[c.catalog_object_id] = parseInt(c.quantity, 10);
+    return acc;
+  }, {});
 
-  // High-quality product images from Unsplash
-  const imageUrls = {
-    beverages: [
-      'https://images.unsplash.com/photo-1581006852262-e4307cf6283a?w=400&h=300&fit=crop',
-      'https://images.unsplash.com/photo-1561758033-d89a9ad46330?w=400&h=300&fit=crop',
-      'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop',
-      'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=400&h=300&fit=crop',
-      'https://images.unsplash.com/photo-1558642452-9d2a7deb7f62?w=400&h=300&fit=crop'
-    ],
-    snacks: [
-      'https://images.unsplash.com/photo-1606312619070-d48b4c652a52?w=400&h=300&fit=crop',
-      'https://images.unsplash.com/photo-1571988840298-3b5301d5109b?w=400&h=300&fit=crop',
-      'https://images.unsplash.com/photo-1584464491033-06628f3a6b7b?w=400&h=300&fit=crop',
-      'https://images.unsplash.com/photo-1577906073491-20319b5d1cc8?w=400&h=300&fit=crop',
-      'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?w=400&h=300&fit=crop'
-    ],
-    meals: [
-      'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop',
-      'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop',
-      'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400&h=300&fit=crop',
-      'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop',
-      'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=300&fit=crop'
-    ],
-    accessories: [
-      'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=300&fit=crop',
-      'https://images.unsplash.com/photo-1556306535-0f09a537f0a3?w=400&h=300&fit=crop',
-      'https://images.unsplash.com/photo-1574180566232-aaad1b5b8450?w=400&h=300&fit=crop',
-      'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=300&fit=crop',
-      'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=400&h=300&fit=crop'
-    ],
-    electronics: [
-      'https://images.unsplash.com/photo-1572569511254-d8f925fe2cbb?w=400&h=300&fit=crop',
-      'https://images.unsplash.com/photo-1585792180666-f7347c490ee2?w=400&h=300&fit=crop',
-      'https://images.unsplash.com/photo-1484704849700-f032a568e944?w=400&h=300&fit=crop',
-      'https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=400&h=300&fit=crop',
-      'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=400&h=300&fit=crop'
-    ]
-  };
-
-  let id = 1;
-  categories.forEach(category => {
-    const names = productNames[category];
-    const categoryDescriptions = descriptions[category];
-    const categoryImages = imageUrls[category];
-    
-    names.forEach((name, index) => {
-      const priceType = priceTypes[Math.floor(Math.random() * priceTypes.length)];
-      const basePrice = Math.random() * 50 + 5; // $5-$55
-      const pointsMultiplier = 100; // 1 dollar = 100 points roughly
-      
-      products.push({
-        id: id++,
-        name: `${name}`,
-        description: categoryDescriptions[Math.floor(Math.random() * categoryDescriptions.length)],
-        category: category,
-        priceType: priceType,
-        cashPrice: priceType !== 'points' ? Math.round(basePrice * 100) / 100 : null,
-        pointsPrice: priceType !== 'cash' ? Math.round(basePrice * pointsMultiplier) : null,
-        imageUrl: categoryImages[index % categoryImages.length],
-        inStock: Math.random() > 0.1, // 90% chance of being in stock
-        stockQuantity: Math.floor(Math.random() * 100) + 1,
-        rating: Math.round((Math.random() * 2 + 3) * 10) / 10, // 3.0-5.0 rating
-        reviewCount: Math.floor(Math.random() * 50) + 1,
-        createdAt: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString(),
-      });
+  // Build category map {id: name}
+  objects
+    .filter((obj) => obj.type === 'CATEGORY' && obj.category_data?.name)
+    .forEach((cat) => {
+      categoriesMap[cat.id] = cat.category_data.name;
     });
-  });
 
-  return products;
+  // Build images map {id: url}
+  objects
+    .filter((obj) => obj.type === 'IMAGE' && obj.image_data?.url)
+    .forEach((img) => {
+      imagesMap[img.id] = img.image_data.url;
+    });
+
+  // Convert ITEM objects -> product model
+  const products = objects
+    .filter((obj) => obj.type === 'ITEM' && obj.item_data)
+    .map((item) => {
+      const { id, item_data } = item;
+
+      // Determine category
+      let categoryName = 'Other';
+      if (item_data.categories && item_data.categories.length > 0) {
+        const catId = item_data.categories[0].id;
+        categoryName = categoriesMap[catId] || categoryName;
+      }
+
+      // Build variations array
+      const variationsArr = (item_data.variations || []).map((v) => {
+        const vId = v.id;
+        const priceCents = v.item_variation_data?.price_money?.amount;
+        return {
+          id: vId,
+          name: v.item_variation_data?.name || 'Variant',
+          cashPrice: priceCents !== undefined ? priceCents / 100 : null,
+          stockQuantity: countsMap[vId] ?? 0,
+          inStock: (countsMap[vId] ?? 0) > 0,
+        };
+      });
+
+      // Find first in-stock variation for display, or default to first one if all are OOS.
+      const displayVar = variationsArr.find(v => v.inStock) || variationsArr[0] || { cashPrice: 0, inStock: false, stockQuantity: 0 };
+
+      // Find image URL from the first image_id
+      let imageUrl = null;
+      if (item_data.image_ids && item_data.image_ids.length > 0) {
+        const imageId = item_data.image_ids[0];
+        imageUrl = imagesMap[imageId] || null;
+      }
+
+      const isAnyVariationInStock = variationsArr.some(v => v.inStock);
+
+      return {
+        id,
+        name: item_data.name,
+        description: item_data.description || '',
+        category: categoryName.toLowerCase(),
+        priceType: 'cash',
+        cashPrice: displayVar.cashPrice,
+        pointsPrice: null,
+        imageUrl,
+        inStock: isAnyVariationInStock,
+        stockQuantity: displayVar.stockQuantity,
+        rating: undefined,
+        reviewCount: undefined,
+        createdAt: item.updated_at || item.created_at,
+        variations: variationsArr,
+      };
+    });
+
+  const categoriesList = Object.values(categoriesMap)
+    .map((name) => name.toLowerCase())
+    .sort()
+    .map((cat) => ({ value: cat, label: cat.charAt(0).toUpperCase() + cat.slice(1) }));
+
+  return { products, categoriesList };
 };
 
-const mockProducts = generateMockProducts();
-
-// Mock API function - this simulates a real API call
+// Fetch products util which now calls backend proxy then transforms + filters
 const fetchProducts = async (filters = {}) => {
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
-  
-  let filteredProducts = [...mockProducts];
+  const squareRaw = await productService.getProducts();
+  const { products: allProducts, categoriesList } = transformSquareCatalog(squareRaw);
+  let products = [...allProducts];
   
   // Apply filters
   if (filters.search) {
     const searchTerm = filters.search.toLowerCase();
-    filteredProducts = filteredProducts.filter(product =>
+    products = products.filter(product =>
       product.name.toLowerCase().includes(searchTerm) ||
       product.description.toLowerCase().includes(searchTerm) ||
       product.category.toLowerCase().includes(searchTerm)
@@ -155,20 +110,24 @@ const fetchProducts = async (filters = {}) => {
   }
   
   if (filters.category) {
-    filteredProducts = filteredProducts.filter(product =>
+    products = products.filter(product =>
       product.category === filters.category
     );
   }
   
   if (filters.priceType) {
-    filteredProducts = filteredProducts.filter(product =>
+    products = products.filter(product =>
       product.priceType === filters.priceType
     );
   }
   
+  if (filters.inStockOnly) {
+    products = products.filter((p) => p.inStock);
+  }
+  
   // Apply affordability filter
   if (filters.affordable && filters.userPoints !== undefined) {
-    filteredProducts = filteredProducts.filter(product => {
+    products = products.filter(product => {
       if (!product.inStock) return false; // Can't buy out of stock items
       
       // Check if user can afford this product based on price type
@@ -193,7 +152,7 @@ const fetchProducts = async (filters = {}) => {
   
   // Apply sorting
   if (filters.sortBy) {
-    filteredProducts.sort((a, b) => {
+    products.sort((a, b) => {
       switch (filters.sortBy) {
         case 'points-asc':
           // Sort by points price (ascending), handle null values
@@ -227,12 +186,12 @@ const fetchProducts = async (filters = {}) => {
 
   // Calculate stats
   const stats = {
-    totalProducts: filteredProducts.length,
-    cashProducts: filteredProducts.filter(p => p.priceType === 'cash' || p.priceType === 'both').length,
-    pointsProducts: filteredProducts.filter(p => p.priceType === 'points' || p.priceType === 'both').length,
-    inStockProducts: filteredProducts.filter(p => p.inStock).length,
+    totalProducts: products.length,
+    cashProducts: products.filter(p => p.priceType === 'cash' || p.priceType === 'both').length,
+    pointsProducts: products.filter(p => p.priceType === 'points' || p.priceType === 'both').length,
+    inStockProducts: products.filter(p => p.inStock).length,
     affordableProducts: filters.userPoints !== undefined 
-      ? filteredProducts.filter(p => {
+      ? products.filter(p => {
           if (!p.inStock) return false;
           // Conversion rate: 1 point = $0.01, so $1 = 100 points
           switch (p.priceType) {
@@ -255,17 +214,18 @@ const fetchProducts = async (filters = {}) => {
   const { page = 1, limit = 12 } = filters;
   const startIndex = (page - 1) * limit;
   const endIndex = startIndex + limit;
-  const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
+  const paginatedProducts = products.slice(startIndex, endIndex);
   
   return {
     products: paginatedProducts,
-    totalCount: filteredProducts.length,
+    totalCount: products.length,
     stats,
+    categories: categoriesList,
     pagination: {
       page,
       limit,
-      totalPages: Math.ceil(filteredProducts.length / limit),
-      hasNext: endIndex < filteredProducts.length,
+      totalPages: Math.ceil(products.length / limit),
+      hasNext: endIndex < products.length,
       hasPrev: page > 1,
     }
   };
@@ -299,6 +259,7 @@ export const useProducts = (filters = {}) => {
     products: data?.products || [],
     totalCount: data?.totalCount || 0,
     stats: data?.stats || null,
+    categories: data?.categories || [],
     pagination: data?.pagination || null,
     isLoading,
     error,

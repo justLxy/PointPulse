@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styled from '@emotion/styled';
 import { motion } from 'framer-motion';
 import { FiDollarSign, FiGift, FiStar, FiPackage } from 'react-icons/fi';
@@ -6,7 +6,11 @@ import theme from '../../styles/theme';
 import Badge from '../common/Badge';
 
 const CardContainer = styled(motion.div)`
-  background: ${theme.colors.background.paper};
+  background: ${({ inStock }) => 
+    inStock 
+      ? theme.colors.background.paper 
+      : '#f5f5f5'
+  };
   border-radius: ${theme.radius.xl};
   overflow: hidden;
   box-shadow: ${theme.shadows.sm};
@@ -16,12 +20,16 @@ const CardContainer = styled(motion.div)`
   flex-direction: column;
   
   &:hover {
-    transform: translateY(-4px);
-    box-shadow: ${theme.shadows.lg};
+    ${({ inStock }) => inStock && `
+      transform: translateY(-4px);
+      box-shadow: ${theme.shadows.lg};
+    `}
   }
   
   &:hover .product-image {
-    transform: scale(1.05);
+    ${({ inStock }) => inStock && `
+      transform: scale(1.05);
+    `}
   }
 `;
 
@@ -30,7 +38,7 @@ const ImageContainer = styled.div`
   width: 100%;
   height: 220px;
   overflow: hidden;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: ${theme.colors.background.paper};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -39,16 +47,14 @@ const ImageContainer = styled.div`
 const ProductImage = styled.img`
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: containimage.png;
   transition: transform ${theme.transitions.default};
 `;
 
 const ImagePlaceholder = styled.div`
-  width: 120px;
-  height: 100px;
-  border-radius: ${theme.radius.lg};
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(10px);
+  width: 100%;
+  height: 100%;
+  background: ${theme.colors.background.default};
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -67,24 +73,6 @@ const ImagePlaceholder = styled.div`
     font-weight: ${theme.typography.fontWeights.medium};
     text-align: center;
   }
-  
-  ${({ loading }) => loading && `
-    &::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
-      animation: shimmer 1.5s infinite;
-    }
-    
-    @keyframes shimmer {
-      0% { transform: translateX(-100%); }
-      100% { transform: translateX(100%); }
-    }
-  `}
 `;
 
 const StockBadge = styled.div`
@@ -250,18 +238,35 @@ const ProductCard = ({ product }) => {
     name,
     description,
     category,
-    cashPrice,
-    pointsPrice,
     priceType,
     imageUrl,
+    rating,
+    reviewCount,
+    variations = [],
+  } = product;
+
+  // Find index of first in-stock variation, defaulting to 0
+  const initialVariantIndex = Math.max(0, variations.findIndex(v => v.inStock));
+
+  // State to track selected variation index
+  const [variantIndex, setVariantIndex] = useState(initialVariantIndex);
+
+  const currentVar = variations[variantIndex] || {};
+  const {
+    cashPrice,
+    pointsPrice,
     inStock = true,
     stockQuantity,
-    rating,
-    reviewCount
-  } = product;
+  } = currentVar;
 
   const [imageError, setImageError] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
+
+  useEffect(() => {
+    if (!imageUrl) {
+      setImageLoading(false);
+    }
+  }, [imageUrl]);
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat('en-CA', {
@@ -298,7 +303,8 @@ const ProductCard = ({ product }) => {
 
   return (
     <CardContainer
-      whileHover={{ y: -4 }}
+      inStock={inStock}
+      whileHover={inStock ? { y: -4 } : {}}
       transition={{ duration: 0.2 }}
     >
       <ImageContainer>
@@ -317,9 +323,9 @@ const ProductCard = ({ product }) => {
         ) : null}
         
         {(!imageUrl || imageError || imageLoading) && (
-          <ImagePlaceholder loading={imageLoading}>
+          <ImagePlaceholder>
             <FiPackage />
-            {imageError && !imageLoading && (
+            {!imageLoading && (imageError || !imageUrl) && (
               <span className="placeholder-text">No Image</span>
             )}
           </ImagePlaceholder>
@@ -337,6 +343,26 @@ const ProductCard = ({ product }) => {
         
         {description && (
           <ProductDescription>{description}</ProductDescription>
+        )}
+
+        {/* Variant selector */}
+        {variations.length > 1 && (
+          <select
+            value={variantIndex}
+            onChange={(e) => setVariantIndex(parseInt(e.target.value, 10))}
+            style={{
+              alignSelf: 'flex-end',
+              marginBottom: theme.spacing.sm,
+              padding: '4px 8px',
+              borderRadius: theme.radius.sm,
+              border: `1px solid ${theme.colors.border.main}`,
+              fontSize: theme.typography.fontSize.xs,
+            }}
+          >
+            {variations.map((v, idx) => (
+              <option key={v.id} value={idx}>{v.name}</option>
+            ))}
+          </select>
         )}
 
         <PriceSection>
@@ -381,8 +407,7 @@ const ProductCard = ({ product }) => {
                 <span>
                   {inStock && stockQuantity > 0 
                     ? `${stockQuantity} available` 
-                    : 'Out of stock'
-                  }
+                    : 'Out of stock'}
                 </span>
               )}
             </StockInfo>

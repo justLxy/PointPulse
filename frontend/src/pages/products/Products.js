@@ -361,6 +361,7 @@ const Products = () => {
     category: searchParams.get('category') || '',
     priceType: searchParams.get('priceType') || '', // 'cash', 'points', 'both'
     affordable: searchParams.get('affordable') === 'true',
+    inStockOnly: searchParams.get('inStock') === 'true',
     sortBy: searchParams.get('sortBy') || '', // 'points-asc', 'points-desc', 'cash-asc', 'cash-desc'
     page: parseInt(searchParams.get('page') || '1', 10),
     limit: 12,
@@ -374,6 +375,7 @@ const Products = () => {
     if (filters.category) newSearchParams.set('category', filters.category);
     if (filters.priceType) newSearchParams.set('priceType', filters.priceType);
     if (filters.affordable) newSearchParams.set('affordable', 'true');
+    if (filters.inStockOnly) newSearchParams.set('inStock', 'true');
     if (filters.sortBy) newSearchParams.set('sortBy', filters.sortBy);
     if (filters.page > 1) newSearchParams.set('page', filters.page.toString());
     
@@ -385,7 +387,8 @@ const Products = () => {
     products, 
     totalCount, 
     isLoading, 
-    stats 
+    stats,
+    categories
   } = useProducts({
     ...filters,
     userPoints: availablePoints || 0
@@ -421,14 +424,8 @@ const Products = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const categoryOptions = [
-    { value: '', label: 'All Categories' },
-    { value: 'beverages', label: 'Beverages' },
-    { value: 'snacks', label: 'Snacks' },
-    { value: 'meals', label: 'Meals' },
-    { value: 'accessories', label: 'Accessories' },
-    { value: 'electronics', label: 'Electronics' },
-  ];
+  // Build category options from API data
+  const categoryOptions = [{ value: '', label: 'All Categories' }, ...(categories ?? [])];
 
 
 
@@ -491,6 +488,7 @@ const Products = () => {
                 onClick={() => {
                   handleFilterChange('priceType', '');
                   handleFilterChange('affordable', false);
+                  handleFilterChange('inStockOnly', false);
                 }}
               >
                 <FiShoppingBag />
@@ -538,6 +536,16 @@ const Products = () => {
               >
                 <FiCreditCard />
                 <span>Cash & Points</span>
+              </PaymentTypeButton>
+              
+              {/* In Stock filter toggle */}
+              <PaymentTypeButton
+                active={filters.inStockOnly}
+                onClick={() => handleFilterChange('inStockOnly', !filters.inStockOnly)}
+                title="Show only items currently in stock"
+              >
+                <FiShoppingBag />
+                <span>In Stock</span>
               </PaymentTypeButton>
             </PaymentTypeFilter>
           </FilterControls>
