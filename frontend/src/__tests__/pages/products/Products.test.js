@@ -18,6 +18,9 @@ jest.mock('framer-motion', () => ({
   AnimatePresence: ({ children }) => <>{children}</>,
 }));
 
+// Mock window.scrollTo
+window.scrollTo = jest.fn();
+
 describe('Products', () => {
   const mockProducts = [
     {
@@ -60,6 +63,10 @@ describe('Products', () => {
       products: mockProducts,
       totalCount: 2,
       isLoading: false,
+      categories: [
+        { value: 'beverages', label: 'Beverages' },
+        { value: 'snacks', label: 'Snacks' },
+      ],
       stats: {
         cashProducts: 2,
         pointsProducts: 2,
@@ -105,55 +112,67 @@ describe('Products', () => {
     });
   });
 
-  it('handles category filter', () => {
+  it('handles category filter', async () => {
     renderComponent();
 
     const categorySelect = screen.getByDisplayValue('All Categories');
+
+    // Wait for the specific option to be in the document
+    await screen.findByText('Beverages');
+
     fireEvent.change(categorySelect, { target: { value: 'beverages' } });
 
-    expect(useProducts).toHaveBeenCalledWith(
-      expect.objectContaining({
-        category: 'beverages',
-      })
-    );
+    await waitFor(() => {
+      expect(useProducts).toHaveBeenCalledWith(
+        expect.objectContaining({
+          category: 'beverages',
+        })
+      );
+    });
   });
 
-  it('handles payment type filters', () => {
+  it('handles payment type filters', async () => {
     renderComponent();
 
     fireEvent.click(screen.getByText('Cash Only'));
 
-    expect(useProducts).toHaveBeenCalledWith(
-      expect.objectContaining({
-        priceType: 'cash',
-        affordable: false,
-      })
-    );
+    await waitFor(() => {
+      expect(useProducts).toHaveBeenCalledWith(
+        expect.objectContaining({
+          priceType: 'cash',
+          affordable: false,
+        })
+      );
+    });
   });
 
-  it('handles affordable filter', () => {
+  it('handles affordable filter', async () => {
     renderComponent();
 
     fireEvent.click(screen.getByText('Can Purchase'));
 
-    expect(useProducts).toHaveBeenCalledWith(
-      expect.objectContaining({
-        affordable: true,
-      })
-    );
+    await waitFor(() => {
+      expect(useProducts).toHaveBeenCalledWith(
+        expect.objectContaining({
+          affordable: true,
+        })
+      );
+    });
   });
 
-  it('handles sorting', () => {
+  it('handles sorting', async () => {
     renderComponent();
 
     const sortSelect = screen.getByDisplayValue('No Sorting');
     fireEvent.change(sortSelect, { target: { value: 'points-asc' } });
 
-    expect(useProducts).toHaveBeenCalledWith(
-      expect.objectContaining({
-        sortBy: 'points-asc',
-      })
-    );
+    await waitFor(() => {
+      expect(useProducts).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sortBy: 'points-asc',
+        })
+      );
+    });
   });
 
   it('shows loading state', () => {
