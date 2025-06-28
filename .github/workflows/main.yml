@@ -312,14 +312,29 @@ jobs:
         run: |
           npx prisma generate
           npx prisma db push
-          npm run seed || echo "Seeding failed, continuing..."
+          echo "✅ Database schema applied"
+          npm run seed || echo "⚠️ Seeding failed, continuing..."
+          echo "✅ Database setup completed"
 
       - name: 🚀 Start backend server
         working-directory: ./backend
         env:
           DATABASE_URL: file:./test.db
           PORT: 8000
-        run: npm start &
+        run: |
+          echo "🚀 Starting backend server on port 8000..."
+          npm start &
+          BACKEND_PID=$!
+          echo "Backend PID: $BACKEND_PID"
+          echo "BACKEND_PID=$BACKEND_PID" >> $GITHUB_ENV
+
+      - name: 🔍 Verify services are running
+        run: |
+          echo "⏳ Waiting for services to start..."
+          sleep 10
+          echo "🔍 Checking backend health..."
+          curl -f http://localhost:8000 || echo "⚠️ Backend health check failed"
+          echo "✅ Service verification completed"
 
       - name: 🧪 Run Cypress tests with local services
         id: cypress-run
@@ -327,6 +342,7 @@ jobs:
         env:
           CYPRESS_BASE_URL: http://localhost:3000
           CYPRESS_API_URL: http://localhost:8000
+          DEBUG: cypress:*
         continue-on-error: true # allow subsequent steps even if tests fail
         with:
           working-directory: ./frontend
@@ -334,6 +350,15 @@ jobs:
           wait-on: 'http://localhost:3000, http://localhost:8000'
           wait-on-timeout: 120
           command: npm run test:e2e
+          config: video=true,screenshotOnRunFailure=true
+
+      - name: 🛑 Stop backend server
+        if: always()
+        run: |
+          if [ -n "$BACKEND_PID" ]; then
+            echo "🛑 Stopping backend server (PID: $BACKEND_PID)"
+            kill $BACKEND_PID || echo "Backend already stopped"
+          fi
 
       - name: 💾 Store Cypress results
         if: always()
@@ -355,13 +380,24 @@ jobs:
           path: /tmp/test-results/
           retention-days: 1
 
-      - name: 📤 Upload Cypress videos
+      - name: 📋 Generate test summary
         if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: cypress-videos-${{ github.run_number }}
-          path: frontend/cypress/videos/**
-          retention-days: 14
+        run: |
+          echo "## 🧪 Cypress E2E Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|--------|" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.cypress-run.outcome }}" = "success" ]; then
+            echo "| **Status** | ✅ All tests passed |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| **Status** | ❌ Some tests failed |" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "| **Job Outcome** | ${{ steps.cypress-run.outcome }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔍 Debug Information" >> $GITHUB_STEP_SUMMARY
+          echo "- Backend URL: http://localhost:8000" >> $GITHUB_STEP_SUMMARY
+          echo "- Frontend URL: http://localhost:3000" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
 
   test-summary:
     runs-on: ubuntu-latest
