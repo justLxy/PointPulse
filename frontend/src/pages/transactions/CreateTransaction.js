@@ -364,9 +364,21 @@ const CreateTransaction = () => {
       const oneTimePromotions = selectedPromotions.filter(promo => promo.type !== 'automatic');
       
       // Update selected promotions with eligible automatic promotions and existing one-time promotions
-      setSelectedPromotions([...oneTimePromotions, ...eligibleAutomaticPromotions]);
+      const newSelection = [...oneTimePromotions, ...eligibleAutomaticPromotions];
+      
+      // Only update if the selection has actually changed to avoid infinite loops
+      const currentIds = selectedPromotions.map(p => p.id).sort();
+      const newIds = newSelection.map(p => p.id).sort();
+      
+      if (JSON.stringify(currentIds) !== JSON.stringify(newIds)) {
+        console.log('Updating selected promotions:', newSelection.map(p => ({ name: p.name, type: p.type })));
+        setSelectedPromotions(newSelection);
+      }
+    } else if ((!user || !amount || parseFloat(amount) <= 0) && selectedPromotions.length > 0) {
+      // Clear promotions if no user or amount
+      setSelectedPromotions([]);
     }
-  }, [amount, user, automaticPromotions]);
+  }, [amount, user, automaticPromotions, selectedPromotions]);
   
   // Scanner setup and cleanup functions
   const startScanner = async () => {
@@ -534,35 +546,44 @@ const CreateTransaction = () => {
   
   const calculateEarnedPoints = () => {
     const baseAmount = parseFloat(amount) || 0;
+    if (baseAmount <= 0) return 0;
+    
     // Default rate: 1 point per 25 cents
     let points = Math.round(baseAmount * 100 / 25);
+    console.log('Base points calculation:', baseAmount, 'amount ->', points, 'base points');
     
     // Add points from one-time promotions
-    const additionalPoints = selectedPromotions
-      .filter(p => p.points)
-      .reduce((sum, p) => sum + p.points, 0);
+    const oneTimePromotions = selectedPromotions.filter(p => p.points && p.type !== 'automatic');
+    const additionalPoints = oneTimePromotions.reduce((sum, p) => sum + p.points, 0);
+    console.log('One-time promotion points:', additionalPoints);
     
-    // Apply rate promotions
+    // Apply rate promotions (including automatic ones)
     const ratePromotions = selectedPromotions.filter(p => p.rate);
+    console.log('Rate promotions:', ratePromotions.map(p => ({ name: p.name, rate: p.rate, minSpending: p.minSpending })));
     
     if (ratePromotions.length > 0) {
       // Filter applicable rate promotions based on minimum spending
       const applicableRatePromos = ratePromotions.filter(p => 
         !p.minSpending || baseAmount >= p.minSpending
       );
+      console.log('Applicable rate promotions:', applicableRatePromos.map(p => ({ name: p.name, rate: p.rate })));
       
       if (applicableRatePromos.length > 0) {
         // Use the highest rate promotion
         const highestApplicableRate = Math.max(...applicableRatePromos.map(p => p.rate));
+        console.log('Highest applicable rate:', highestApplicableRate);
         
-        // Calculate additional points from rate (not multiply)
-        // For example: if rate is 0.01, add 1 extra point per dollar spent
+        // Calculate additional points from rate
+        // For example: if rate is 0.06, add 6 extra points per dollar spent
         const rateAdditionalPoints = Math.round(baseAmount * highestApplicableRate * 100);
+        console.log('Rate additional points:', rateAdditionalPoints);
         points += rateAdditionalPoints;
       }
     }
     
-    return points + additionalPoints;
+    const totalPoints = points + additionalPoints;
+    console.log('Total points calculation:', points, '(base+rate) +', additionalPoints, '(one-time) =', totalPoints);
+    return totalPoints;
   };
   
   const getInitials = (name) => {
@@ -820,7 +841,7 @@ const CreateTransaction = () => {
                         )}
                       </PromotionInfo>
                       <PromotionValue>
-                        {promotion.rate ? `${promotion.rate}×` : `+${promotion.points}`}
+                        {promotion.rate ? `${(promotion.rate * 100).toFixed(1)}%` : `+${promotion.points}`}
                       </PromotionValue>
                       {isAutomatic && isEligible && (
                         <div style={{ 
@@ -860,6 +881,24 @@ const CreateTransaction = () => {
             <div className="label">Promotions Applied</div>
             <div className="value">{selectedPromotions.length}</div>
           </SummaryItem>
+          {amount && parseFloat(amount) > 0 && (
+            <>
+              <SummaryItem>
+                <div className="label">Base Points</div>
+                <div className="value" style={{ color: theme.colors.text.secondary }}>
+                  {Math.round(parseFloat(amount) * 100 / 25)} points
+                </div>
+              </SummaryItem>
+              {selectedPromotions.length > 0 && (
+                <SummaryItem>
+                  <div className="label">Promotion Bonus</div>
+                  <div className="value" style={{ color: theme.colors.primary.main }}>
+                    +{calculateEarnedPoints() - Math.round(parseFloat(amount) * 100 / 25)} points
+                  </div>
+                </SummaryItem>
+              )}
+            </>
+          )}
           <SummaryItem>
             <div className="label">Points Earned</div>
             <div className="value">

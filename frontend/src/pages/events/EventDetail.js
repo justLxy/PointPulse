@@ -1242,6 +1242,17 @@ const EventDetail = () => {
   const eventStatus = getEventStatus(event.startTime, event.endTime);
   const attending = isUserAttending();
   
+  // Debug: Log RSVP conditions
+  console.log('RSVP Debug:', {
+    eventStatus: eventStatus.text,
+    isCurrentUserOrganizerForEvent,
+    eventCapacity: event.capacity,
+    numGuests: event.numGuests,
+    capacityCheck: !event.capacity || event.numGuests < event.capacity,
+    published: event.published,
+    isOrganizer: event.isOrganizer
+  });
+  
   return (
     <div>
       <PageHeader>
@@ -1279,6 +1290,12 @@ const EventDetail = () => {
         </div>
         
         <PageActionsContainer>
+          {/* Debug info - remove this later */}
+          <div style={{ fontSize: '12px', color: '#666', marginBottom: '10px' }}>
+            Debug: Status={eventStatus.text}, Organizer={isCurrentUserOrganizerForEvent ? 'Yes' : 'No'}, 
+            Capacity={event.capacity || 'None'}, Guests={event.numGuests || 0}, Published={event.published ? 'Yes' : 'No'}
+          </div>
+          
           {/* Prioritize the most important user action - RSVP */}
           {(eventStatus.text === 'Upcoming' || eventStatus.text === 'Ongoing') && !isCurrentUserOrganizerForEvent && 
            (!event.capacity || event.numGuests < event.capacity) && (

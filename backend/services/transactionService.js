@@ -126,21 +126,29 @@ const createPurchase = async (data, creatorId, promotionIds = []) => {
     let pointsEarned = Math.round(spent * 100 / 25);
     console.log('Base points:', pointsEarned);
 
-    // Apply automatic promotions
-    for (const promotion of appliedPromotions) {
-        console.log('Applying promotion:', promotion.id);
-        // Apply rate-based promotions
-        if (promotion.rate) {
-            const promotionPoints = Math.round(spent * 100 * promotion.rate);
-            console.log('Rate-based promotion points:', promotionPoints);
-            pointsEarned += promotionPoints;
-        }
-
-        // Apply fixed-points promotions
-        if (promotion.points) {
-            console.log('Fixed-points promotion points:', promotion.points);
-            pointsEarned += promotion.points;
-        }
+    // Apply promotions
+    // First, find the highest rate promotion
+    const ratePromotions = appliedPromotions.filter(p => p.rate);
+    const pointPromotions = appliedPromotions.filter(p => p.points);
+    
+    console.log('Rate promotions found:', ratePromotions.length);
+    console.log('Point promotions found:', pointPromotions.length);
+    
+    // Apply only the highest rate promotion
+    if (ratePromotions.length > 0) {
+        const highestRatePromotion = ratePromotions.reduce((highest, current) => 
+            current.rate > highest.rate ? current : highest
+        );
+        
+        const promotionPoints = Math.round(spent * 100 * highestRatePromotion.rate);
+        console.log('Applying highest rate promotion:', highestRatePromotion.id, 'Rate:', highestRatePromotion.rate, 'Points:', promotionPoints);
+        pointsEarned += promotionPoints;
+    }
+    
+    // Apply all fixed-points promotions
+    for (const promotion of pointPromotions) {
+        console.log('Applying fixed-points promotion:', promotion.id, 'Points:', promotion.points);
+        pointsEarned += promotion.points;
     }
     console.log('Total points earned:', pointsEarned);
 
