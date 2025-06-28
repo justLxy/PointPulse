@@ -372,7 +372,7 @@ jobs:
           echo "🔍 Checking backend health..."
           for i in {1..10}; do
             echo "Attempt $i/10..."
-            if curl -f http://localhost:8000 2>/dev/null; then
+            if curl -f http://localhost:8000/products 2>/dev/null; then
               echo "✅ Backend is responding"
               break
             elif [ $i -eq 10 ]; then
@@ -389,7 +389,7 @@ jobs:
           done
           
           echo "🔍 Testing API endpoint..."
-          curl -v http://localhost:8000/api/health 2>&1 || echo "Health endpoint not available"
+          curl -v http://localhost:8000/products 2>&1 || echo "Products endpoint not available"
           
           echo "✅ Service verification completed"
 
@@ -403,7 +403,7 @@ jobs:
         with:
           working-directory: ./frontend
           start: npm start
-          wait-on: 'http://localhost:3000, http://localhost:8000'
+          wait-on: 'http://localhost:3000, http://localhost:8000/products'
           wait-on-timeout: 180
           command: npm run test:e2e
           config: video=true,screenshotOnRunFailure=true
