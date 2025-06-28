@@ -317,9 +317,9 @@ jobs:
           echo "✅ Database schema applied"
           
           # Check if database file was created
-          if [ -f "./test.db" ]; then
-            echo "✅ Database file created successfully"
-            ls -la test.db
+          if [ -f "prisma/test.db" ]; then
+            echo "✅ Database file created successfully (prisma/test.db)"
+            ls -la prisma/test.db
           else
             echo "❌ Database file not found"
             exit 1
