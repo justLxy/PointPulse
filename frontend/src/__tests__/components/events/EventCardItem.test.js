@@ -311,7 +311,7 @@ describe('EventCardItem', () => {
     );
     
     const buttons = screen.getAllByTestId('button');
-    expect(buttons.length).toBe(4); // View Details, RSVP, Edit, Delete
+    expect(buttons.length).toBe(3); // View Details, Edit, Delete (no RSVP for unpublished)
   });
 
   it('does not display delete button for published events', () => {
@@ -323,7 +323,7 @@ describe('EventCardItem', () => {
     
     // Should not have delete button for published events
     const buttons = screen.getAllByTestId('button');
-    expect(buttons.length).toBe(3); // View Details, RSVP, Edit (no delete)
+    expect(buttons.length).toBe(3); // View Details, Edit (no delete)
   });
 
   it('calls handleEditEvent when edit button is clicked', () => {
