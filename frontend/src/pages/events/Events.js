@@ -426,6 +426,31 @@ const Events = () => {
   
   // Create event
   const handleCreateEvent = () => {
+    // Local validation for past dates
+    const now = new Date();
+    const startDate = new Date(eventData.startTime);
+    const endDate = new Date(eventData.endTime);
+
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      toast.error('Please provide valid start and end times');
+      return;
+    }
+
+    if (startDate < now) {
+      toast.error('Start time cannot be in the past');
+      return;
+    }
+
+    if (endDate < now) {
+      toast.error('End time cannot be in the past');
+      return;
+    }
+
+    if (endDate <= startDate) {
+      toast.error('End time must be after start time');
+      return;
+    }
+
     // Format data for API
     const formattedData = {
       ...eventData,

@@ -334,6 +334,7 @@ export const CreateEventModal = ({
               value={eventData.startTime}
               onChange={(e) => handleFormChange('startTime', e.target.value)}
               required
+              min={new Date().toISOString().slice(0, 16)}
             />
             
             <StyledInput
@@ -342,6 +343,7 @@ export const CreateEventModal = ({
               value={eventData.endTime}
               onChange={(e) => handleFormChange('endTime', e.target.value)}
               required
+              min={new Date().toISOString().slice(0, 16)}
             />
           </FormGroup>
           
@@ -564,6 +566,7 @@ export const EditEventModal = ({
               value={eventData.startTime}
               onChange={(e) => handleFormChange('startTime', e.target.value)}
               required
+              min={new Date().toISOString().slice(0, 16)}
             />
             
             <StyledInput
@@ -572,6 +575,7 @@ export const EditEventModal = ({
               value={eventData.endTime}
               onChange={(e) => handleFormChange('endTime', e.target.value)}
               required
+              min={new Date().toISOString().slice(0, 16)}
             />
           </FormGroup>
           

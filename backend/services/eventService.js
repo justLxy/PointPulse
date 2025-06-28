@@ -65,6 +65,17 @@ const createEvent = async (eventData) => {
         throw new Error('Invalid date format for start or end time');
     }
 
+    // NEW VALIDATION: Ensure start and end times are not in the past
+    const now = new Date();
+    if (startDate < now) {
+        console.log('Validation failed: Start time cannot be in the past');
+        throw new Error('Start time cannot be in the past');
+    }
+    if (endDate < now) {
+        console.log('Validation failed: End time cannot be in the past');
+        throw new Error('End time cannot be in the past');
+    }
+
     if (startDate >= endDate) {
         console.log('Validation failed: End time must be after start time');
         throw new Error('End time must be after start time');
