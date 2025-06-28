@@ -298,6 +298,13 @@ jobs:
             npm install
           fi
 
+      - name: 🔧 Force SQLite for CI tests
+        working-directory: ./backend
+        run: |
+          # This command replaces 'postgresql' with 'sqlite' to ensure CI uses SQLite.
+          sed -i 's/provider = "postgresql"/provider = "sqlite"/' prisma/schema.prisma
+          echo "✅ Prisma schema has been configured for SQLite."
+
       - name: 🗄️ Setup database
         working-directory: ./backend
         env:
