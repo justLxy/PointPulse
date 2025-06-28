@@ -63,6 +63,13 @@ const createPurchase = async (data, creatorId, promotionIds = []) => {
     console.log('Cashier found:', JSON.stringify(cashier, null, 2));
     console.log('Cashier is suspicious:', cashier.suspicious);
 
+    // Prevent cashiers from creating transactions for themselves
+    if (cashier.role === 'cashier' && cashier.id === user.id) {
+        console.log('Cashier attempted to create a purchase for themselves');
+        console.log('===== TRANSACTION SERVICE: CREATE PURCHASE FAILED =====\n');
+        throw new Error('Cashiers cannot create transactions for themselves');
+    }
+
     // Check promotions
     let appliedPromotions = [];
 
