@@ -449,18 +449,11 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Metric | Result |" >> $GITHUB_STEP_SUMMARY
           echo "|--------|--------|" >> $GITHUB_STEP_SUMMARY
-          PASSED="${{ steps.cypress-run.outputs.total-passed }}"
-          FAILED="${{ steps.cypress-run.outputs.total-failed }}"
-          TOTAL="${{ steps.cypress-run.outputs.total-tests }}"
-          STATUS_ROW="❌ Some tests failed"
-          if [ "${PASSED}" = "" ]; then
-            PASSED="N/A"; FAILED="N/A"; TOTAL="N/A";
-          fi
           if [ "${{ steps.cypress-run.outcome }}" = "success" ]; then
-            STATUS_ROW="✅ All tests passed"
+            echo "| **Status** | ✅ All tests passed |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| **Status** | ❌ Some tests failed |" >> $GITHUB_STEP_SUMMARY
           fi
-          echo "| **Status** | ${STATUS_ROW} |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Tests** | ${PASSED}/${TOTAL} (failed: ${FAILED}) |" >> $GITHUB_STEP_SUMMARY
           echo "| **Job Outcome** | ${{ steps.cypress-run.outcome }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🔍 Debug Information" >> $GITHUB_STEP_SUMMARY
