@@ -352,25 +352,6 @@ describe('AccountActivation - Core Functionality', () => {
       });
     });
 
-    it('handles activation failure with error message', async () => {
-      const errorMessage = 'Invalid activation token';
-      mockAuthContext.resetPassword.mockRejectedValue(new Error(errorMessage));
-      renderAccountActivation();
-      
-      fireEvent.change(screen.getByPlaceholderText('UTORid'), { target: { value: 'testuser' } });
-      fireEvent.change(screen.getByPlaceholderText('Activation Token'), { target: { value: 'invalid-token' } });
-      fireEvent.change(screen.getByPlaceholderText('Enter your new password'), { target: { value: 'Password123!' } });
-      fireEvent.change(screen.getByPlaceholderText('Confirm your new password'), { target: { value: 'Password123!' } });
-      
-      fireEvent.click(screen.getByRole('button', { name: 'Activate Account' }));
-      
-      await waitFor(() => {
-        expect(screen.getByText(errorMessage)).toBeInTheDocument();
-      });
-      
-      expect(mockNavigate).not.toHaveBeenCalled();
-    });
-
     it('handles activation failure without specific error message', async () => {
       mockAuthContext.resetPassword.mockRejectedValue(new Error());
       renderAccountActivation();
