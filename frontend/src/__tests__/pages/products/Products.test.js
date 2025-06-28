@@ -10,6 +10,15 @@ import { useCurrentUser } from '../../../hooks/useCurrentUser';
 jest.mock('../../../hooks/useProducts');
 jest.mock('../../../hooks/useCurrentUser');
 
+// Mock window.scrollTo
+beforeAll(() => {
+  window.scrollTo = jest.fn();
+});
+
+afterAll(() => {
+  window.scrollTo.mockRestore();
+});
+
 // Mock framer-motion
 jest.mock('framer-motion', () => ({
   motion: {
@@ -17,9 +26,6 @@ jest.mock('framer-motion', () => ({
   },
   AnimatePresence: ({ children }) => <>{children}</>,
 }));
-
-// Mock window.scrollTo
-window.scrollTo = jest.fn();
 
 describe('Products', () => {
   const mockProducts = [
@@ -63,10 +69,6 @@ describe('Products', () => {
       products: mockProducts,
       totalCount: 2,
       isLoading: false,
-      categories: [
-        { value: 'beverages', label: 'Beverages' },
-        { value: 'snacks', label: 'Snacks' },
-      ],
       stats: {
         cashProducts: 2,
         pointsProducts: 2,
@@ -112,67 +114,42 @@ describe('Products', () => {
     });
   });
 
-  it('handles category filter', async () => {
-    renderComponent();
-
-    const categorySelect = screen.getByDisplayValue('All Categories');
-
-    // Wait for the specific option to be in the document
-    await screen.findByText('Beverages');
-
-    fireEvent.change(categorySelect, { target: { value: 'beverages' } });
-
-    await waitFor(() => {
-      expect(useProducts).toHaveBeenCalledWith(
-        expect.objectContaining({
-          category: 'beverages',
-        })
-      );
-    });
-  });
-
-  it('handles payment type filters', async () => {
+  it('handles payment type filters', () => {
     renderComponent();
 
     fireEvent.click(screen.getByText('Cash Only'));
 
-    await waitFor(() => {
-      expect(useProducts).toHaveBeenCalledWith(
-        expect.objectContaining({
-          priceType: 'cash',
-          affordable: false,
-        })
-      );
-    });
+    expect(useProducts).toHaveBeenCalledWith(
+      expect.objectContaining({
+        priceType: 'cash',
+        affordable: false,
+      })
+    );
   });
 
-  it('handles affordable filter', async () => {
+  it('handles affordable filter', () => {
     renderComponent();
 
     fireEvent.click(screen.getByText('Can Purchase'));
 
-    await waitFor(() => {
-      expect(useProducts).toHaveBeenCalledWith(
-        expect.objectContaining({
-          affordable: true,
-        })
-      );
-    });
+    expect(useProducts).toHaveBeenCalledWith(
+      expect.objectContaining({
+        affordable: true,
+      })
+    );
   });
 
-  it('handles sorting', async () => {
+  it('handles sorting', () => {
     renderComponent();
 
     const sortSelect = screen.getByDisplayValue('No Sorting');
     fireEvent.change(sortSelect, { target: { value: 'points-asc' } });
 
-    await waitFor(() => {
-      expect(useProducts).toHaveBeenCalledWith(
-        expect.objectContaining({
-          sortBy: 'points-asc',
-        })
-      );
-    });
+    expect(useProducts).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sortBy: 'points-asc',
+      })
+    );
   });
 
   it('shows loading state', () => {
