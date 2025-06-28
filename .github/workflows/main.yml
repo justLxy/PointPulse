@@ -318,8 +318,7 @@ jobs:
           
           # Check if database file was created
           if [ -f "prisma/test.db" ]; then
-            echo "✅ Database file created successfully (prisma/test.db)"
-            ls -la prisma/test.db
+            echo "✅ Database file created (prisma/test.db)"
           else
             echo "❌ Database file not found"
             exit 1
@@ -327,9 +326,7 @@ jobs:
           
           echo "🌱 Running seed script..."
           npm run seed 2>&1 | tee seed.log || {
-            echo "⚠️ Seeding failed, checking logs..."
-            cat seed.log
-            echo "Continuing without seed data..."
+            echo "⚠️ Seeding failed, continuing without seed data"
           }
           echo "✅ Database setup completed"
 
@@ -341,10 +338,6 @@ jobs:
           NODE_ENV: development
         run: |
           echo "🚀 Starting backend server on port 8000..."
-          echo "Environment variables:"
-          echo "- DATABASE_URL: $DATABASE_URL"
-          echo "- PORT: $PORT"
-          echo "- NODE_ENV: $NODE_ENV"
           
           # Start server in background and capture PID
           npm start > server.log 2>&1 &
@@ -352,46 +345,31 @@ jobs:
           echo "Backend PID: $BACKEND_PID"
           echo "BACKEND_PID=$BACKEND_PID" >> $GITHUB_ENV
           
-          # Wait a moment for server to start
           sleep 5
-          
-          # Check if process is still running
           if kill -0 $BACKEND_PID 2>/dev/null; then
-            echo "✅ Backend process is running"
+            echo "✅ Backend process running"
           else
-            echo "❌ Backend process died, checking logs..."
+            echo "❌ Backend process crashed (see server.log)"
             cat server.log
             exit 1
           fi
 
       - name: 🔍 Verify services are running
         run: |
-          echo "⏳ Waiting for services to start..."
-          sleep 10
-          
-          echo "🔍 Checking backend health..."
+          echo "🔍 Verifying backend health..."
           for i in {1..10}; do
-            echo "Attempt $i/10..."
-            if curl -f http://localhost:8000/products 2>/dev/null; then
-              echo "✅ Backend is responding"
+            if curl -sSf http://localhost:8000/products > /dev/null; then
+              echo "✅ Backend healthy"
               break
             elif [ $i -eq 10 ]; then
-              echo "❌ Backend health check failed after 10 attempts"
-              echo "Backend logs:"
-              cat backend/server.log || echo "No server logs found"
-              echo "Process status:"
-              ps aux | grep node || echo "No node processes found"
+              echo "❌ Backend health check failed"
+              cat backend/server.log || true
               exit 1
             else
-              echo "⏳ Waiting 3 seconds before retry..."
               sleep 3
             fi
           done
-          
-          echo "🔍 Testing API endpoint..."
-          curl -v http://localhost:8000/products 2>&1 || echo "Products endpoint not available"
-          
-          echo "✅ Service verification completed"
+          echo "🟢 Backend ready"
 
       - name: 🧪 Run Cypress tests with local services
         id: cypress-run
@@ -406,7 +384,6 @@ jobs:
           wait-on: 'http://localhost:3000, http://localhost:8000/products'
           wait-on-timeout: 180
           command: npm run test:e2e
-          config: video=true,screenshotOnRunFailure=true
 
       - name: 📋 Debug information on failure
         if: failure()
@@ -445,11 +422,17 @@ jobs:
           mkdir -p /tmp/test-results
           STATUS="❌ Failed"
           EXIT_CODE=1
+          PASSED="${{ steps.cypress-run.outputs.total-passed }}"
+          FAILED="${{ steps.cypress-run.outputs.total-failed }}"
+          TOTAL="${{ steps.cypress-run.outputs.total-tests }}"
+          if [ "${PASSED}" = "" ]; then
+            PASSED="N/A"; FAILED="N/A"; TOTAL="N/A";
+          fi
           if [ "${{ steps.cypress-run.outcome }}" = "success" ]; then
             STATUS="✅ Passed"
             EXIT_CODE=0
           fi
-          echo "cypress|$STATUS|0|0|0|0|N/A|$EXIT_CODE" > /tmp/test-results/cypress.txt
+          echo "cypress|$STATUS|0|0|${PASSED}|${TOTAL}|N/A|$EXIT_CODE" > /tmp/test-results/cypress.txt
 
       - name: 📤 Upload Cypress results
         if: always()
@@ -466,11 +449,18 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Metric | Result |" >> $GITHUB_STEP_SUMMARY
           echo "|--------|--------|" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ steps.cypress-run.outcome }}" = "success" ]; then
-            echo "| **Status** | ✅ All tests passed |" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "| **Status** | ❌ Some tests failed |" >> $GITHUB_STEP_SUMMARY
+          PASSED="${{ steps.cypress-run.outputs.total-passed }}"
+          FAILED="${{ steps.cypress-run.outputs.total-failed }}"
+          TOTAL="${{ steps.cypress-run.outputs.total-tests }}"
+          STATUS_ROW="❌ Some tests failed"
+          if [ "${PASSED}" = "" ]; then
+            PASSED="N/A"; FAILED="N/A"; TOTAL="N/A";
           fi
+          if [ "${{ steps.cypress-run.outcome }}" = "success" ]; then
+            STATUS_ROW="✅ All tests passed"
+          fi
+          echo "| **Status** | ${STATUS_ROW} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Tests** | ${PASSED}/${TOTAL} (failed: ${FAILED}) |" >> $GITHUB_STEP_SUMMARY
           echo "| **Job Outcome** | ${{ steps.cypress-run.outcome }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🔍 Debug Information" >> $GITHUB_STEP_SUMMARY

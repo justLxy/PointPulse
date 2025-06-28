@@ -434,7 +434,7 @@ const EventCardItem = ({
               </div>
               
               <div style={{ display: 'flex', gap: theme.spacing.sm }}>
-                {(eventStatus.text === 'Upcoming' || eventStatus.text === 'Ongoing') && !isFull && (
+                {event.published && (eventStatus.text === 'Upcoming' || eventStatus.text === 'Ongoing') && !isFull && (
                   <Button 
                     size="small" 
                     variant={isUserRsvpd ? "outlined" : "default"}
