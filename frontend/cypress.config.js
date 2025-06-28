@@ -2,13 +2,13 @@ const { defineConfig } = require("cypress");
 
 module.exports = defineConfig({
   e2e: {
-    baseUrl: process.env.CYPRESS_BASE_URL || 'https://www.pairxy.com',
+    baseUrl: process.env.CYPRESS_BASE_URL || 'http://localhost:3000',
     supportFile: 'cypress/support/e2e.js',
     specPattern: 'cypress/e2e/**/*.cy.{js,jsx,ts,tsx}',
     viewportWidth: 1280,
     viewportHeight: 720,
-    video: true,
-    screenshotOnRunFailure: true,
+    video: false,
+    screenshotOnRunFailure: false,
     defaultCommandTimeout: 15000,
     requestTimeout: 15000,
     responseTimeout: 15000,
@@ -18,7 +18,7 @@ module.exports = defineConfig({
     },
   },
   env: {
-    apiUrl: process.env.CYPRESS_API_URL || 'https://www.pairxy.com/api',
+    apiUrl: process.env.CYPRESS_API_URL || 'http://localhost:8000',
     CYPRESS_LANG: 'en'
   }
 }); 

@@ -256,9 +256,89 @@ jobs:
         echo "Original exit code: ${{ steps.run-tests.outputs.test-exit-code }}"
         exit 1
 
+  cypress:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NODE_VERSION: '20.x'
+    steps:
+      - name: 📦 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: 🔧 Install backend dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: 🔧 Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: 🗄️ Setup database
+        working-directory: ./backend
+        env:
+          DATABASE_URL: file:./test.db
+        run: |
+          npx prisma generate
+          npx prisma db push
+          npm run seed || echo "Seeding failed, continuing..."
+
+      - name: 🚀 Start backend server
+        working-directory: ./backend
+        env:
+          DATABASE_URL: file:./test.db
+          PORT: 8000
+        run: npm start &
+
+      - name: 🧪 Run Cypress tests with local services
+        id: cypress-run
+        uses: cypress-io/github-action@v6
+        env:
+          CYPRESS_BASE_URL: http://localhost:3000
+          CYPRESS_API_URL: http://localhost:8000
+        continue-on-error: true # allow subsequent steps even if tests fail
+        with:
+          working-directory: ./frontend
+          start: npm start
+          wait-on: 'http://localhost:3000, http://localhost:8000'
+          wait-on-timeout: 120
+          command: npm run test:e2e
+
+      - name: 💾 Store Cypress results
+        if: always()
+        run: |
+          mkdir -p /tmp/test-results
+          STATUS="❌ Failed"
+          EXIT_CODE=1
+          if [ "${{ steps.cypress-run.outcome }}" = "success" ]; then
+            STATUS="✅ Passed"
+            EXIT_CODE=0
+          fi
+          echo "cypress|$STATUS|0|0|0|0|N/A|$EXIT_CODE" > /tmp/test-results/cypress.txt
+
+      - name: 📤 Upload Cypress results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-cypress
+          path: /tmp/test-results/
+          retention-days: 1
+
+      - name: 📤 Upload Cypress videos
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-videos-${{ github.run_number }}
+          path: frontend/cypress/videos/**
+          retention-days: 14
+
   test-summary:
     runs-on: ubuntu-latest
-    needs: test
+    needs: [test, cypress]
     if: always() && github.event_name == 'pull_request'
     steps:
     - name: 📥 Download test results
@@ -273,8 +353,10 @@ jobs:
       run: |
         BACKEND_STATUS="❌ Failed"
         FRONTEND_STATUS="❌ Failed"
+        CYPRESS_STATUS="❌ Failed"
         BACKEND_DETAILS="Not run"
         FRONTEND_DETAILS="Not run"
+        CYPRESS_DETAILS="Not run"
         OVERALL_SUCCESS=true
         
         if [ -f "/tmp/test-results/backend.txt" ]; then
@@ -303,6 +385,19 @@ jobs:
           OVERALL_SUCCESS=false
         fi
         
+        if [ -f "/tmp/test-results/cypress.txt" ]; then
+          CYPRESS_DATA=$(cat /tmp/test-results/cypress.txt)
+          IFS='|' read -r PROJECT STATUS SUITES_PASSED SUITES_TOTAL TESTS_PASSED TESTS_TOTAL COVERAGE EXIT_CODE <<< "$CYPRESS_DATA"
+          if [ "$EXIT_CODE" = "0" ]; then
+            CYPRESS_STATUS="✅ Passed"
+          else
+            OVERALL_SUCCESS=false
+          fi
+          CYPRESS_DETAILS="$STATUS (exit $EXIT_CODE)"
+        else
+          OVERALL_SUCCESS=false
+        fi
+        
         if [ "$OVERALL_SUCCESS" = true ]; then
           OVERALL_STATUS="✅ All projects passed"
         else
@@ -312,8 +407,10 @@ jobs:
         echo "overall-status=$OVERALL_STATUS" >> $GITHUB_OUTPUT
         echo "backend-status=$BACKEND_STATUS" >> $GITHUB_OUTPUT
         echo "frontend-status=$FRONTEND_STATUS" >> $GITHUB_OUTPUT
+        echo "cypress-status=$CYPRESS_STATUS" >> $GITHUB_OUTPUT
         echo "backend-details=$BACKEND_DETAILS" >> $GITHUB_OUTPUT
         echo "frontend-details=$FRONTEND_DETAILS" >> $GITHUB_OUTPUT
+        echo "cypress-details=$CYPRESS_DETAILS" >> $GITHUB_OUTPUT
 
     - name: 💬 Comment on PR
       uses: actions/github-script@v7
@@ -341,10 +438,12 @@ jobs:
             |---------|--------|---------|
             | **Backend** | ${{ steps.collect-results.outputs.backend-status }} | ${{ steps.collect-results.outputs.backend-details }} |
             | **Frontend** | ${{ steps.collect-results.outputs.frontend-status }} | ${{ steps.collect-results.outputs.frontend-details }} |
+            | **Cypress E2E** | ${{ steps.collect-results.outputs.cypress-status }} | ${{ steps.collect-results.outputs.cypress-details }} |
             
             ### 📋 Coverage Reports
             - 📊 **Backend Coverage**: [Download Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
             - 📊 **Frontend Coverage**: [Download Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            - 🎥 **Cypress Videos**: [Workflow Artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
             
             > 💡 **Tip**: Click on the individual job details in the [Actions tab](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) to see detailed test results for each project.
             

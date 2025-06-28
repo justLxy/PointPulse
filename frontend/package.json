@@ -29,6 +29,7 @@
     "test": "react-scripts test --watchAll=false --testTimeout=10000",
     "test:coverage": "react-scripts test --watchAll=false --testTimeout=10000 --coverage",
     "test:watch": "react-scripts test",
+    "test:e2e": "cypress run --browser chrome --headless",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {

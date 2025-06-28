@@ -1,7 +1,7 @@
 /* ==== Test Created with Cypress Studio ==== */
 it('promotions', function() {
   /* ==== Generated with Cypress Studio ==== */
-  cy.visit('https://www.pairxy.com/');
+  cy.visit('/');
   cy.get(':nth-child(1) > .css-f1uyzo > .css-vgognf > .css-1jbx84z').clear('zh');
   cy.get(':nth-child(1) > .css-f1uyzo > .css-vgognf > .css-1jbx84z').type('zhaokiko');
   cy.get(':nth-child(2) > .css-f1uyzo > .css-vgognf > .css-1jbx84z').clear('12');

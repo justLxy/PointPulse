@@ -30,5 +30,5 @@ Cypress.Commands.add('loginAsSuperuser', () => {
   cy.login('zhaokiko', '123')
   
   // Verify we're logged in by checking we're at the root URL
-  cy.url().should('match', /https:\/\/www\.pairxy\.com\/?$/)
+  cy.url().should('eq', Cypress.config().baseUrl + '/')
 }) 
