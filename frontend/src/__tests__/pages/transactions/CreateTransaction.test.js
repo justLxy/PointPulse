@@ -202,8 +202,11 @@ describe('CreateTransaction', () => {
       
       // Check that automatic promotions are applied
       await waitFor(() => {
-        const appliedElements = screen.getAllByText('Applied');
-        expect(appliedElements.length).toBeGreaterThan(0);
+        const labelElement = screen.getByText(/Active Promotions/i);
+        expect(labelElement).toBeInTheDocument();
+        const valueElement = labelElement.parentElement.querySelector('.value');
+        expect(valueElement).toBeTruthy();
+        expect(parseInt(valueElement.textContent)).toBeGreaterThan(0);
       });
     });
 
@@ -230,13 +233,11 @@ describe('CreateTransaction', () => {
       if (oneTimePromotion) {
         fireEvent.click(oneTimePromotion);
         
-        // Verify promotion is selected by checking if it's in the selected promotions list
         await waitFor(() => {
-          // Find the "Promotions Applied" summary row and check its next sibling text content
-          const label = screen.getByText(/Promotions Applied/i);
-          expect(label).toBeInTheDocument();
-          // The value element is the next sibling within the same parent
-          const valueElement = label.parentElement.querySelector('.value');
+          const labelElement = screen.getByText(/Active Promotions/i);
+          expect(labelElement).toBeInTheDocument();
+          const valueElement = labelElement.parentElement.querySelector('.value');
+          expect(valueElement).toBeTruthy();
           expect(parseInt(valueElement.textContent)).toBeGreaterThan(0);
         });
       }
