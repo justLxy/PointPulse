@@ -310,10 +310,27 @@ jobs:
         env:
           DATABASE_URL: file:./test.db
         run: |
+          echo "🗄️ Setting up database..."
           npx prisma generate
+          echo "✅ Prisma client generated"
           npx prisma db push
           echo "✅ Database schema applied"
-          npm run seed || echo "⚠️ Seeding failed, continuing..."
+          
+          # Check if database file was created
+          if [ -f "./test.db" ]; then
+            echo "✅ Database file created successfully"
+            ls -la test.db
+          else
+            echo "❌ Database file not found"
+            exit 1
+          fi
+          
+          echo "🌱 Running seed script..."
+          npm run seed 2>&1 | tee seed.log || {
+            echo "⚠️ Seeding failed, checking logs..."
+            cat seed.log
+            echo "Continuing without seed data..."
+          }
           echo "✅ Database setup completed"
 
       - name: 🚀 Start backend server
@@ -321,19 +338,59 @@ jobs:
         env:
           DATABASE_URL: file:./test.db
           PORT: 8000
+          NODE_ENV: development
         run: |
           echo "🚀 Starting backend server on port 8000..."
-          npm start &
+          echo "Environment variables:"
+          echo "- DATABASE_URL: $DATABASE_URL"
+          echo "- PORT: $PORT"
+          echo "- NODE_ENV: $NODE_ENV"
+          
+          # Start server in background and capture PID
+          npm start > server.log 2>&1 &
           BACKEND_PID=$!
           echo "Backend PID: $BACKEND_PID"
           echo "BACKEND_PID=$BACKEND_PID" >> $GITHUB_ENV
+          
+          # Wait a moment for server to start
+          sleep 5
+          
+          # Check if process is still running
+          if kill -0 $BACKEND_PID 2>/dev/null; then
+            echo "✅ Backend process is running"
+          else
+            echo "❌ Backend process died, checking logs..."
+            cat server.log
+            exit 1
+          fi
 
       - name: 🔍 Verify services are running
         run: |
           echo "⏳ Waiting for services to start..."
           sleep 10
+          
           echo "🔍 Checking backend health..."
-          curl -f http://localhost:8000 || echo "⚠️ Backend health check failed"
+          for i in {1..10}; do
+            echo "Attempt $i/10..."
+            if curl -f http://localhost:8000 2>/dev/null; then
+              echo "✅ Backend is responding"
+              break
+            elif [ $i -eq 10 ]; then
+              echo "❌ Backend health check failed after 10 attempts"
+              echo "Backend logs:"
+              cat backend/server.log || echo "No server logs found"
+              echo "Process status:"
+              ps aux | grep node || echo "No node processes found"
+              exit 1
+            else
+              echo "⏳ Waiting 3 seconds before retry..."
+              sleep 3
+            fi
+          done
+          
+          echo "🔍 Testing API endpoint..."
+          curl -v http://localhost:8000/api/health 2>&1 || echo "Health endpoint not available"
+          
           echo "✅ Service verification completed"
 
       - name: 🧪 Run Cypress tests with local services
@@ -343,21 +400,43 @@ jobs:
           CYPRESS_BASE_URL: http://localhost:3000
           CYPRESS_API_URL: http://localhost:8000
           DEBUG: cypress:*
-        continue-on-error: true # allow subsequent steps even if tests fail
         with:
           working-directory: ./frontend
           start: npm start
           wait-on: 'http://localhost:3000, http://localhost:8000'
-          wait-on-timeout: 120
+          wait-on-timeout: 180
           command: npm run test:e2e
           config: video=true,screenshotOnRunFailure=true
+
+      - name: 📋 Debug information on failure
+        if: failure()
+        run: |
+          echo "🔍 Collecting debug information..."
+          echo "=== Backend Logs ==="
+          cat backend/server.log || echo "No backend logs found"
+          echo ""
+          echo "=== Seed Logs ==="
+          cat backend/seed.log || echo "No seed logs found"
+          echo ""
+          echo "=== Process List ==="
+          ps aux | grep -E "(node|npm)" || echo "No Node processes found"
+          echo ""
+          echo "=== Port Usage ==="
+          netstat -tlnp 2>/dev/null | grep -E "(3000|8000)" || echo "Ports 3000/8000 not in use"
+          echo ""
+          echo "=== Database File ==="
+          ls -la backend/test.db || echo "Database file not found"
 
       - name: 🛑 Stop backend server
         if: always()
         run: |
           if [ -n "$BACKEND_PID" ]; then
             echo "🛑 Stopping backend server (PID: $BACKEND_PID)"
-            kill $BACKEND_PID || echo "Backend already stopped"
+            kill $BACKEND_PID 2>/dev/null || echo "Backend already stopped"
+            # Wait a moment for graceful shutdown
+            sleep 2
+            # Force kill if still running
+            kill -9 $BACKEND_PID 2>/dev/null || echo "Backend process cleaned up"
           fi
 
       - name: 💾 Store Cypress results
@@ -398,6 +477,13 @@ jobs:
           echo "- Backend URL: http://localhost:8000" >> $GITHUB_STEP_SUMMARY
           echo "- Frontend URL: http://localhost:3000" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+
+      - name: ❌ Fail job if Cypress tests failed
+        if: steps.cypress-run.outcome != 'success'
+        run: |
+          echo "❌ Cypress tests failed!"
+          echo "Outcome: ${{ steps.cypress-run.outcome }}"
+          exit 1
 
   test-summary:
     runs-on: ubuntu-latest
