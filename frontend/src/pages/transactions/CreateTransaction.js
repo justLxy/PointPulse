@@ -815,6 +815,19 @@ const CreateTransaction = () => {
                   const isAutomatic = promotion.type === 'automatic';
                   const isSelected = selectedPromotions.some(p => p.id === promotion.id);
                   
+                  // Find the highest rate promotion among eligible rate promotions
+                  const eligibleRatePromotions = selectedPromotions.filter(p => 
+                    p.rate && (!p.minSpending || parseFloat(amount || 0) >= p.minSpending)
+                  );
+                  const highestRatePromotion = eligibleRatePromotions.length > 0 
+                    ? eligibleRatePromotions.reduce((highest, current) => 
+                        current.rate > highest.rate ? current : highest
+                      )
+                    : null;
+                  
+                  const isHighestRate = highestRatePromotion && promotion.id === highestRatePromotion.id;
+                  const isRatePromotion = promotion.rate !== null && promotion.rate !== undefined;
+                  
                   return (
                     <PromotionItem 
                       key={promotion.id} 
@@ -823,14 +836,44 @@ const CreateTransaction = () => {
                       style={{
                         opacity: isEligible ? 1 : 0.6,
                         cursor: isEligible && !isAutomatic ? 'pointer' : 'not-allowed',
-                        backgroundColor: isAutomatic && isEligible ? 'rgba(46, 204, 113, 0.1)' : isSelected ? 'rgba(52, 152, 219, 0.1)' : 'transparent',
+                        backgroundColor: isHighestRate 
+                          ? 'rgba(255, 215, 0, 0.08)' // Lighter gold background for highest rate
+                          : isAutomatic && isEligible 
+                            ? 'rgba(46, 204, 113, 0.1)' 
+                            : isSelected 
+                              ? 'rgba(52, 152, 219, 0.1)' 
+                              : 'transparent',
+                        border: isHighestRate 
+                          ? `2px solid #FFD700` // Lighter gold border for highest rate
+                          : isSelected 
+                            ? `1px solid ${theme.colors.primary.main}` 
+                            : `1px solid ${theme.colors.border.light}`,
                       }}
                     >
-                      <PromotionIcon>
+                      <PromotionIcon style={{
+                        backgroundColor: isHighestRate 
+                          ? '#FFD700' 
+                          : theme.colors.accent.light,
+                        color: isHighestRate 
+                          ? '#8B6914' 
+                          : theme.colors.accent.dark,
+                      }}>
                         <FaTag />
                       </PromotionIcon>
                       <PromotionInfo>
-                        <h4>{promotion.name} {isAutomatic && '(Automatic)'}</h4>
+                        <h4>
+                          {promotion.name} {isAutomatic && '(Automatic)'}
+                          {isHighestRate && (
+                            <span style={{ 
+                              color: '#DAA520', 
+                              fontWeight: 'bold', 
+                              fontSize: '0.75rem',
+                              marginLeft: theme.spacing.xs
+                            }}>
+                              ★ BEST RATE
+                            </span>
+                          )}
+                        </h4>
                         {promotion.minSpending && (
                           <p style={{ 
                             color: isEligible ? theme.colors.text.secondary : theme.colors.error.main 
@@ -840,17 +883,27 @@ const CreateTransaction = () => {
                           </p>
                         )}
                       </PromotionInfo>
-                      <PromotionValue>
+                      <PromotionValue style={{
+                        color: isHighestRate ? '#DAA520' : theme.colors.primary.main
+                      }}>
                         {promotion.rate ? `${(promotion.rate * 100).toFixed(1)}%` : `+${promotion.points}`}
                       </PromotionValue>
                       {isAutomatic && isEligible && (
                         <div style={{ 
                           fontSize: '0.75rem', 
                           fontWeight: 'bold', 
-                          color: theme.colors.success.main,
+                          color: isHighestRate 
+                            ? '#DAA520' 
+                            : isRatePromotion && !isHighestRate 
+                              ? theme.colors.text.secondary 
+                              : theme.colors.success.main,
                           marginLeft: theme.spacing.md 
                         }}>
-                          Applied
+                          {isHighestRate 
+                            ? 'APPLIED' 
+                            : isRatePromotion && !isHighestRate 
+                              ? 'Available' 
+                              : 'Applied'}
                         </div>
                       )}
                     </PromotionItem>
@@ -878,8 +931,28 @@ const CreateTransaction = () => {
             <div className="value">${parseFloat(amount || 0).toFixed(2)}</div>
           </SummaryItem>
           <SummaryItem>
-            <div className="label">Promotions Applied</div>
-            <div className="value">{selectedPromotions.length}</div>
+            <div className="label">Active Promotions</div>
+            <div className="value">
+              {(() => {
+                if (!amount || parseFloat(amount) <= 0 || selectedPromotions.length === 0) {
+                  return '0';
+                }
+                
+                // Count rate promotions (only highest one applies)
+                const eligibleRatePromotions = selectedPromotions.filter(p => 
+                  p.rate && (!p.minSpending || parseFloat(amount) >= p.minSpending)
+                );
+                const ratePromoCount = eligibleRatePromotions.length > 0 ? 1 : 0;
+                
+                // Count fixed-point promotions (all apply)
+                const pointPromoCount = selectedPromotions.filter(p => 
+                  p.points && (!p.minSpending || parseFloat(amount) >= p.minSpending)
+                ).length;
+                
+                const total = ratePromoCount + pointPromoCount;
+                return total === 0 ? '0' : `${total}`;
+              })()}
+            </div>
           </SummaryItem>
           {amount && parseFloat(amount) > 0 && (
             <>
@@ -907,10 +980,6 @@ const CreateTransaction = () => {
               </PointsEarned>
             </div>
           </SummaryItem>
-          <TotalItem>
-            <div className="label">Total</div>
-            <div className="value">${parseFloat(amount || 0).toFixed(2)}</div>
-          </TotalItem>
           
           <Button 
             fullWidth 
