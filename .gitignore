@@ -1,0 +1,11 @@
+/frontend/.env
+/frontend/.env.development
+/.idea/.gitignore
+/.cursor/rules/backend.mdc
+/.cursor/rules/frontend.mdc
+/.cursor/rules/test.mdc
+/.idea/modules.xml
+/.idea/PointPulse.iml
+/.idea/inspectionProfiles/Project_Default.xml
+/.idea/vcs.xml
+/.cursor/rules/product.mdc
