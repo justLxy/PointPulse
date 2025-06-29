@@ -398,20 +398,45 @@ jobs:
           # Display the output
           cat cypress_output.log
           
-          # Extract numbers from "Tests:", "Passing:", "Failing:" lines (works for both pass & fail; skips ANSI codes)
-          TOTAL_TESTS=$(grep -oE "Tests:[[:space:]]+[0-9]+" cypress_output.log | awk '{sum+=$2} END {print sum+0}')
-          PASSED_TESTS=$(grep -oE "Passing:[[:space:]]+[0-9]+" cypress_output.log | awk '{sum+=$2} END {print sum+0}')
-          FAILED_TESTS=$(grep -oE "Failing:[[:space:]]+[0-9]+" cypress_output.log | awk '{sum+=$2} END {print sum+0}')
-
           if [ $CYPRESS_EXIT_CODE -eq 0 ]; then
-            echo "CYPRESS_STATUS=success" >> $GITHUB_OUTPUT
+            # Parse success case - look for final summary like "✔  8 of 8 passed (100%)"
+            SUMMARY_LINE=$(grep -E "✔.*of.*passed" cypress_output.log | tail -1)
+            if [ -n "$SUMMARY_LINE" ]; then
+              # Extract the two numbers: "passed_count of total_count"
+              PASSED_TESTS=$(echo "$SUMMARY_LINE" | grep -oE "[0-9]+" | head -1)
+              TOTAL_TESTS=$(echo "$SUMMARY_LINE" | grep -oE "[0-9]+" | head -2 | tail -1)
+              FAILED_TESTS=$((TOTAL_TESTS - PASSED_TESTS))
+            else
+              # Fallback: sum from individual spec results
+              TOTAL_TESTS=$(grep -E "│.*\.cy\.js.*│" cypress_output.log | wc -l)
+              PASSED_TESTS=$TOTAL_TESTS
+              FAILED_TESTS=0
+            fi
+            
+            echo "CYPRESS_TOTAL=$TOTAL_TESTS" >> $GITHUB_OUTPUT
+            echo "CYPRESS_PASSED=$PASSED_TESTS" >> $GITHUB_OUTPUT
+            echo "CYPRESS_FAILED=$FAILED_TESTS" >> $GITHUB_OUTPUT
+            echo "CYPRESS_STATUS=✅ All tests passed" >> $GITHUB_OUTPUT
           else
-            echo "CYPRESS_STATUS=failure" >> $GITHUB_OUTPUT
+            # Parse failure case - look for final summary like "✖  8 of 8 failed (100%)"
+            SUMMARY_LINE=$(grep -E "✖.*of.*failed" cypress_output.log | tail -1)
+            if [ -n "$SUMMARY_LINE" ]; then
+              # Extract the two numbers: "failed_count of total_count"
+              FAILED_TESTS=$(echo "$SUMMARY_LINE" | grep -oE "[0-9]+" | head -1)
+              TOTAL_TESTS=$(echo "$SUMMARY_LINE" | grep -oE "[0-9]+" | head -2 | tail -1)
+              PASSED_TESTS=$((TOTAL_TESTS - FAILED_TESTS))
+            else
+              # Fallback: count from individual spec results
+              TOTAL_TESTS=$(grep -E "│.*\.cy\.js.*│" cypress_output.log | wc -l)
+              FAILED_TESTS=$TOTAL_TESTS
+              PASSED_TESTS=0
+            fi
+            
+            echo "CYPRESS_TOTAL=$TOTAL_TESTS" >> $GITHUB_OUTPUT
+            echo "CYPRESS_PASSED=$PASSED_TESTS" >> $GITHUB_OUTPUT
+            echo "CYPRESS_FAILED=$FAILED_TESTS" >> $GITHUB_OUTPUT
+            echo "CYPRESS_STATUS=❌ Some tests failed" >> $GITHUB_OUTPUT
           fi
-
-          echo "CYPRESS_TOTAL=$TOTAL_TESTS" >> $GITHUB_OUTPUT
-          echo "CYPRESS_PASSED=$PASSED_TESTS" >> $GITHUB_OUTPUT
-          echo "CYPRESS_FAILED=$FAILED_TESTS" >> $GITHUB_OUTPUT
           
           exit $CYPRESS_EXIT_CODE
         env:
