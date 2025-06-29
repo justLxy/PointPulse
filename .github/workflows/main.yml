@@ -399,9 +399,9 @@ jobs:
           cat cypress_output.log
           
           # Extract numbers from "Tests:", "Passing:", "Failing:" lines (works for both pass & fail; skips ANSI codes)
-          TOTAL_TESTS=$(grep -oE "Tests:[[:space:]]+[0-9]+" cypress_output.log | tail -1 | grep -oE "[0-9]+" || echo "0")
-          PASSED_TESTS=$(grep -oE "Passing:[[:space:]]+[0-9]+" cypress_output.log | tail -1 | grep -oE "[0-9]+" || echo "0")
-          FAILED_TESTS=$(grep -oE "Failing:[[:space:]]+[0-9]+" cypress_output.log | tail -1 | grep -oE "[0-9]+" || echo "0")
+          TOTAL_TESTS=$(grep -oE "Tests:[[:space:]]+[0-9]+" cypress_output.log | awk '{sum+=$2} END {print sum+0}')
+          PASSED_TESTS=$(grep -oE "Passing:[[:space:]]+[0-9]+" cypress_output.log | awk '{sum+=$2} END {print sum+0}')
+          FAILED_TESTS=$(grep -oE "Failing:[[:space:]]+[0-9]+" cypress_output.log | awk '{sum+=$2} END {print sum+0}')
 
           if [ $CYPRESS_EXIT_CODE -eq 0 ]; then
             echo "CYPRESS_STATUS=success" >> $GITHUB_OUTPUT
