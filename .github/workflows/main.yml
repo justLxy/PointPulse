@@ -398,32 +398,20 @@ jobs:
           # Display the output
           cat cypress_output.log
           
-          # Parse the results from the output
+          # Extract numbers from "Tests:", "Passing:", "Failing:" lines (works for both pass & fail; skips ANSI codes)
+          TOTAL_TESTS=$(grep -oE "Tests:[[:space:]]+[0-9]+" cypress_output.log | tail -1 | grep -oE "[0-9]+" || echo "0")
+          PASSED_TESTS=$(grep -oE "Passing:[[:space:]]+[0-9]+" cypress_output.log | tail -1 | grep -oE "[0-9]+" || echo "0")
+          FAILED_TESTS=$(grep -oE "Failing:[[:space:]]+[0-9]+" cypress_output.log | tail -1 | grep -oE "[0-9]+" || echo "0")
+
           if [ $CYPRESS_EXIT_CODE -eq 0 ]; then
-            # Extract numbers from the final summary line like: "✔  All specs passed!                        00:23        8        8        -        -        -"
-            SUMMARY_LINE=$(grep -E "All specs passed|spec.*failed" cypress_output.log | tail -1)
-            echo "Summary line: $SUMMARY_LINE"
-            
-            # Extract test counts using more flexible parsing
-            TOTAL_TESTS=$(echo "$SUMMARY_LINE" | sed -E 's/.*[[:space:]]+([0-9]+)[[:space:]]+([0-9]+)[[:space:]]+.*/\1/' || echo "8")
-            PASSED_TESTS=$(echo "$SUMMARY_LINE" | sed -E 's/.*[[:space:]]+([0-9]+)[[:space:]]+([0-9]+)[[:space:]]+.*/\2/' || echo "8")
-            FAILED_TESTS="0"
-            
-            echo "CYPRESS_TOTAL=$TOTAL_TESTS" >> $GITHUB_OUTPUT
-            echo "CYPRESS_PASSED=$PASSED_TESTS" >> $GITHUB_OUTPUT  
-            echo "CYPRESS_FAILED=$FAILED_TESTS" >> $GITHUB_OUTPUT
             echo "CYPRESS_STATUS=success" >> $GITHUB_OUTPUT
           else
-            # For failures, try to extract from output or use defaults
-            TOTAL_TESTS=$(grep -o "Tests:[[:space:]]*[0-9]*" cypress_output.log | tail -1 | grep -o "[0-9]*" || echo "0")
-            PASSED_TESTS=$(grep -o "Passing:[[:space:]]*[0-9]*" cypress_output.log | tail -1 | grep -o "[0-9]*" || echo "0")
-            FAILED_TESTS=$(grep -o "Failing:[[:space:]]*[0-9]*" cypress_output.log | tail -1 | grep -o "[0-9]*" || echo "1")
-            
-            echo "CYPRESS_TOTAL=$TOTAL_TESTS" >> $GITHUB_OUTPUT
-            echo "CYPRESS_PASSED=$PASSED_TESTS" >> $GITHUB_OUTPUT
-            echo "CYPRESS_FAILED=$FAILED_TESTS" >> $GITHUB_OUTPUT
             echo "CYPRESS_STATUS=failure" >> $GITHUB_OUTPUT
           fi
+
+          echo "CYPRESS_TOTAL=$TOTAL_TESTS" >> $GITHUB_OUTPUT
+          echo "CYPRESS_PASSED=$PASSED_TESTS" >> $GITHUB_OUTPUT
+          echo "CYPRESS_FAILED=$FAILED_TESTS" >> $GITHUB_OUTPUT
           
           exit $CYPRESS_EXIT_CODE
         env:
