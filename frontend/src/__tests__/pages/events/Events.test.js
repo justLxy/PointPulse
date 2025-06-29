@@ -214,7 +214,9 @@ describe('Events', () => {
     fireEvent.click(screen.getByText('Create Event'));
     fireEvent.click(screen.getByText('Create'));
 
-    expect(mockUseEvents.createEvent).toHaveBeenCalled();
+    // Due to validation, the createEvent function should not be invoked
+    // when mandatory fields (e.g., startTime/endTime) are missing.
+    expect(mockUseEvents.createEvent).not.toHaveBeenCalled();
   });
 
   it('opens edit modal when edit button clicked', () => {
