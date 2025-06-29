@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import styled from '@emotion/styled';
 import { motion } from 'framer-motion';
-import { FiDollarSign, FiGift, FiStar, FiPackage } from 'react-icons/fi';
+import { FiDollarSign, FiGift, FiStar, FiPackage, FiLock } from 'react-icons/fi';
 import theme from '../../styles/theme';
 import Badge from '../common/Badge';
+import { TIER_ORDER } from '../../utils/tierUtils';
 
 const CardContainer = styled(motion.div)`
   background: ${({ inStock }) => 
@@ -21,14 +22,14 @@ const CardContainer = styled(motion.div)`
   
   &:hover {
     ${({ inStock }) => inStock && `
-      transform: translateY(-4px);
-      box-shadow: ${theme.shadows.lg};
+    transform: translateY(-4px);
+    box-shadow: ${theme.shadows.lg};
     `}
   }
   
   &:hover .product-image {
     ${({ inStock }) => inStock && `
-      transform: scale(1.05);
+    transform: scale(1.05);
     `}
   }
 `;
@@ -215,6 +216,8 @@ const ProductMeta = styled.div`
 const StockInfo = styled.div`
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  width: 100%;
   gap: ${theme.spacing.xs};
   font-size: ${theme.typography.fontSize.xs};
   color: ${theme.colors.text.secondary};
@@ -232,13 +235,24 @@ const RatingDisplay = styled.div`
   }
 `;
 
-const ProductCard = ({ product }) => {
+// Helper function to check if user meets minimum tier requirement
+const checkTierEligibility = (userTier, requiredTier) => {
+  if (!requiredTier || requiredTier === null) return true; // No tier restriction
+  if (!userTier) return false; // User has no tier, can't access restricted items
+  
+  const userTierIndex = TIER_ORDER.indexOf(userTier);
+  const requiredTierIndex = TIER_ORDER.indexOf(requiredTier);
+  
+  // User must have equal or higher tier (higher index in TIER_ORDER)
+  return userTierIndex >= requiredTierIndex;
+};
+
+const ProductCard = ({ product, userTier = null }) => {
   const {
     id,
     name,
     description,
     category,
-    priceType,
     imageUrl,
     rating,
     reviewCount,
@@ -257,7 +271,18 @@ const ProductCard = ({ product }) => {
     pointsPrice,
     inStock = true,
     stockQuantity,
+    redemptionType = 'cash', // Get redemption type from current variation
+    minimumTier = 'BRONZE', // Get minimum tier from current variation
   } = currentVar;
+
+  // Check if user meets tier requirement
+  const meetsTierRequirement = checkTierEligibility(userTier, minimumTier);
+  
+  // Product is effectively "available" only if in stock AND user meets tier requirement
+  const isEffectivelyAvailable = inStock && meetsTierRequirement;
+
+  // Use redemption type from current variation as priceType
+  const priceType = redemptionType;
 
   const [imageError, setImageError] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
@@ -303,8 +328,8 @@ const ProductCard = ({ product }) => {
 
   return (
     <CardContainer
-      inStock={inStock}
-      whileHover={inStock ? { y: -4 } : {}}
+      inStock={isEffectivelyAvailable}
+      whileHover={isEffectivelyAvailable ? { y: -4 } : {}}
       transition={{ duration: 0.2 }}
     >
       <ImageContainer>
@@ -333,8 +358,12 @@ const ProductCard = ({ product }) => {
         
         <CategoryBadge>{category}</CategoryBadge>
         
-        <StockBadge inStock={inStock}>
-          {inStock ? 'In Stock' : 'Out of Stock'}
+
+        
+        <StockBadge inStock={isEffectivelyAvailable}>
+          {isEffectivelyAvailable ? 'In Stock' : (
+            !inStock ? 'Out of Stock' : 'Tier Restricted'
+          )}
         </StockBadge>
       </ImageContainer>
 
@@ -357,25 +386,41 @@ const ProductCard = ({ product }) => {
               borderRadius: theme.radius.sm,
               border: `1px solid ${theme.colors.border.main}`,
               fontSize: theme.typography.fontSize.xs,
+              backgroundColor: theme.colors.background.paper,
+              color: theme.colors.text.primary,
             }}
           >
-            {variations.map((v, idx) => (
-              <option key={v.id} value={idx}>{v.name}</option>
-            ))}
+            {variations.map((v, idx) => {
+              const isOutOfStock = !v.inStock || (v.stockQuantity !== undefined && v.stockQuantity <= 0);
+              const displayName = isOutOfStock ? `${v.name} (Out of Stock)` : v.name;
+              
+              return (
+                <option 
+                  key={v.id} 
+                  value={idx}
+                  style={{
+                    color: isOutOfStock ? '#999' : 'inherit',
+                    fontStyle: isOutOfStock ? 'italic' : 'normal'
+                  }}
+                >
+                  {displayName}
+                </option>
+              );
+            })}
           </select>
         )}
 
         <PriceSection>
           <PriceContainer>
             <PriceDisplay>
-              {priceType === 'cash' && (
+              {priceType === 'cash' && cashPrice !== undefined && cashPrice !== null && (
                 <CashPrice>
                   <FiDollarSign />
                   {formatPrice(cashPrice)}
                 </CashPrice>
               )}
               
-              {priceType === 'points' && (
+              {priceType === 'points' && pointsPrice !== undefined && pointsPrice !== null && (
                 <PointsPrice>
                   <FiGift />
                   {formatPoints(pointsPrice)} points
@@ -384,14 +429,18 @@ const ProductCard = ({ product }) => {
               
               {priceType === 'both' && (
                 <>
-                  <CashPrice>
-                    <FiDollarSign />
-                    {formatPrice(cashPrice)}
-                  </CashPrice>
-                  <PointsPrice>
-                    <FiGift />
-                    {formatPoints(pointsPrice)} points
-                  </PointsPrice>
+                  {cashPrice !== undefined && cashPrice !== null && (
+                    <CashPrice>
+                      <FiDollarSign />
+                      {formatPrice(cashPrice)}
+                    </CashPrice>
+                  )}
+                  {pointsPrice !== undefined && pointsPrice !== null && (
+                    <PointsPrice>
+                      <FiGift />
+                      {formatPoints(pointsPrice)} points
+                    </PointsPrice>
+                  )}
                 </>
               )}
             </PriceDisplay>
@@ -403,11 +452,26 @@ const ProductCard = ({ product }) => {
 
           <ProductMeta>
             <StockInfo>
-              {stockQuantity !== undefined && (
-                <span>
-                  {inStock && stockQuantity > 0 
-                    ? `${stockQuantity} available` 
-                    : 'Out of stock'}
+              <div>
+                {stockQuantity !== undefined && (
+                  <span>
+                    {isEffectivelyAvailable && stockQuantity > 0 
+                      ? `${stockQuantity} available` 
+                      : 'Out of stock'}
+                  </span>
+                )}
+              </div>
+              {/* Show tier requirement on the right side */}
+              {!meetsTierRequirement && minimumTier && minimumTier !== 'BRONZE' && (
+                <span style={{ 
+                  color: '#e74c3c',
+                  fontWeight: 'bold',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}>
+                  <FiLock size={12} />
+                  {minimumTier} Required
                 </span>
               )}
             </StockInfo>

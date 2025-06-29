@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState, useMemo } from 'react';
 import productService from '../services/product.service';
+import { TIER_ORDER } from '../utils/tierUtils';
 
 // Transform Square catalog objects into the product shape used by the UI
 const transformSquareCatalog = (squareData = {}) => {
@@ -29,6 +30,52 @@ const transformSquareCatalog = (squareData = {}) => {
       imagesMap[img.id] = img.image_data.url;
     });
 
+  // Helper function to get REDEMPTION_TYPE from custom attributes
+  const getRedemptionType = (customAttributes = {}) => {
+    const redemptionTypeAttr = customAttributes['Square:900917c3-ced0-4a7f-9b29-643019029c10'];
+    if (redemptionTypeAttr && redemptionTypeAttr.selection_uid_values && redemptionTypeAttr.selection_uid_values.length > 0) {
+      const selectionUid = redemptionTypeAttr.selection_uid_values[0];
+      // Map selection UIDs to our priceType values
+      switch (selectionUid) {
+        case 'DNS2HFR3QWJVANRMHR3Z33HS': // POINTS_ONLY
+          return 'points';
+        case 'N7HYPPYUIUQVU47KMS42LEZJ': // UNRESTRICTED
+          return 'both';
+        case 'XUS3MGN4PBW62D3NAGGPCMKE': // CASH_ONLY
+          return 'cash';
+        default:
+          return 'cash'; // Default to cash if unknown
+      }
+    }
+    return 'cash'; // Default to cash if no redemption type specified
+  };
+
+  // Helper function to get MINIMUM_TIER from custom attributes
+  const getMinimumTier = (customAttributes = {}) => {
+    const minimumTierAttr = customAttributes['Square:c0cc7a27-ffe5-45a3-9950-f9c6ee2b4e9d'];
+    if (minimumTierAttr && minimumTierAttr.selection_uid_values && minimumTierAttr.selection_uid_values.length > 0) {
+      const selectionUid = minimumTierAttr.selection_uid_values[0];
+      // Map selection UIDs to tier values (based on Square definition)
+      switch (selectionUid) {
+        case 'MEQRTCP5FODCYRLAR4Q2CR6L': // BRONZE
+          return 'BRONZE';
+        case 'E2P4SQIGRFIUUBIEPWXZFJBZ': // SILVER
+          return 'SILVER';
+        case 'AVHPER2O6NUEZ2LIQZQ7QXC7': // GOLD
+          return 'GOLD';
+        case 'BLSAT5KZVGMQSRG7WXCEJDN2': // PLATINUM
+          return 'PLATINUM';
+        case 'YNT6HS4NYIG5OMSFMJQXFI6E': // DIAMOND
+          return 'DIAMOND';
+        case 'TQMOTZL7V4ULKLKE2NTR7ZHW': // UNRESTRICTED
+          return null; // No tier restriction
+        default:
+          return 'BRONZE'; // Default to Bronze if unknown
+      }
+    }
+    return 'BRONZE'; // Default to Bronze if no minimum tier specified
+  };
+
   // Convert ITEM objects -> product model
   const products = objects
     .filter((obj) => obj.type === 'ITEM' && obj.item_data)
@@ -42,21 +89,40 @@ const transformSquareCatalog = (squareData = {}) => {
         categoryName = categoriesMap[catId] || categoryName;
       }
 
+      // Get redemption type from item-level custom attributes first
+      let itemRedemptionType = getRedemptionType(item.custom_attribute_values);
+      let itemMinimumTier = getMinimumTier(item.custom_attribute_values);
+
       // Build variations array
       const variationsArr = (item_data.variations || []).map((v) => {
         const vId = v.id;
         const priceCents = v.item_variation_data?.price_money?.amount;
+        
+        // Check variation-level custom attributes, fallback to item-level
+        const variationRedemptionType = getRedemptionType(v.custom_attribute_values) || itemRedemptionType;
+        const variationMinimumTier = getMinimumTier(v.custom_attribute_values) || itemMinimumTier;
+        
         return {
           id: vId,
           name: v.item_variation_data?.name || 'Variant',
           cashPrice: priceCents !== undefined ? priceCents / 100 : null,
+          pointsPrice: priceCents !== undefined ? priceCents * 4 : null, // 1 cent = 4 points (rough conversion)
           stockQuantity: countsMap[vId] ?? 0,
           inStock: (countsMap[vId] ?? 0) > 0,
+          redemptionType: variationRedemptionType,
+          minimumTier: variationMinimumTier,
         };
       });
 
       // Find first in-stock variation for display, or default to first one if all are OOS.
-      const displayVar = variationsArr.find(v => v.inStock) || variationsArr[0] || { cashPrice: 0, inStock: false, stockQuantity: 0 };
+      const displayVar = variationsArr.find(v => v.inStock) || variationsArr[0] || { 
+        cashPrice: 0, 
+        pointsPrice: 0, 
+        inStock: false, 
+        stockQuantity: 0, 
+        redemptionType: 'cash',
+        minimumTier: 'BRONZE',
+      };
 
       // Find image URL from the first image_id
       let imageUrl = null;
@@ -67,14 +133,17 @@ const transformSquareCatalog = (squareData = {}) => {
 
       const isAnyVariationInStock = variationsArr.some(v => v.inStock);
 
+      // Determine final priceType based on the display variation's redemption type
+      const finalPriceType = displayVar.redemptionType || 'cash';
+
       return {
         id,
         name: item_data.name,
         description: item_data.description || '',
         category: categoryName.toLowerCase(),
-        priceType: 'cash',
+        priceType: finalPriceType,
         cashPrice: displayVar.cashPrice,
-        pointsPrice: null,
+        pointsPrice: displayVar.pointsPrice,
         imageUrl,
         inStock: isAnyVariationInStock,
         stockQuantity: displayVar.stockQuantity,
@@ -82,6 +151,8 @@ const transformSquareCatalog = (squareData = {}) => {
         reviewCount: undefined,
         createdAt: item.updated_at || item.created_at,
         variations: variationsArr,
+        redemptionType: displayVar.redemptionType || 'cash',
+        minimumTier: displayVar.minimumTier || 'BRONZE',
       };
     });
 
@@ -123,6 +194,40 @@ const fetchProducts = async (filters = {}) => {
   
   if (filters.inStockOnly) {
     products = products.filter((p) => p.inStock);
+  }
+  
+  // Apply tier eligibility check - products are considered "in stock" only if user meets tier requirement
+  if (filters.userTier !== undefined) {
+    products = products.map(product => {
+      // Check if any variation is accessible to the user
+      const accessibleVariations = product.variations.filter(variation => 
+        checkTierEligibility(filters.userTier, variation.minimumTier)
+      );
+      
+      // If no variations are accessible, mark product as out of stock
+      if (accessibleVariations.length === 0 && product.variations.length > 0) {
+        return {
+          ...product,
+          inStock: false,
+          variations: product.variations.map(v => ({ ...v, inStock: false }))
+        };
+      }
+      
+      // Update variations to reflect tier accessibility
+      const updatedVariations = product.variations.map(variation => ({
+        ...variation,
+        inStock: variation.inStock && checkTierEligibility(filters.userTier, variation.minimumTier)
+      }));
+      
+      // Product is in stock if any variation is accessible and in stock
+      const isProductInStock = updatedVariations.some(v => v.inStock);
+      
+      return {
+        ...product,
+        inStock: isProductInStock,
+        variations: updatedVariations
+      };
+    });
   }
   
   // Apply affordability filter
@@ -189,6 +294,7 @@ const fetchProducts = async (filters = {}) => {
     totalProducts: products.length,
     cashProducts: products.filter(p => p.priceType === 'cash' || p.priceType === 'both').length,
     pointsProducts: products.filter(p => p.priceType === 'points' || p.priceType === 'both').length,
+    bothProducts: products.filter(p => p.priceType === 'both').length,
     inStockProducts: products.filter(p => p.inStock).length,
     affordableProducts: filters.userPoints !== undefined 
       ? products.filter(p => {
@@ -229,6 +335,18 @@ const fetchProducts = async (filters = {}) => {
       hasPrev: page > 1,
     }
   };
+};
+
+// Helper function to check if user meets minimum tier requirement
+const checkTierEligibility = (userTier, requiredTier) => {
+  if (!requiredTier || requiredTier === null) return true; // No tier restriction
+  if (!userTier) return false; // User has no tier, can't access restricted items
+  
+  const userTierIndex = TIER_ORDER.indexOf(userTier);
+  const requiredTierIndex = TIER_ORDER.indexOf(requiredTier);
+  
+  // User must have equal or higher tier (higher index in TIER_ORDER)
+  return userTierIndex >= requiredTierIndex;
 };
 
 export const useProducts = (filters = {}) => {

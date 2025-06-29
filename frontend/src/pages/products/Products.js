@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FiSearch, FiFilter, FiShoppingBag, FiDollarSign, FiGift, FiChevronLeft, FiChevronRight, FiCreditCard, FiStar, FiCheckCircle, FiArrowUp, FiArrowDown } from 'react-icons/fi';
 import { useProducts } from '../../hooks/useProducts';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
+import { useTierStatus } from '../../hooks/useTierStatus';
 import theme from '../../styles/theme';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import Button from '../../components/common/Button';
@@ -355,6 +356,10 @@ const Products = () => {
   // Get current user data for affordability check
   const { currentUser, availablePoints } = useCurrentUser();
   
+  // Get user tier status for tier-restricted products
+  const { tierStatus } = useTierStatus();
+  const userTier = tierStatus?.activeTier || null;
+  
   // Initialize filters from URL parameters
   const [filters, setFilters] = useState(() => ({
     search: searchParams.get('search') || '',
@@ -391,7 +396,8 @@ const Products = () => {
     categories
   } = useProducts({
     ...filters,
-    userPoints: availablePoints || 0
+    userPoints: availablePoints || 0,
+    userTier: userTier
   });
 
   // Handle filter changes
@@ -609,7 +615,7 @@ const Products = () => {
                     duration: 0.4 
                   }}
                 >
-                  <ProductCard product={product} />
+                  <ProductCard product={product} userTier={userTier} />
                 </motion.div>
               ))}
             </AnimatePresence>
