@@ -39,6 +39,89 @@ const login = async (req, res) => {
 };
 
 /**
+ * Request OTP for email-based login
+ */
+const requestOTP = async (req, res) => {
+    console.log('\n\n===== OTP REQUEST START =====');
+    console.log('Time:', new Date().toISOString());
+    console.log('URL:', req.originalUrl);
+    console.log('Method:', req.method);
+    
+    try {
+        const { email } = req.body;
+        
+        if (!email) {
+            console.log('Missing email');
+            console.log('===== OTP REQUEST END (400) =====\n\n');
+            return res.status(400).json({ error: 'Email is required' });
+        }
+
+        console.log('OTP requested for email:', email);
+        
+        const result = await authService.requestEmailOTP(email);
+        
+        console.log('OTP request successful for email:', email);
+        console.log('===== OTP REQUEST END (200) =====\n\n');
+        
+        res.status(200).json(result);
+    } catch (error) {
+        console.log('OTP request failed:', error.message);
+        
+        let statusCode = 400;
+        if (error.message.includes('No account found')) {
+            statusCode = 404;
+        } else if (error.message.includes('Please wait')) {
+            statusCode = 429;
+        }
+        
+        console.log('===== OTP REQUEST END (', statusCode, ') =====\n\n');
+        res.status(statusCode).json({ error: error.message });
+    }
+};
+
+/**
+ * Verify OTP and generate JWT token
+ */
+const verifyOTP = async (req, res) => {
+    console.log('\n\n===== OTP VERIFY START =====');
+    console.log('Time:', new Date().toISOString());
+    console.log('URL:', req.originalUrl);
+    console.log('Method:', req.method);
+    
+    try {
+        const { email, otp } = req.body;
+        
+        if (!email || !otp) {
+            console.log('Missing email or OTP');
+            console.log('===== OTP VERIFY END (400) =====\n\n');
+            return res.status(400).json({ error: 'Email and verification code are required' });
+        }
+
+        console.log('OTP verification for email:', email);
+        
+        const { token, expiresAt } = await authService.verifyEmailOTP(email, otp);
+        
+        console.log('OTP verification successful for email:', email);
+        console.log('Token generated, expires at:', expiresAt);
+        console.log('===== OTP VERIFY END (200) =====\n\n');
+        
+        res.status(200).json({ token, expiresAt });
+    } catch (error) {
+        console.log('OTP verification failed:', error.message);
+        
+        let statusCode = 401;
+        if (error.message.includes('No verification code found') || error.message.includes('expired')) {
+            statusCode = 410; // Gone - code expired or not found
+        } else if (error.message.includes('Too many verification attempts')) {
+            statusCode = 429; // Too many requests
+        }
+        
+        console.log('===== OTP VERIFY END (', statusCode, ') =====\n\n');
+        res.status(statusCode).json({ error: error.message });
+    }
+};
+
+/**
  * Request a password reset token
  */
 const requestReset = async (req, res) => {
@@ -161,5 +244,7 @@ const resetPassword = async (req, res) => {
 module.exports = {
     login,
     requestReset,
-    resetPassword
+    resetPassword,
+    requestOTP,
+    verifyOTP
 };

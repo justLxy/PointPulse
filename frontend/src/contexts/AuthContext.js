@@ -279,6 +279,61 @@ export const AuthProvider = ({ children }) => {
     }
   };
   
+  // OTP-based email authentication
+  const requestOTP = async (email) => {
+    try {
+      console.log('Requesting OTP for email:', email); // Debug log
+      const result = await AuthService.requestOTP(email);
+      console.log('requestOTP result:', result); // Debug log
+      return { success: true, message: result.message };
+    } catch (error) {
+      const errorMessage = error.message || 'Failed to send verification code. Please try again.';
+      console.error('requestOTP error:', error); // Debug log
+      toast.error(errorMessage);
+      return {
+        success: false,
+        error: {
+          message: errorMessage,
+          originalError: error
+        }
+      };
+    }
+  };
+
+  const verifyOTP = async (email, otp) => {
+    try {
+      console.log('Verifying OTP for email:', email, 'OTP:', otp); // Debug log
+
+      // First get the token
+      const authData = await AuthService.verifyOTP(email, otp);
+      console.log('verifyOTP authData:', authData); // Debug log
+
+      // Then fetch user data with the new token (force refresh from API)
+      const user = await AuthService.getCurrentUser(true);
+      
+      // Update state and localStorage
+      setCurrentUser(user);
+      setActiveRole(user.role);
+      localStorage.setItem('activeRole', user.role);
+      
+      setIsAuthenticated(true);
+      
+      return { success: true, user };
+    } catch (error) {
+      const errorMessage = error.message || 'Verification failed. Please try again.';
+      console.error('verifyOTP error:', error); // Debug log
+      toast.error(errorMessage);
+      
+      return { 
+        success: false, 
+        error: { 
+          message: errorMessage,
+          originalError: error
+        } 
+      };
+    }
+  };
+  
   const value = {
     currentUser,
     loading,
@@ -291,6 +346,8 @@ export const AuthProvider = ({ children }) => {
     requestPasswordReset,
     resetPassword,
     updatePassword,
+    requestOTP,
+    verifyOTP,
   };
   
   if (loading) {

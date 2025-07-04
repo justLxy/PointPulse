@@ -42,6 +42,78 @@ const AuthService = {
     }
   },
 
+  // OTP-based email authentication
+  requestOTP: async (email) => {
+    try {
+      const response = await api.post('/auth/otp/request', { email });
+      return response.data;
+    } catch (error) {
+      if (error.response) {
+        const status = error.response.status;
+        const data = error.response.data;
+        
+        if (status === 400) {
+          if (data.error && data.error.includes('Invalid email format')) {
+            throw new Error('Please enter a valid University of Toronto email address (@mail.utoronto.ca).');
+          }
+          throw new Error(data.error || 'Invalid email format. Please check your email address.');
+        } else if (status === 404) {
+          throw new Error('No account found with this email address. Please check your email or contact support.');
+        } else if (status === 429) {
+          throw new Error('Please wait before requesting another verification code.');
+        } else if (status >= 500) {
+          throw new Error('Server error. Our team has been notified.');
+        } else if (data && data.error) {
+          throw new Error(data.error);
+        }
+      } else if (error.request) {
+        throw new Error('Network error. Please check your internet connection.');
+      } else if (error.message) {
+        throw new Error(error.message);
+      }
+      
+      throw new Error('Failed to send verification code. Please try again.');
+    }
+  },
+
+  verifyOTP: async (email, otp) => {
+    try {
+      const response = await api.post('/auth/otp/verify', { email, otp });
+      
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('tokenExpiry', response.data.expiresAt);
+      }
+      return response.data;
+    } catch (error) {
+      if (error.response) {
+        const status = error.response.status;
+        const data = error.response.data;
+        
+        if (status === 401) {
+          throw new Error('Invalid verification code. Please check the code and try again.');
+        } else if (status === 410) {
+          if (data.error && data.error.includes('expired')) {
+            throw new Error('Verification code has expired. Please request a new code.');
+          }
+          throw new Error('Verification code not found. Please request a new code.');
+        } else if (status === 429) {
+          throw new Error('Too many verification attempts. Please request a new code.');
+        } else if (status >= 500) {
+          throw new Error('Server error. Our team has been notified.');
+        } else if (data && data.error) {
+          throw new Error(data.error);
+        }
+      } else if (error.request) {
+        throw new Error('Network error. Please check your internet connection.');
+      } else if (error.message) {
+        throw new Error(error.message);
+      }
+      
+      throw new Error('Verification failed. Please try again.');
+    }
+  },
+
   logout: () => {
     localStorage.removeItem('token');
     localStorage.removeItem('tokenExpiry');

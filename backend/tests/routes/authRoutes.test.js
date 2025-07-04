@@ -9,14 +9,17 @@ jest.mock('../../controllers/authController', () => ({
             expiresAt: '2025-03-10T01:41:47.000Z'
         });
     }),
-    requestReset: jest.fn((req, res) => {
-        res.status(202).json({
-            expiresAt: '2025-03-01T01:41:47.000Z',
-            resetToken: 'ad71d4e1-8614-46aa-b96f-cb894e346506'
+    requestOTP: jest.fn((req, res) => {
+        res.status(200).json({
+            success: true,
+            expiresAt: '2025-03-10T01:41:47.000Z'
         });
     }),
-    resetPassword: jest.fn((req, res) => {
-        res.status(200).json({ success: true });
+    verifyOTP: jest.fn((req, res) => {
+        res.status(200).json({
+            token: 'mock-jwt-token',
+            expiresAt: '2025-03-10T01:41:47.000Z'
+        });
     })
 }));
 
@@ -36,68 +39,55 @@ describe('Auth Routes', () => {
                     expect(response.body.token).toBe('mock-jwt-token');
                 });
         });
+    });
 
-        test('should handle authentication request without error', async () => {
+    describe('POST /auth/otp/request', () => {
+        test('should request OTP and return success', async () => {
             await request(app)
-                .post('/auth/tokens')
+                .post('/auth/otp/request')
                 .send({
-                    utorid: 'testus01',
-                    password: 'TestPassword123!'
+                    email: 'test@mail.utoronto.ca'
+                })
+                .expect(200)
+                .then((response) => {
+                    expect(response.body).toHaveProperty('success');
+                    expect(response.body).toHaveProperty('expiresAt');
+                    expect(response.body.success).toBe(true);
+                });
+        });
+
+        test('should handle OTP request without error', async () => {
+            await request(app)
+                .post('/auth/otp/request')
+                .send({
+                    email: 'test@mail.utoronto.ca'
                 })
                 .expect(200);
         });
     });
 
-    describe('POST /auth/resets', () => {
-        test('should request password reset and return reset token', async () => {
+    describe('POST /auth/otp/verify', () => {
+        test('should verify OTP and return JWT token', async () => {
             await request(app)
-                .post('/auth/resets')
+                .post('/auth/otp/verify')
                 .send({
-                    utorid: 'testus01'
-                })
-                .expect(202)
-                .then((response) => {
-                    expect(response.body).toHaveProperty('expiresAt');
-                    expect(response.body).toHaveProperty('resetToken');
-                    expect(response.body.resetToken).toBe('ad71d4e1-8614-46aa-b96f-cb894e346506');
-                });
-        });
-
-        test('should handle password reset request', async () => {
-            await request(app)
-                .post('/auth/resets')
-                .send({
-                    utorid: 'existinguser'
-                })
-                .expect(202);
-        });
-    });
-
-    describe('POST /auth/resets/:resetToken', () => {
-        test('should reset password with valid token', async () => {
-            const resetToken = 'ad71d4e1-8614-46aa-b96f-cb894e346506';
-
-            await request(app)
-                .post(`/auth/resets/${resetToken}`)
-                .send({
-                    utorid: 'testus01',
-                    password: 'NewPassword123!'
+                    email: 'test@mail.utoronto.ca',
+                    otp: '123456'
                 })
                 .expect(200)
                 .then((response) => {
-                    expect(response.body).toHaveProperty('success');
-                    expect(response.body.success).toBe(true);
+                    expect(response.body).toHaveProperty('token');
+                    expect(response.body).toHaveProperty('expiresAt');
+                    expect(response.body.token).toBe('mock-jwt-token');
                 });
         });
 
-        test('should handle password reset with token', async () => {
-            const resetToken = 'valid-reset-token';
-
+        test('should handle OTP verification without error', async () => {
             await request(app)
-                .post(`/auth/resets/${resetToken}`)
+                .post('/auth/otp/verify')
                 .send({
-                    utorid: 'testus01',
-                    password: 'NewPassword123!'
+                    email: 'test@mail.utoronto.ca',
+                    otp: '123456'
                 })
                 .expect(200);
         });

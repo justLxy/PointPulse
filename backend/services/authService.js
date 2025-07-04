@@ -16,6 +16,15 @@ const resetAttempts = new Map();
 // Map to track expired tokens
 const expiredTokens = new Map();
 
+// OTP storage and rate limiting for email-based login
+const otpStorage = new Map(); // email -> { otp, expiresAt, attempts }
+const otpRateLimit = new Map(); // email -> lastRequestTime
+
+// OTP Configuration
+const OTP_EXPIRY_MINUTES = 10; // OTP expires in 10 minutes
+const OTP_RATE_LIMIT_MINUTES = 1; // Can request new OTP every 1 minute
+const MAX_OTP_ATTEMPTS = 3; // Maximum verification attempts per OTP
+
 /**
  * Generate JWT token for user
  */
@@ -245,11 +254,164 @@ const isResetTokenExpired = async (resetToken) => {
     return isExpired;
 };
 
+/**
+ * Generate a random 6-digit OTP
+ */
+const generateOTP = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+/**
+ * Validate University of Toronto email format
+ */
+const validateUTorontoEmail = (email) => {
+    // Support both @mail.utoronto.ca and @utoronto.ca
+    const regex = /^[^\s@]+@(mail\.)?utoronto\.ca$/;
+    return regex.test(email);
+};
+
+/**
+ * Request OTP for email-based login
+ */
+const requestEmailOTP = async (email) => {
+    console.log('OTP requested for email:', email);
+    
+    // Validate email format
+    if (!validateUTorontoEmail(email)) {
+        console.log('OTP request failed: Invalid email format');
+        throw new Error('Invalid email format. Please use a valid University of Toronto email address.');
+    }
+
+    // Find user by email
+    const user = await prisma.user.findFirst({
+        where: { email: email.toLowerCase() }
+    });
+
+    if (!user) {
+        console.log('OTP request failed: User not found for email:', email);
+        throw new Error('No account found with this email address.');
+    }
+
+    // Check rate limiting
+    const now = Date.now();
+    const lastRequest = otpRateLimit.get(email.toLowerCase());
+    
+    if (lastRequest && (now - lastRequest) < (OTP_RATE_LIMIT_MINUTES * 60 * 1000)) {
+        console.log('OTP request rate limited for email:', email);
+        throw new Error('Please wait before requesting another verification code.');
+    }
+
+    // Generate OTP
+    const otp = generateOTP();
+    const expiresAt = now + (OTP_EXPIRY_MINUTES * 60 * 1000);
+
+    // Store OTP
+    otpStorage.set(email.toLowerCase(), {
+        otp,
+        expiresAt,
+        attempts: 0,
+        userId: user.id
+    });
+
+    // Update rate limit
+    otpRateLimit.set(email.toLowerCase(), now);
+
+    console.log('OTP generated for email:', email, 'expires at:', new Date(expiresAt));
+
+    // Send OTP email
+    await emailService.sendOTPEmail(email, otp, user.name);
+
+    // Clean up expired OTPs
+    clearExpiredOTPs();
+
+    return { success: true, message: 'Verification code sent to your email.' };
+};
+
+/**
+ * Verify OTP and authenticate user
+ */
+const verifyEmailOTP = async (email, otp) => {
+    console.log('OTP verification requested for email:', email);
+    
+    const normalizedEmail = email.toLowerCase();
+    const otpData = otpStorage.get(normalizedEmail);
+
+    if (!otpData) {
+        console.log('OTP verification failed: No OTP found for email:', email);
+        throw new Error('No verification code found. Please request a new code.');
+    }
+
+    // Check if OTP has expired
+    if (Date.now() > otpData.expiresAt) {
+        console.log('OTP verification failed: Expired OTP for email:', email);
+        otpStorage.delete(normalizedEmail);
+        throw new Error('Verification code has expired. Please request a new code.');
+    }
+
+    // Check attempt limit
+    if (otpData.attempts >= MAX_OTP_ATTEMPTS) {
+        console.log('OTP verification failed: Too many attempts for email:', email);
+        otpStorage.delete(normalizedEmail);
+        throw new Error('Too many verification attempts. Please request a new code.');
+    }
+
+    // Verify OTP
+    if (otpData.otp !== otp) {
+        console.log('OTP verification failed: Invalid OTP for email:', email);
+        otpData.attempts++;
+        throw new Error('Invalid verification code. Please try again.');
+    }
+
+    // OTP is valid, get user data
+    const user = await prisma.user.findUnique({
+        where: { id: otpData.userId }
+    });
+
+    if (!user) {
+        console.log('OTP verification failed: User not found for ID:', otpData.userId);
+        otpStorage.delete(normalizedEmail);
+        throw new Error('User account not found.');
+    }
+
+    console.log('OTP verification successful for email:', email);
+
+    // Clear the used OTP
+    otpStorage.delete(normalizedEmail);
+    
+    // Update last login
+    await prisma.user.update({
+        where: { id: user.id },
+        data: { lastLogin: new Date() }
+    });
+    console.log('Updated last login timestamp for user ID:', user.id);
+
+    // Generate and return token
+    return generateToken(user);
+};
+
+/**
+ * Clear expired OTPs from storage
+ */
+const clearExpiredOTPs = () => {
+    const now = Date.now();
+    for (const [email, otpData] of otpStorage.entries()) {
+        if (now > otpData.expiresAt) {
+            otpStorage.delete(email);
+            console.log('Cleared expired OTP for email:', email);
+        }
+    }
+};
+
 module.exports = {
     generateToken,
     authenticateUser,
     requestPasswordReset,
     resetPassword,
     findUserByResetToken,
-    isResetTokenExpired
+    isResetTokenExpired,
+    generateOTP,
+    validateUTorontoEmail,
+    requestEmailOTP,
+    verifyEmailOTP,
+    clearExpiredOTPs
 };
