@@ -32,16 +32,27 @@ app.use(cors({
     origin: function (origin, callback) {
         const allowedOrigins = [
             FRONTEND_URL,
+            'http://localhost:3000',
+            'http://localhost:3001',
             // Add other specific origins if needed
         ];
-        if (!origin || allowedOrigins.indexOf(origin) !== -1 || origin.startsWith('https://pointpulse')) {
+        
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        
+        // Allow all Vercel preview and production domains
+        if (origin.includes('vercel.app') || 
+            origin.includes('pointpulse') ||
+            allowedOrigins.indexOf(origin) !== -1) {
             callback(null, true);
         } else {
+            console.log('CORS blocked origin:', origin);
             callback(new Error('Not allowed by CORS'));
         }
     },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
+    credentials: true
 }));
 
 app.use(express.json());
@@ -61,6 +72,11 @@ app.use(
         path: [
             /^\/auth\//,
             /^\/products\/?.*/,
+            /^\/uploads\//,
+            '/manifest.json',
+            '/favicon.ico',
+            '/logo.png',
+            // Add any other public paths that don't need authentication
         ],
     })
 );
@@ -84,11 +100,21 @@ app.setupSocketIO = (server) => {
             origin: function (origin, callback) {
                 const allowedOrigins = [
                     FRONTEND_URL,
+                    'http://localhost:3000',
+                    'http://localhost:3001',
                     // Add other specific origins if needed
                 ];
-                if (!origin || allowedOrigins.indexOf(origin) !== -1 || origin.startsWith('https://pointpulse')) {
+                
+                // Allow requests with no origin
+                if (!origin) return callback(null, true);
+                
+                // Allow all Vercel preview and production domains
+                if (origin.includes('vercel.app') || 
+                    origin.includes('pointpulse') ||
+                    allowedOrigins.indexOf(origin) !== -1) {
                     callback(null, true);
                 } else {
+                    console.log('Socket.IO CORS blocked origin:', origin);
                     callback(new Error('Not allowed by CORS'));
                 }
             },
