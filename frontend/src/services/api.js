@@ -11,7 +11,7 @@ import axios from 'axios';
 // export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 export const API_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:8000";
 
-// Create an axios instance with a base URL
+// Create a dedicated axios instance ONLY for backend API calls
 const api = axios.create({
   baseURL: API_URL,
   // Don't set a default Content-Type - axios will set the appropriate one 
@@ -19,17 +19,13 @@ const api = axios.create({
 });
 
 // Add a request interceptor to include the auth token
+// This interceptor ONLY applies to our API instance
 api.interceptors.request.use(
   (config) => {
-    // Only add Authorization header for API requests (not static files)
-    // Check if this is an API request by looking at the baseURL
-    if (config.baseURL === API_URL) {
-      const token = localStorage.getItem('token');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
-    
     return config;
   },
   (error) => {
