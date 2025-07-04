@@ -206,6 +206,99 @@ const AuthService = {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     return user.role || null;
   },
+
+  // Email-based authentication methods
+  requestEmailLogin: async (email) => {
+    try {
+      const response = await api.post('/auth/email-login', { email });
+      return response.data;
+    } catch (error) {
+      if (error.response) {
+        const { status, data } = error.response;
+        
+        if (status === 400) {
+          if (data.error && data.error.includes('University of Toronto')) {
+            throw new Error('Please use a valid University of Toronto email address (@mail.utoronto.ca)');
+          }
+          throw new Error(data.error || 'Invalid email address');
+        }
+        
+        if (status === 404) {
+          throw new Error('No account found with this email address. Please contact support if you believe this is an error.');
+        }
+        
+        if (status === 429) {
+          throw new Error('Too many login attempts. Please wait a minute before trying again.');
+        }
+        
+        if (status >= 500) {
+          throw new Error('Server error. Please try again later.');
+        }
+        
+        throw new Error(data.error || 'Failed to send verification email');
+      }
+      
+      if (error.request) {
+        throw new Error('Network error. Please check your internet connection.');
+      }
+      
+      throw new Error('An unexpected error occurred. Please try again.');
+    }
+  },
+
+  verifyEmailLogin: async (email, otp) => {
+    try {
+      const response = await api.post('/auth/verify-email', { email, otp });
+      
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('tokenExpiry', response.data.expiresAt);
+      }
+      
+      return response.data;
+    } catch (error) {
+      if (error.response) {
+        const { status, data } = error.response;
+        
+        if (status === 400) {
+          if (data.error && data.error.includes('University of Toronto')) {
+            throw new Error('Please use a valid University of Toronto email address (@mail.utoronto.ca)');
+          }
+          throw new Error(data.error || 'Invalid email or verification code');
+        }
+        
+        if (status === 401) {
+          throw new Error('Invalid verification code. Please check your code and try again.');
+        }
+        
+        if (status === 410) {
+          throw new Error('Verification code has expired. Please request a new verification code.');
+        }
+        
+        if (status >= 500) {
+          throw new Error('Server error. Please try again later.');
+        }
+        
+        throw new Error(data.error || 'Login verification failed');
+      }
+      
+      if (error.request) {
+        throw new Error('Network error. Please check your internet connection.');
+      }
+      
+      throw new Error('An unexpected error occurred. Please try again.');
+    }
+  },
+
+  // Utility method to validate UofT email format
+  isValidUofTEmail: (email) => {
+    if (!email || typeof email !== 'string') {
+      return false;
+    }
+    
+    const emailLower = email.toLowerCase();
+    return emailLower.endsWith('@mail.utoronto.ca');
+  },
 };
 
 export default AuthService; 

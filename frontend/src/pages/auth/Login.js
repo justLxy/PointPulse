@@ -20,9 +20,10 @@ import { useAuth } from '../../contexts/AuthContext';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
 import theme from '../../styles/theme';
-import { FaLock, FaUser, FaSignInAlt, FaEye, FaEyeSlash, FaExclamationTriangle, FaUserPlus } from 'react-icons/fa';
+import { FaExclamationTriangle, FaUserPlus, FaEnvelope, FaKey, FaArrowLeft } from 'react-icons/fa';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import AnimatedLogo from '../../components/common/AnimatedLogo';
+import AuthService from '../../services/auth.service';
 
 const fadeIn = keyframes`
   from {
@@ -123,60 +124,7 @@ const InputGroup = styled.div`
   width: 100%;
 `;
 
-const PasswordToggle = styled.button`
-  position: absolute;
-  right: 12px;
-  top: 8px;
-  height: 24px;
-  width: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: ${theme.colors.text.secondary};
-  z-index: 5;
-  padding: 0;
-  
-  &:hover {
-    color: ${theme.colors.primary.main};
-  }
-`;
 
-const ForgotPassword = styled(Link)`
-  color: ${theme.colors.primary.main};
-  font-size: ${theme.typography.fontSize.sm};
-  text-align: right;
-  margin-top: -${theme.spacing.sm};
-  
-  &:hover {
-    text-decoration: underline;
-    color: ${theme.colors.primary.dark};
-  }
-`;
-
-const AccountActions = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: -${theme.spacing.sm};
-  margin-bottom: ${theme.spacing.md};
-`;
-
-const LinkButton = styled(Link)`
-  color: ${theme.colors.primary.main};
-  font-size: ${theme.typography.fontSize.sm};
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  
-  &:hover {
-    text-decoration: underline;
-    color: ${theme.colors.primary.dark};
-  }
-`;
 
 const ErrorMessage = styled.div`
   background-color: rgba(231, 76, 60, 0.1);
@@ -207,12 +155,102 @@ const StyledInput = styled(Input)`
   }
 `;
 
+
+
+const StepIndicator = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: ${theme.spacing.sm};
+  margin-bottom: ${theme.spacing.lg};
+  font-size: ${theme.typography.fontSize.sm};
+  color: ${theme.colors.text.secondary};
+`;
+
+const BackButton = styled.button`
+  background: none;
+  border: none;
+  color: ${theme.colors.primary.main};
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: ${theme.spacing.xs};
+  margin-bottom: ${theme.spacing.md};
+  font-size: ${theme.typography.fontSize.sm};
+  
+  &:hover {
+    color: ${theme.colors.primary.dark};
+  }
+`;
+
+const SuccessMessage = styled.div`
+  background-color: rgba(39, 174, 96, 0.1);
+  color: ${theme.colors.success.main};
+  padding: ${theme.spacing.md};
+  border-radius: ${theme.radius.md};
+  margin-bottom: ${theme.spacing.md};
+  font-size: ${theme.typography.fontSize.sm};
+  border-left: 4px solid ${theme.colors.success.main};
+  display: flex;
+  align-items: center;
+  
+  svg {
+    margin-right: ${theme.spacing.sm};
+    min-width: 16px;
+  }
+`;
+
+const OTPInput = styled(Input)`
+  text-align: center;
+  font-size: 1.5rem;
+  letter-spacing: 0.5rem;
+  font-weight: bold;
+  
+  input {
+    text-align: center;
+    font-size: 1.5rem;
+    letter-spacing: 0.5rem;
+    font-weight: bold;
+  }
+`;
+
+const ResendButton = styled.button`
+  background: none;
+  border: none;
+  color: ${theme.colors.primary.main};
+  cursor: pointer;
+  font-size: ${theme.typography.fontSize.sm};
+  text-decoration: underline;
+  margin-top: ${theme.spacing.sm};
+  
+  &:hover {
+    color: ${theme.colors.primary.dark};
+  }
+  
+  &:disabled {
+    color: ${theme.colors.text.disabled};
+    cursor: not-allowed;
+    text-decoration: none;
+  }
+`;
+
+const Timer = styled.span`
+  color: ${theme.colors.text.secondary};
+  font-size: ${theme.typography.fontSize.sm};
+  margin-left: ${theme.spacing.sm};
+`;
+
 const Login = () => {
-  const [utorid, setUtorid] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  // Email login states
+  const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
+  const [emailStep, setEmailStep] = useState('email'); // 'email' or 'otp'
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [resendTimer, setResendTimer] = useState(0);
   const [error, setError] = useState('');
-  const { login, isAuthenticated, loading } = useAuth();
+  
+  const { isAuthenticated, loading, emailLogin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -231,42 +269,111 @@ const Login = () => {
       navigate(from || '/', { replace: true });
     }
   }, [isAuthenticated, loading, navigate, from]);
+
+  // Timer for resend button
+  useEffect(() => {
+    let interval;
+    if (resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer(prev => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [resendTimer]);
   
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccessMessage('');
+    setIsSubmitting(true);
     
-    if (!utorid.trim() || !password.trim()) {
-      setError('Please enter both UTORid and password');
+    try {
+      if (emailStep === 'email') {
+        await handleEmailLogin();
+      } else if (emailStep === 'otp') {
+        await handleOTPVerification();
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('An unexpected error occurred. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleEmailLogin = async () => {
+    if (!email.trim()) {
+      setError('Please enter your email address');
+      return;
+    }
+    
+    if (!AuthService.isValidUofTEmail(email)) {
+      setError('Please use a valid University of Toronto email address (@mail.utoronto.ca)');
       return;
     }
     
     try {
-      // const { success, error } = await login(utorid, password);
-      const { success, error } = await login(utorid.trim().toLowerCase(), password);
-
-      
-      if (success) {
-        navigate(from, { replace: true });
-      } else {
-        if (error?.status === 401) {
-          setError('Incorrect UTORid or password. Please check your credentials and try again.');
-        } else if (error?.message?.includes('network')) {
-          setError('Network error. Please check your internet connection and try again.');
-        } else if (error?.message) {
-          setError(error.message);
-        } else {
-          setError('Authentication failed. Please verify your credentials and try again.');
-        }
-      }
+      const result = await AuthService.requestEmailLogin(email);
+      setSuccessMessage('Verification code sent to your email. Please check your inbox.');
+      setEmailStep('otp');
+      setResendTimer(60); // 60 second cooldown
     } catch (err) {
-      console.error('Login error:', err);
-      setError('We couldn\'t process your login request. This might be due to a server issue. Please try again later.');
+      setError(err.message || 'Failed to send verification email');
     }
   };
-  
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
+
+  const handleOTPVerification = async () => {
+    if (!otp.trim()) {
+      setError('Please enter the verification code');
+      return;
+    }
+    
+    if (otp.length !== 6 || !/^\d{6}$/.test(otp)) {
+      setError('Please enter a valid 6-digit verification code');
+      return;
+    }
+    
+    try {
+      const result = await emailLogin(email, otp);
+      
+      if (result.success) {
+        setSuccessMessage('Login successful! Redirecting...');
+        // AuthContext will handle navigation automatically when isAuthenticated changes
+      } else {
+        setError(result.error.message);
+        // Clear OTP input so user can try again
+        setOtp('');
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to verify login');
+      // Clear OTP input so user can try again
+      setOtp('');
+    }
+  };
+
+  const handleResendCode = async () => {
+    if (resendTimer > 0) return;
+    
+    setError('');
+    setSuccessMessage('');
+    setIsSubmitting(true);
+    
+    try {
+      await AuthService.requestEmailLogin(email);
+      setSuccessMessage('Verification code sent again. Please check your inbox.');
+      setResendTimer(60);
+    } catch (err) {
+      setError(err.message || 'Failed to resend verification code');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+    const goBackToEmail = () => {
+    setEmailStep('email');
+    setOtp('');
+    setError('');
+    setSuccessMessage('');
   };
   
   // If still loading auth state, show loading indicator
@@ -296,55 +403,119 @@ const Login = () => {
           <AnimatedLogo />
         </Logo>
         
+        {/* Step indicator for email login */}
+        <StepIndicator>
+          {emailStep === 'email' ? (
+            <>
+              <FaEnvelope size={14} />
+              Step 1: Enter your University of Toronto email
+            </>
+          ) : (
+            <>
+              <FaKey size={14} />
+              Step 2: Enter verification code
+            </>
+          )}
+        </StepIndicator>
+
+        {/* Back button for OTP step */}
+        {emailStep === 'otp' && (
+          <BackButton type="button" onClick={goBackToEmail}>
+            <FaArrowLeft size={12} />
+            Back to email
+          </BackButton>
+        )}
+        
+        {/* Error Message */}
         {error && (
           <ErrorMessage>
             <FaExclamationTriangle />
             {error}
           </ErrorMessage>
         )}
+
+        {/* Success Message */}
+        {successMessage && (
+          <SuccessMessage>
+            <FaEnvelope />
+            {successMessage}
+          </SuccessMessage>
+        )}
         
         <Form onSubmit={handleSubmit}>
-          <InputGroup>
-            <StyledInput
-              type="text"
-              placeholder="UTORid"
-              value={utorid}
-              onChange={(e) => setUtorid(e.target.value)}
-              required
-              leftIcon={<FaUser size={16} />}
-            />
-          </InputGroup>
-          
-          <InputGroup>
-            <StyledInput
-              type={showPassword ? "text" : "password"}
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              leftIcon={<FaLock size={16} />}
-            />
-            <PasswordToggle 
-              type="button" 
-              onClick={togglePasswordVisibility}
-              aria-label={showPassword ? "Hide password" : "Show password"}
-            >
-              {showPassword ? <FaEye size={16} /> : <FaEyeSlash size={16} />}
-            </PasswordToggle>
-          </InputGroup>
-          
-          <AccountActions>
-            <LinkButton to="/password-reset">
-              Forgot Password?
-            </LinkButton>
-            <LinkButton to="/account-activation">
-              <FaUserPlus size={14} /> Activate Account
-            </LinkButton>
-          </AccountActions>
-          
-          <Button type="submit" fullWidth>
-            <FaSignInAlt /> Login
-          </Button>
+          {emailStep === 'email' && (
+            <>
+              <InputGroup>
+                <StyledInput
+                  type="email"
+                  placeholder="your.email@mail.utoronto.ca"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  leftIcon={<FaEnvelope size={16} />}
+                />
+              </InputGroup>
+              
+              <Button type="submit" fullWidth disabled={isSubmitting}>
+                <FaEnvelope /> {isSubmitting ? 'Sending...' : 'Send Verification Code'}
+              </Button>
+              
+              <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+                <Link 
+                  to="/account-activation"
+                  style={{ 
+                    color: theme.colors.primary.main,
+                    fontSize: theme.typography.fontSize.sm,
+                    textDecoration: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '5px'
+                  }}
+                >
+                  <FaUserPlus size={14} /> Need to activate your account?
+                </Link>
+              </div>
+            </>
+          )}
+
+          {emailStep === 'otp' && (
+            <>
+              <InputGroup>
+                <OTPInput
+                  type="text"
+                  placeholder="000000"
+                  value={otp}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '');
+                    if (value.length <= 6) {
+                      setOtp(value);
+                    }
+                  }}
+                  maxLength="6"
+                  required
+                  leftIcon={<FaKey size={16} />}
+                />
+              </InputGroup>
+              
+              <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+                <p style={{ fontSize: '0.875rem', color: '#666', marginBottom: '0.5rem' }}>
+                  Verification code sent to: <strong>{email}</strong>
+                </p>
+                <ResendButton 
+                  type="button" 
+                  onClick={handleResendCode}
+                  disabled={resendTimer > 0 || isSubmitting}
+                >
+                  {resendTimer > 0 ? `Resend in ${resendTimer}s` : 'Resend Code'}
+                </ResendButton>
+              </div>
+              
+              <Button type="submit" fullWidth disabled={isSubmitting}>
+                <FaKey /> {isSubmitting ? 'Verifying...' : 'Verify & Login'}
+              </Button>
+            </>
+          )}
         </Form>
       </Card>
     </Container>

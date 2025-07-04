@@ -22,6 +22,8 @@ model User {
   suspicious           Boolean           @default(false)
   resetToken           String?
   expiresAt            DateTime?
+  loginToken           String?           // For email-based authentication
+  loginTokenExpiresAt  DateTime?         // Login token expiration
   avatarUrl            String?
   sentTransactions     Transaction[]     @relation("SentTransactions")
   receivedTransactions Transaction[]     @relation("ReceivedTransactions")

@@ -17,6 +17,18 @@ jest.mock('../../controllers/authController', () => ({
     }),
     resetPassword: jest.fn((req, res) => {
         res.status(200).json({ success: true });
+    }),
+    requestEmailLogin: jest.fn((req, res) => {
+        res.status(200).json({
+            message: 'Login verification email sent',
+            expiresAt: '2025-03-10T01:56:47.000Z'
+        });
+    }),
+    verifyEmailLogin: jest.fn((req, res) => {
+        res.status(200).json({
+            token: 'mock-jwt-token',
+            expiresAt: '2025-03-10T01:41:47.000Z'
+        });
     })
 }));
 
@@ -98,6 +110,58 @@ describe('Auth Routes', () => {
                 .send({
                     utorid: 'testus01',
                     password: 'NewPassword123!'
+                })
+                .expect(200);
+        });
+    });
+
+    describe('POST /auth/email-login', () => {
+        test('should request email login and return success message', async () => {
+            await request(app)
+                .post('/auth/email-login')
+                .send({
+                    email: 'test@mail.utoronto.ca'
+                })
+                .expect(200)
+                .then((response) => {
+                    expect(response.body).toHaveProperty('message');
+                    expect(response.body).toHaveProperty('expiresAt');
+                    expect(response.body.message).toBe('Login verification email sent');
+                });
+        });
+
+        test('should handle email login request without error', async () => {
+            await request(app)
+                .post('/auth/email-login')
+                .send({
+                    email: 'user@mail.utoronto.ca'
+                })
+                .expect(200);
+        });
+    });
+
+    describe('POST /auth/verify-email', () => {
+        test('should verify email login and return JWT token', async () => {
+            await request(app)
+                .post('/auth/verify-email')
+                .send({
+                    email: 'test@mail.utoronto.ca',
+                    otp: '123456'
+                })
+                .expect(200)
+                .then((response) => {
+                    expect(response.body).toHaveProperty('token');
+                    expect(response.body).toHaveProperty('expiresAt');
+                    expect(response.body.token).toBe('mock-jwt-token');
+                });
+        });
+
+        test('should handle email verification without error', async () => {
+            await request(app)
+                .post('/auth/verify-email')
+                .send({
+                    email: 'user@mail.utoronto.ca',
+                    otp: '654321'
                 })
                 .expect(200);
         });

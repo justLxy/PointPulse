@@ -11,10 +11,15 @@ const prisma = new PrismaClient();
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
 
+// Rate limiting for email verification requests
+const emailAttempts = new Map();
 // Rate limiting for password reset
 const resetAttempts = new Map();
 // Map to track expired tokens
 const expiredTokens = new Map();
+
+// University email domains
+const VALID_EMAIL_DOMAINS = ['mail.utoronto.ca'];
 
 /**
  * Generate JWT token for user
@@ -245,11 +250,146 @@ const isResetTokenExpired = async (resetToken) => {
     return isExpired;
 };
 
+/**
+ * Validate if email is a valid UofT email
+ */
+const validateUofTEmail = (email) => {
+    if (!email || typeof email !== 'string') {
+        return false;
+    }
+    
+    const emailLower = email.toLowerCase();
+    return VALID_EMAIL_DOMAINS.some(domain => emailLower.endsWith(`@${domain}`));
+};
+
+/**
+ * Generate a 6-digit OTP
+ */
+const generateLoginOTP = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+/**
+ * Request email-based login
+ */
+const requestEmailLogin = async (email, ipAddress) => {
+    console.log('Email login requested for:', email, 'from IP:', ipAddress);
+    
+    // Validate email format
+    if (!validateUofTEmail(email)) {
+        console.log('Email login failed: Invalid UofT email format:', email);
+        throw new Error('Invalid UofT email address');
+    }
+    
+    // Check rate limiting
+    const key = `${ipAddress}_${email}`;
+    const now = Date.now();
+    const lastAttempt = emailAttempts.get(key) || 0;
+
+    if (now - lastAttempt < 60000) { // 60 seconds
+        console.log('Email login rate limited for:', email, 'from IP:', ipAddress);
+        throw new Error('Too many requests');
+    }
+
+    // Find the user
+    const user = await prisma.user.findUnique({
+        where: { email }
+    });
+
+    if (!user) {
+        console.log('Email login failed: User not found for email:', email);
+        // Still record the attempt for rate limiting
+        emailAttempts.set(key, now);
+        throw new Error('User not found');
+    }
+
+    // Record this attempt
+    emailAttempts.set(key, now);
+    console.log('Email login attempt recorded for:', email);
+
+    // Generate login token
+    const loginToken = generateLoginOTP();
+    const loginTokenExpiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+    console.log('Generated login OTP for user ID:', user.id, 'OTP:', loginToken, 'expires at:', loginTokenExpiresAt);
+
+    // Save the login token to the user
+    await prisma.user.update({
+        where: { id: user.id },
+        data: {
+            loginToken,
+            loginTokenExpiresAt
+        }
+    });
+    console.log('Login token saved to database for user ID:', user.id);
+
+    // Send login email
+    console.log('Sending login email to:', user.email, 'with OTP:', loginToken, 'for user:', user.name);
+    await emailService.sendLoginEmail(user.email, loginToken, user.name);
+
+    return { 
+        message: 'Login verification email sent', 
+        expiresAt: loginTokenExpiresAt 
+    };
+};
+
+/**
+ * Verify email login with OTP
+ */
+const verifyEmailLogin = async (email, otp) => {
+    console.log('Verifying email login for:', email, 'with OTP');
+    
+    // Validate email format
+    if (!validateUofTEmail(email)) {
+        console.log('Email verification failed: Invalid UofT email format:', email);
+        throw new Error('Invalid UofT email address');
+    }
+    
+    // Find the user with this email and login token
+    const user = await prisma.user.findFirst({
+        where: {
+            email,
+            loginToken: otp
+        }
+    });
+
+    if (!user) {
+        console.log('Email verification failed: Invalid OTP or email combination');
+        throw new Error('Invalid verification code');
+    }
+
+    // Check if the token has expired
+    if (!user.loginTokenExpiresAt || new Date(user.loginTokenExpiresAt) < new Date()) {
+        console.log('Email verification failed: Login token has expired for user ID:', user.id);
+        throw new Error('Verification code has expired');
+    }
+
+    console.log('Email verification successful for user ID:', user.id);
+
+    // Clear the login token and update last login
+    await prisma.user.update({
+        where: { id: user.id },
+        data: {
+            loginToken: null,
+            loginTokenExpiresAt: null,
+            lastLogin: new Date(),
+            verified: true // Mark as verified since they accessed their email
+        }
+    });
+    console.log('Login token cleared and last login updated for user ID:', user.id);
+
+    // Generate and return JWT token
+    return generateToken(user);
+};
+
 module.exports = {
     generateToken,
     authenticateUser,
     requestPasswordReset,
     resetPassword,
     findUserByResetToken,
-    isResetTokenExpired
+    isResetTokenExpired,
+    validateUofTEmail,
+    generateLoginOTP,
+    requestEmailLogin,
+    verifyEmailLogin
 };

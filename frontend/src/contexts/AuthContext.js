@@ -279,12 +279,77 @@ export const AuthProvider = ({ children }) => {
     }
   };
   
+  // Email login function for the new authentication flow
+  const emailLogin = async (email, otp) => {
+    try {
+      // Don't set global loading here - let Login component handle its own loading
+      
+      // Verify OTP and get token
+      const authData = await AuthService.verifyEmailLogin(email, otp);
+      
+      // Fetch user data with the new token
+      const user = await AuthService.getCurrentUser(true);
+      
+      // Update state and localStorage
+      setCurrentUser(user);
+      setActiveRole(user.role);
+      localStorage.setItem('activeRole', user.role);
+      
+      setIsAuthenticated(true);
+      
+      return { success: true, user };
+    } catch (error) {
+      // Provide more specific error messages
+      let errorMessage = 'Login verification failed. Please try again.';
+      
+      // Handle different types of errors
+      if (error.response) {
+        // Server returned an error status code
+        const status = error.response.status;
+        
+        if (status === 401) {
+          errorMessage = 'Invalid verification code. Please check your code and try again.';
+        } else if (status === 400) {
+          errorMessage = 'Invalid verification code format. Please enter a 6-digit code.';
+        } else if (status === 404) {
+          errorMessage = 'Verification code not found. Please request a new code.';
+        } else if (status === 410) {
+          errorMessage = 'Verification code has expired. Please request a new code.';
+        } else if (status === 429) {
+          errorMessage = 'Too many verification attempts. Please try again later.';
+        } else if (status >= 500) {
+          errorMessage = 'Server error. Our team has been notified and is working on it.';
+        }
+      } else if (error.request) {
+        // Request was sent but no response received
+        errorMessage = 'Network error. Please check your internet connection and try again.';
+      } else if (error.message) {
+        // Use the error message from the service
+        errorMessage = error.message;
+      }
+      
+      // Show error notification
+      toast.error(errorMessage);
+      
+      // Return detailed error information
+      return { 
+        success: false, 
+        error: { 
+          message: errorMessage,
+          status: error.response?.status,
+          originalError: error
+        } 
+      };
+    }
+  };
+
   const value = {
     currentUser,
     loading,
     activeRole,
     isAuthenticated,
     login,
+    emailLogin,
     logout,
     updateCurrentUser,
     switchRole,
