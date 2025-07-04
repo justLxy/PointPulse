@@ -60,6 +60,44 @@ app.use(express.json());
 // Serve static files from the uploads directory
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
+// Handle static files that might be requested from frontend
+// These should ideally be served by the frontend, but we'll provide them here as fallback
+app.get('/manifest.json', (req, res) => {
+  res.json({
+    "short_name": "PointPulse",
+    "name": "PointPulse - UofT Loyalty Rewards",
+    "icons": [
+      {
+        "src": "logo.png",
+        "sizes": "64x64 32x32 24x24 16x16",
+        "type": "image/png"
+      },
+      {
+        "src": "logo.png",
+        "type": "image/png",
+        "sizes": "192x192"
+      },
+      {
+        "src": "logo.png",
+        "type": "image/png",
+        "sizes": "512x512"
+      }
+    ],
+    "start_url": ".",
+    "display": "standalone",
+    "theme_color": "#3498db",
+    "background_color": "#f5f8fa"
+  });
+});
+
+app.get('/favicon.ico', (req, res) => {
+  res.status(404).end();
+});
+
+app.get('/logo.png', (req, res) => {
+  res.status(404).end();
+});
+
 // Auth routes (no JWT required)
 app.use("/auth", authRoutes);
 

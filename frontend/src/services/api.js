@@ -21,9 +21,15 @@ const api = axios.create({
 // Add a request interceptor to include the auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    // Don't add auth token for static files
+    const staticFiles = ['/manifest.json', '/favicon.ico', '/logo.png'];
+    const isStaticFile = staticFiles.some(file => config.url?.includes(file));
+    
+    if (!isStaticFile) {
+      const token = localStorage.getItem('token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     
     return config;
