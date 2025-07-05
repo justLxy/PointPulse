@@ -20,8 +20,8 @@ const validateEmail = (email) => {
         return false;
     }
     
-    // 支持 @mail.utoronto.ca 和 @utoronto.ca 两种格式
-    const regex = /^[^\s@]+@(mail\.)?utoronto\.ca$/;
+    // 支持 @mail.utoronto.ca, @utoronto.ca, 以及 @toronto.edu 三种格式
+    const regex = /^([^\s@]+@(mail\.)?utoronto\.ca|[^\s@]+@toronto\.edu)$/i;
     const isValid = regex.test(email);
     console.log('Regex pattern:', regex);
     console.log('Is valid email?', isValid);

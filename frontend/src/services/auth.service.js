@@ -206,6 +206,46 @@ const AuthService = {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     return user.role || null;
   },
+
+  // Request a login code via email
+  requestEmailLogin: async (email) => {
+    try {
+      const response = await api.post('/auth/email-login', { email });
+      return response.data;
+    } catch (error) {
+      if (error.response) {
+        const status = error.response.status;
+        if (status === 404) {
+          throw new Error('No account associated with this email.');
+        }
+        throw new Error(error.response.data?.error || 'Failed to request login code.');
+      }
+      throw new Error('Network error. Please check your connection.');
+    }
+  },
+
+  // Verify the OTP code and obtain JWT token
+  verifyEmailLogin: async (email, code) => {
+    try {
+      const response = await api.post('/auth/email-login/verify', { email, code });
+
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('tokenExpiry', response.data.expiresAt);
+      }
+
+      return response.data;
+    } catch (error) {
+      if (error.response) {
+        const status = error.response.status;
+        if (status === 410) {
+          throw new Error('Invalid or expired login code. Please request a new one.');
+        }
+        throw new Error(error.response.data?.error || 'Login verification failed.');
+      }
+      throw new Error('Network error. Please check your connection.');
+    }
+  },
 };
 
 export default AuthService; 

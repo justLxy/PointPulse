@@ -18,15 +18,10 @@
  */
 
 it('inventory – search & basic interactions work', () => {
-  // Visit login page (root redirects to login when not authenticated)
-  cy.visit('/');
+  // Login using reusable command
+  cy.login('zhaokiko', '123');
 
-  // --- Login ---
-  cy.get('input[placeholder="UTORid"], input[type="text"]').first().type('zhaokiko');
-  cy.get('input[placeholder="Password"], input[type="password"]').first().type('123');
-  cy.contains('button', /login/i).click();
-
-  // Wait for dashboard header (account avatar) to confirm successful login
+  // Dashboard header confirms successful login
   cy.get('header').should('be.visible');
 
   // --- Navigate to Products page ---

@@ -16,6 +16,10 @@ const resetAttempts = new Map();
 // Map to track expired tokens
 const expiredTokens = new Map();
 
+// In-memory store for email login OTP codes
+// Structure: loginCodes[email] = { code: '123456', expiresAt: Date }
+const loginCodes = new Map();
+
 /**
  * Generate JWT token for user
  */
@@ -245,11 +249,99 @@ const isResetTokenExpired = async (resetToken) => {
     return isExpired;
 };
 
+// Generate a 6-digit OTP code
+const generateOtpCode = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+/**
+ * Request an email login code (OTP) for existing user by email
+ */
+const requestEmailLogin = async (email) => {
+    console.log('Email-login requested for:', email);
+
+    // Look up user by email (case insensitive)
+    const user = await prisma.user.findFirst({
+        where: {
+            email: email.toLowerCase(),
+        },
+    });
+
+    if (!user) {
+        console.log('No user associated with email:', email);
+        throw new Error('User not found');
+    }
+
+    // Generate OTP and expiry (10 minutes)
+    const otpCode = generateOtpCode();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    // Store in map (overwrite any existing)
+    loginCodes.set(email.toLowerCase(), { code: otpCode, expiresAt });
+
+    // Send email
+    await emailService.sendLoginCodeEmail(user.email, user.name, otpCode);
+
+    console.log('OTP generated for email-login, expires at:', expiresAt);
+
+    return { expiresAt };
+};
+
+/**
+ * Verify email login OTP and issue JWT token
+ */
+const verifyEmailLogin = async (email, otpCode) => {
+    console.log('Verifying email-login for:', email);
+
+    const record = loginCodes.get(email.toLowerCase());
+
+    if (!record) {
+        console.log('No OTP record for email');
+        throw new Error('Invalid or expired code');
+    }
+
+    // Check expiry
+    if (new Date() > record.expiresAt) {
+        loginCodes.delete(email.toLowerCase());
+        console.log('OTP expired');
+        throw new Error('Code expired');
+    }
+
+    // Check code match
+    if (record.code !== otpCode) {
+        console.log('OTP mismatch');
+        throw new Error('Invalid or expired code');
+    }
+
+    // Successful – delete OTP so it cannot be reused
+    loginCodes.delete(email.toLowerCase());
+
+    // Look up user again
+    const user = await prisma.user.findFirst({
+        where: { email: email.toLowerCase() },
+    });
+
+    if (!user) {
+        console.log('User disappeared?');
+        throw new Error('User not found');
+    }
+
+    // Update last login timestamp
+    await prisma.user.update({
+        where: { id: user.id },
+        data: { lastLogin: new Date() },
+    });
+
+    return generateToken(user);
+};
+
 module.exports = {
     generateToken,
     authenticateUser,
     requestPasswordReset,
     resetPassword,
     findUserByResetToken,
-    isResetTokenExpired
+    isResetTokenExpired,
+    requestEmailLogin,
+    verifyEmailLogin,
 };

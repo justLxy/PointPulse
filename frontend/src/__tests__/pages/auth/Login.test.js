@@ -61,7 +61,7 @@ describe('Login - User Authentication', () => {
     expect(screen.getByTestId('animated-logo')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('UTORid')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Password')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /login/i })).toBeInTheDocument();
+    expect(screen.getByTestId('login-submit')).toBeInTheDocument();
   });
 
   test('handles successful login workflow', async () => {
@@ -78,7 +78,7 @@ describe('Login - User Authentication', () => {
     });
     
     // Submit form
-    fireEvent.click(screen.getByRole('button', { name: /login/i }));
+    fireEvent.click(screen.getByTestId('login-submit'));
     
     await waitFor(() => {
       expect(mockAuthContext.login).toHaveBeenCalledWith('testuser', 'password123');
@@ -102,7 +102,7 @@ describe('Login - User Authentication', () => {
       target: { value: 'wrongpassword' }
     });
     
-    fireEvent.click(screen.getByRole('button', { name: /login/i }));
+    fireEvent.click(screen.getByTestId('login-submit'));
     
     await waitFor(() => {
       expect(screen.getByText(/incorrect utorid or password/i)).toBeInTheDocument();
@@ -113,7 +113,7 @@ describe('Login - User Authentication', () => {
     renderLogin();
     
     // Try to submit without filling fields
-    fireEvent.click(screen.getByRole('button', { name: /login/i }));
+    fireEvent.click(screen.getByTestId('login-submit'));
     
     await waitFor(() => {
       expect(screen.getByText('Please enter both UTORid and password')).toBeInTheDocument();
@@ -181,7 +181,7 @@ describe('Login - User Authentication', () => {
       target: { value: 'password123' }
     });
     
-    fireEvent.click(screen.getByRole('button', { name: /login/i }));
+    fireEvent.click(screen.getByTestId('login-submit'));
     
     await waitFor(() => {
       expect(screen.getByText('Network error occurred')).toBeInTheDocument();
@@ -200,7 +200,7 @@ describe('Login - User Authentication', () => {
       target: { value: 'password123' }
     });
     
-    fireEvent.click(screen.getByRole('button', { name: /login/i }));
+    fireEvent.click(screen.getByTestId('login-submit'));
     
     await waitFor(() => {
       expect(mockAuthContext.login).toHaveBeenCalledWith('testuser', 'password123');

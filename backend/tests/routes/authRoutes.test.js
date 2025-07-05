@@ -17,6 +17,12 @@ jest.mock('../../controllers/authController', () => ({
     }),
     resetPassword: jest.fn((req, res) => {
         res.status(200).json({ success: true });
+    }),
+    requestEmailLogin: jest.fn((req, res) => {
+        res.status(202).json({ message: 'mock email sent' });
+    }),
+    verifyEmailLogin: jest.fn((req, res) => {
+        res.status(200).json({ token: 'mock-jwt-token', expiresAt: '2025-03-10T01:41:47.000Z' });
     })
 }));
 

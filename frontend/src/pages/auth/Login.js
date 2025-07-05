@@ -208,11 +208,15 @@ const StyledInput = styled(Input)`
 `;
 
 const Login = () => {
+  const [mode, setMode] = useState('utorid'); // 'utorid' or 'email'
   const [utorid, setUtorid] = useState('');
   const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const { login, isAuthenticated, loading } = useAuth();
+  const { login, requestEmailLogin, verifyEmailLogin, isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -232,10 +236,64 @@ const Login = () => {
     }
   }, [isAuthenticated, loading, navigate, from]);
   
+  // Restore pending email login (in case app renders loading overlay and remounts)
+  useEffect(() => {
+    const pending = sessionStorage.getItem('pendingEmailLogin');
+    if (pending) {
+      setMode('email');
+      setEmail(pending);
+      setOtpSent(true);
+    }
+  }, []);
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     
+    if (mode === 'email') {
+      if (!otpSent) {
+        // Send OTP
+        if (!email.trim()) {
+          setError('Please enter your U of T email address');
+          return;
+        }
+        // Basic domain validation on client side
+        const domainRegex = /@(?:mail\.)?utoronto\.ca$|@toronto\.edu$/i;
+        if (!domainRegex.test(email.trim())) {
+          setError('Please enter a valid University of Toronto email address.');
+          return;
+        }
+
+        try {
+          const { success } = await requestEmailLogin(email.trim().toLowerCase());
+          if (success) {
+            setOtpSent(true);
+            sessionStorage.setItem('pendingEmailLogin', email.trim().toLowerCase());
+          }
+        } catch (err) {
+          setError(err.message || 'Failed to send login code');
+        }
+        return;
+      } else {
+        // Verify OTP
+        if (!otp.trim()) {
+          setError('Please enter the login code sent to your email');
+          return;
+        }
+
+        try {
+          const { success } = await verifyEmailLogin(email.trim().toLowerCase(), otp.trim());
+          if (success) {
+            sessionStorage.removeItem('pendingEmailLogin');
+            navigate(from, { replace: true });
+          }
+        } catch (err) {
+          setError(err.message || 'Login verification failed');
+        }
+        return;
+      }
+    }
+
     if (!utorid.trim() || !password.trim()) {
       setError('Please enter both UTORid and password');
       return;
@@ -303,52 +361,126 @@ const Login = () => {
           </ErrorMessage>
         )}
         
+        <ModeSwitcher>
+          <button
+            type="button"
+            className={mode === 'utorid' ? 'active' : ''}
+            onClick={() => { setMode('utorid'); setError(''); }}
+          >UTORid Login</button>
+          <button
+            type="button"
+            className={mode === 'email' ? 'active' : ''}
+            onClick={() => { setMode('email'); setError(''); }}
+          >U&nbsp;of&nbsp;T Email Login</button>
+        </ModeSwitcher>
+        
         <Form onSubmit={handleSubmit}>
-          <InputGroup>
-            <StyledInput
-              type="text"
-              placeholder="UTORid"
-              value={utorid}
-              onChange={(e) => setUtorid(e.target.value)}
-              required
-              leftIcon={<FaUser size={16} />}
-            />
-          </InputGroup>
-          
-          <InputGroup>
-            <StyledInput
-              type={showPassword ? "text" : "password"}
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              leftIcon={<FaLock size={16} />}
-            />
-            <PasswordToggle 
-              type="button" 
-              onClick={togglePasswordVisibility}
-              aria-label={showPassword ? "Hide password" : "Show password"}
-            >
-              {showPassword ? <FaEye size={16} /> : <FaEyeSlash size={16} />}
-            </PasswordToggle>
-          </InputGroup>
-          
-          <AccountActions>
-            <LinkButton to="/password-reset">
-              Forgot Password?
-            </LinkButton>
-            <LinkButton to="/account-activation">
-              <FaUserPlus size={14} /> Activate Account
-            </LinkButton>
-          </AccountActions>
-          
-          <Button type="submit" fullWidth>
-            <FaSignInAlt /> Login
-          </Button>
+          {mode === 'utorid' && (
+            <>
+              <InputGroup>
+                <StyledInput
+                  type="text"
+                  placeholder="UTORid"
+                  value={utorid}
+                  onChange={(e) => setUtorid(e.target.value)}
+                  required
+                  leftIcon={<FaUser size={16} />}
+                />
+              </InputGroup>
+              
+              <InputGroup>
+                <StyledInput
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  leftIcon={<FaLock size={16} />}
+                />
+                <PasswordToggle 
+                  type="button" 
+                  onClick={togglePasswordVisibility}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <FaEye size={16} /> : <FaEyeSlash size={16} />}
+                </PasswordToggle>
+              </InputGroup>
+              
+              <AccountActions>
+                <LinkButton to="/password-reset">
+                  Forgot Password?
+                </LinkButton>
+                <LinkButton to="/account-activation">
+                  <FaUserPlus size={14} /> Activate Account
+                </LinkButton>
+              </AccountActions>
+              
+              <Button type="submit" fullWidth data-testid="login-submit">
+                <FaSignInAlt /> Login
+              </Button>
+            </>
+          )}
+
+          {mode === 'email' && (
+            <>
+              {!otpSent && (
+                <InputGroup>
+                  <StyledInput
+                    type="email"
+                    placeholder="U of T Email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    leftIcon={<FaUser size={16} />}
+                  />
+                </InputGroup>
+              )}
+
+              {otpSent && (
+                <>
+                  <p style={{ fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary }}>We've sent a login code to {email}. Enter it below to continue.</p>
+                  <InputGroup>
+                    <StyledInput
+                      type="text"
+                      placeholder="6-digit code"
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value)}
+                      required
+                      leftIcon={<FaLock size={16} />}
+                    />
+                  </InputGroup>
+                </>
+              )}
+
+              <Button type="submit" fullWidth data-testid="login-submit">
+                {otpSent ? 'Verify Code' : 'Send Login Code'}
+              </Button>
+            </>
+          )}
         </Form>
       </Card>
     </Container>
   );
 };
+
+// UI helpers for mode switch
+const ModeSwitcher = styled.div`
+  display: flex;
+  margin-bottom: ${theme.spacing.md};
+  button {
+    flex: 1;
+    padding: ${theme.spacing.sm} 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: ${theme.typography.fontSize.md};
+    color: ${theme.colors.text.primary};
+    border-bottom: 2px solid transparent;
+    &.active {
+      border-color: ${theme.colors.primary.main};
+      font-weight: ${theme.typography.fontWeights.semibold};
+    }
+  }
+`;
 
 export default Login; 

@@ -203,6 +203,44 @@ export const AuthProvider = ({ children }) => {
     }
   };
   
+  // Request OTP login via email
+  const requestEmailLogin = async (email) => {
+    try {
+      setLoading(true);
+      await AuthService.requestEmailLogin(email);
+      toast.success('Check your U of T email to complete login!');
+      return { success: true };
+    } catch (error) {
+      toast.error(error.message || 'Failed to send login code');
+      return { success: false, error };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Verify OTP and log the user in
+  const verifyEmailLogin = async (email, code) => {
+    try {
+      setLoading(true);
+      const data = await AuthService.verifyEmailLogin(email, code);
+
+      // After token stored, fetch current user
+      const user = await AuthService.getCurrentUser(true);
+
+      setCurrentUser(user);
+      setActiveRole(user.role);
+      localStorage.setItem('activeRole', user.role);
+      setIsAuthenticated(true);
+
+      return { success: true, user };
+    } catch (error) {
+      toast.error(error.message || 'Login verification failed');
+      return { success: false, error };
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   const logout = () => {
     AuthService.logout();
     localStorage.removeItem('activeRole');
@@ -285,6 +323,8 @@ export const AuthProvider = ({ children }) => {
     activeRole,
     isAuthenticated,
     login,
+    requestEmailLogin,
+    verifyEmailLogin,
     logout,
     updateCurrentUser,
     switchRole,
