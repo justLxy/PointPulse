@@ -6,6 +6,7 @@ const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
 const { JWT_SECRET } = require('../utils/jwtConfig');
 const emailService = require('./emailService');
+const { validateEmail } = require('../utils/validators');
 
 const prisma = new PrismaClient();
 
@@ -259,6 +260,12 @@ const generateOtpCode = () => {
  */
 const requestEmailLogin = async (email) => {
     console.log('Email-login requested for:', email);
+
+    // Validate email domain using shared validator
+    if (!validateEmail(email)) {
+        console.log('Invalid email domain for email-login');
+        throw new Error('Please enter a valid University of Toronto email address.');
+    }
 
     // Look up user by email (case insensitive)
     const user = await prisma.user.findFirst({
