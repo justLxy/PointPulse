@@ -158,8 +158,65 @@ const resetPassword = async (req, res) => {
     }
 };
 
+// Email-based login request: send OTP
+const requestEmailLogin = async (req, res) => {
+    console.log('\n\n===== EMAIL LOGIN REQUEST START =====');
+    console.log('Time:', new Date().toISOString());
+    console.log('URL:', req.originalUrl);
+    console.log('Method:', req.method);
+
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ error: 'Email is required' });
+        }
+
+        await authService.requestEmailLogin(email);
+
+        console.log('OTP sent to email:', email);
+        return res.status(202).json({ message: 'Check your U of T email to complete login!' });
+    } catch (error) {
+        if (error.message === 'User not found') {
+            return res.status(404).json({ error: 'No account found for this email' });
+        }
+        console.error('Error in email login request:', error);
+        return res.status(500).json({ error: 'Failed to process email login request' });
+    }
+};
+
+// Email-based login verification: verify OTP, return JWT
+const verifyEmailLogin = async (req, res) => {
+    console.log('\n\n===== EMAIL LOGIN VERIFY START =====');
+    console.log('Time:', new Date().toISOString());
+
+    try {
+        const { email, code } = req.body;
+
+        if (!email || !code) {
+            return res.status(400).json({ error: 'Email and code are required' });
+        }
+
+        try {
+            const { token, expiresAt } = await authService.verifyEmailLogin(email, code);
+            console.log('Email login verified for:', email);
+            return res.status(200).json({ token, expiresAt });
+        } catch (err) {
+            if (err.message === 'Invalid or expired code' || err.message === 'Code expired') {
+                return res.status(410).json({ error: 'Invalid or expired login code' });
+            }
+            throw err;
+        }
+    } catch (error) {
+        console.error('Error in email login verify:', error);
+        return res.status(500).json({ error: 'Failed to verify login code' });
+    }
+};
+
 module.exports = {
     login,
     requestReset,
-    resetPassword
+    resetPassword,
+    requestEmailLogin,
+    verifyEmailLogin,
 };

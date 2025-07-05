@@ -18,7 +18,7 @@ Cypress.Commands.add('login', (username, password) => {
   cy.get('input[placeholder="Password"]')
     .type(password)
 
-  cy.contains('button', 'Login')
+  cy.get('button[data-testid="login-submit"]')
     .click()
 
   // Wait for login to complete and verify we're redirected

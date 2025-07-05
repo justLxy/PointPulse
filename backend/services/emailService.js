@@ -7,11 +7,6 @@ const nodemailer = require('nodemailer');
  * for the PointPulse application. It utilizes `nodemailer` to send emails via
  * Gmail's SMTP service. The module supports two primary email functionalities:
  * 
- * **Important Notes**:
- * - Hardcoding sensitive information (e.g., Gmail credentials) is not recommended for production. 
- *   It’s better to use environment variables for storing credentials securely.
- * - The email account being used here is a demo account. 
- * 
  * Dependencies:
  * - nodemailer: https://www.npmjs.com/package/nodemailer
  * - reference: https://mailtrap.io/blog/nodemailer-gmail/
@@ -33,7 +28,7 @@ const sendActivationEmail = async (to, activationUrl, userName, activationToken,
     subject: 'Activate Your PointPulse Account',
     html: `
       <p>Hi ${userName},</p>
-      <p>You’ve been added to PointPulse. Please click the link below to activate your account:</p>
+      <p>You've been added to PointPulse. Please click the link below to activate your account:</p>
       <a href="${activationUrl}">${activationUrl}</a>
       <p>Your utorid is ${utorid}</p>
       <p>Your activation token is ${activationToken}</p>
@@ -79,7 +74,53 @@ const sendResetEmail = async (to, reseturl, userName, activationToken, utorid) =
   //   await transporter.sendMail(mailOptions);
   };
 
+// Send a one-time login code to user email
+const sendLoginCodeEmail = async (to, userName, otpCode) => {
+  const mailOptions = {
+    from: '"PointPulse" <spammail04042025@gmail.com>',
+    to,
+    subject: 'Your PointPulse Login Code',
+    html: `
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #2193b0; margin: 0;">PointPulse</h1>
+          </div>
+          
+          <h2 style="color: #333; margin-bottom: 20px;">Login Verification Code</h2>
+          
+          <p>Hi ${userName},</p>
+          
+          <p>Please use the verification code below to log in to your PointPulse account:</p>
+          
+          <div style="background: #f8f9fa; border: 2px solid #2193b0; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
+            <h1 style="color: #2193b0; font-size: 36px; margin: 0; letter-spacing: 8px; font-family: monospace;">${otpCode}</h1>
+          </div>
+          
+          <p><strong>This code will expire in 10 minutes.</strong></p>
+          
+          <p>If you didn't request this code, please ignore this email. Your account remains secure.</p>
+          
+          <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+          
+          <p style="color: #666; font-size: 14px;">
+            This is an automated message from PointPulse. Please do not reply to this email.
+          </p>
+        </div>
+      `,
+  };
+
+  // Send the email
+  transporter.sendMail(mailOptions, function(error, info){
+    if (error) {
+      console.log('Error sending login code email:', error);
+    } else {
+      console.log('Login code email sent:', info.response);
+    }
+  });
+};
+
 module.exports = {
   sendActivationEmail,
   sendResetEmail,
+  sendLoginCodeEmail,
 };

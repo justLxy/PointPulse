@@ -13,4 +13,8 @@ router.post('/resets', authController.requestReset);
 // Reset password with token
 router.post('/resets/:resetToken', authController.resetPassword);
 
+// Email login (OTP)
+router.post('/email-login', authController.requestEmailLogin);
+router.post('/email-login/verify', authController.verifyEmailLogin);
+
 module.exports = router;
