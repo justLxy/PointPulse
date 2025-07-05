@@ -144,18 +144,6 @@ const PasswordToggle = styled.button`
   }
 `;
 
-const ForgotPassword = styled(Link)`
-  color: ${theme.colors.primary.main};
-  font-size: ${theme.typography.fontSize.sm};
-  text-align: right;
-  margin-top: -${theme.spacing.sm};
-  
-  &:hover {
-    text-decoration: underline;
-    color: ${theme.colors.primary.dark};
-  }
-`;
-
 const AccountActions = styled.div`
   display: flex;
   justify-content: space-between;

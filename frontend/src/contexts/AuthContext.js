@@ -146,8 +146,8 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
       
-      // First get the token
-      const authData = await AuthService.login(utorid, password);
+      // First get the token (response not used directly)
+      await AuthService.login(utorid, password);
       
       // Then fetch user data with the new token (force refresh from API)
       const user = await AuthService.getCurrentUser(true);
@@ -222,7 +222,7 @@ export const AuthProvider = ({ children }) => {
   const verifyEmailLogin = async (email, code) => {
     try {
       setLoading(true);
-      const data = await AuthService.verifyEmailLogin(email, code);
+      await AuthService.verifyEmailLogin(email, code);
 
       // After token stored, fetch current user
       const user = await AuthService.getCurrentUser(true);

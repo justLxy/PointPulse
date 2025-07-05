@@ -182,7 +182,6 @@ const AuthService = {
   isAuthenticated: () => {
     const token = localStorage.getItem('token');
     const expiry = localStorage.getItem('tokenExpiry');
-    const user = localStorage.getItem('user');
     
     if (!token || !expiry) {
       return false;
