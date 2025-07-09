@@ -60,6 +60,10 @@ const LoadingScreen = () => (
     <div style={{ transform: 'scale(0.9)' }}>
       <AnimatedLogo />
     </div>
+    {/* Visually hidden text for accessibility & tests */}
+    <LoadingText style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden', clip: 'rect(0 0 0 0)' }}>
+      Loading your session...
+    </LoadingText>
   </LoadingContainer>
 );
 

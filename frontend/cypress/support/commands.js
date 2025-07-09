@@ -29,6 +29,6 @@ Cypress.Commands.add('login', (username, password) => {
 Cypress.Commands.add('loginAsSuperuser', () => {
   cy.login('zhaokiko', '123')
   
-  // Verify we're logged in by checking we're at the root URL
-  cy.url().should('eq', Cypress.config().baseUrl + '/')
+  // Verify we're logged in by checking we reached dashboard
+  cy.url().should('eq', Cypress.config().baseUrl + '/dashboard')
 }) 
