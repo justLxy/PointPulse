@@ -398,20 +398,20 @@ jobs:
           # Display the output
           cat cypress_output.log
           
-          if [ $CYPRESS_EXIT_CODE -eq 0 ]; then
-            # Parse success case - look for final summary like "✔  8 of 8 passed (100%)"
+           if [ $CYPRESS_EXIT_CODE -eq 0 ]; then
             SUMMARY_LINE=$(grep -E "✔.*of.*passed" cypress_output.log | tail -1)
             if [ -n "$SUMMARY_LINE" ]; then
-              # Extract the two numbers: "passed_count of total_count"
               PASSED_TESTS=$(echo "$SUMMARY_LINE" | grep -oE "[0-9]+" | head -1)
               TOTAL_TESTS=$(echo "$SUMMARY_LINE" | grep -oE "[0-9]+" | head -2 | tail -1)
-              FAILED_TESTS=$((TOTAL_TESTS - PASSED_TESTS))
+              echo "Cypress tests passed: $PASSED_TESTS of $TOTAL_TESTS"
             else
-              # Fallback: sum from individual spec results
-              TOTAL_TESTS=$(grep -E "│.*\.cy\.js.*│" cypress_output.log | wc -l)
-              PASSED_TESTS=$TOTAL_TESTS
-              FAILED_TESTS=0
+              echo "Cypress tests passed."
             fi
+            exit 0
+          else
+            echo "❌ Cypress tests failed with exit code $CYPRESS_EXIT_CODE"
+            exit $CYPRESS_EXIT_CODE
+          fi
             
             echo "CYPRESS_TOTAL=$TOTAL_TESTS" >> $GITHUB_OUTPUT
             echo "CYPRESS_PASSED=$PASSED_TESTS" >> $GITHUB_OUTPUT
