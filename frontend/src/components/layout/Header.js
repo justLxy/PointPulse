@@ -451,7 +451,7 @@ const Header = () => {
   
   return (
     <HeaderContainer>
-      <Logo to="/">
+      <Logo to="/dashboard">
         <LogoImg src="/logo.png" alt="PointPulse Logo" />
         PointPulse
       </Logo>

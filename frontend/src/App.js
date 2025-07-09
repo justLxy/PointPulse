@@ -41,6 +41,7 @@ import Products from './pages/products/Products';
 
 // New pages for universal scanning and transfer
 import TransferPage from './pages/TransferPage';
+import Landing from './pages/Landing';
 
 // Create a QueryClientProvider with logout reset capability
 const AppQueryClientProvider = ({ children }) => {
@@ -132,13 +133,14 @@ const App = () => {
             <ScrollToTop />
             <Routes>
               {/* Public Routes */}
+              <Route path="/" element={<Landing />} />
               <Route path="/login" element={<Login />} />
               <Route path="/password-reset" element={<PasswordReset />} />
               <Route path="/account-activation" element={<AccountActivation />} />
               
               {/* Protected Routes */}
               <Route
-                path="/"
+                path="/dashboard"
                 element={
                   <ProtectedRoute>
                     <Layout>

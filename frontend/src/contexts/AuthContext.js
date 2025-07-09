@@ -3,6 +3,7 @@ import styled from '@emotion/styled';
 import AuthService from '../services/auth.service';
 import { toast } from 'react-hot-toast';
 import theme from '../styles/theme';
+import AnimatedLogo from '../components/common/AnimatedLogo';
 
 /**
  * AuthContext
@@ -39,8 +40,8 @@ const LoadingText = styled.div`
 `;
 
 const LoadingSpinner = styled.div`
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   border: 4px solid rgba(0, 0, 0, 0.1);
   border-radius: 50%;
   border-top-color: ${theme.colors.primary.main};
@@ -55,17 +56,10 @@ const LoadingSpinner = styled.div`
 // LoadingScreen component
 const LoadingScreen = () => (
   <LoadingContainer>
-    <Logo>
-      <img src="/logo.png" alt="PointPulse Logo" height="80" />
-      <h1 style={{ 
-        fontSize: theme.typography.fontSize['3xl'],
-        fontWeight: theme.typography.fontWeights.bold,
-        color: theme.colors.primary.main,
-        marginTop: theme.spacing.md
-      }}>PointPulse</h1>
-    </Logo>
-    <LoadingSpinner />
-    <LoadingText>Loading your session...</LoadingText>
+    {/* Modern animated logo*/}
+    <div style={{ transform: 'scale(0.9)' }}>
+      <AnimatedLogo />
+    </div>
   </LoadingContainer>
 );
 
@@ -77,6 +71,7 @@ export const AuthProvider = ({ children }) => {
   
   useEffect(() => {
     const initAuth = async () => {
+      const startTime = Date.now();
       try {
         // Check if token exists and is valid
         const isTokenValid = AuthService.isAuthenticated();
