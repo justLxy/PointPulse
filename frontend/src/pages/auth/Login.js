@@ -195,6 +195,28 @@ const StyledInput = styled(Input)`
   }
 `;
 
+const ResendContainer = styled.div`
+  text-align: center;
+  margin-top: ${theme.spacing.md};
+  font-size: ${theme.typography.fontSize.sm};
+  color: ${theme.colors.text.secondary};
+`;
+
+const ResendButton = styled.button`
+  background: none;
+  border: none;
+  color: ${props => props.disabled ? theme.colors.text.disabled : theme.colors.primary.main};
+  cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
+  text-decoration: ${props => props.disabled ? 'none' : 'underline'};
+  font-size: ${theme.typography.fontSize.sm};
+  padding: 0;
+  margin-left: ${theme.spacing.xs};
+  
+  &:hover:not(:disabled) {
+    color: ${theme.colors.primary.dark};
+  }
+`;
+
 const Login = () => {
   const [mode, setMode] = useState('utorid'); // 'utorid' or 'email'
   const [utorid, setUtorid] = useState('');
@@ -204,6 +226,7 @@ const Login = () => {
   const [otpSent, setOtpSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
   const { login, requestEmailLogin, verifyEmailLogin, isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -227,12 +250,32 @@ const Login = () => {
   // Restore pending email login (in case app renders loading overlay and remounts)
   useEffect(() => {
     const pending = sessionStorage.getItem('pendingEmailLogin');
+    const lastSentTime = sessionStorage.getItem('lastCodeSentTime');
+    
     if (pending) {
       setMode('email');
       setEmail(pending);
       setOtpSent(true);
+      
+      // Calculate remaining cooldown time
+      if (lastSentTime) {
+        const elapsed = Math.floor((Date.now() - parseInt(lastSentTime)) / 1000);
+        const remaining = Math.max(0, 60 - elapsed);
+        setResendCooldown(remaining);
+      }
     }
   }, []);
+
+  // Countdown timer for resend cooldown
+  useEffect(() => {
+    let timer;
+    if (resendCooldown > 0) {
+      timer = setTimeout(() => {
+        setResendCooldown(resendCooldown - 1);
+      }, 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
   
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -255,8 +298,11 @@ const Login = () => {
         try {
           const { success } = await requestEmailLogin(email.trim().toLowerCase());
           if (success) {
+            const now = Date.now();
             setOtpSent(true);
+            setResendCooldown(60); // Start 60-second cooldown
             sessionStorage.setItem('pendingEmailLogin', email.trim().toLowerCase());
+            sessionStorage.setItem('lastCodeSentTime', now.toString());
           }
         } catch (err) {
           setError(err.message || 'Failed to send login code');
@@ -273,6 +319,7 @@ const Login = () => {
           const { success } = await verifyEmailLogin(email.trim().toLowerCase(), otp.trim());
           if (success) {
             sessionStorage.removeItem('pendingEmailLogin');
+            sessionStorage.removeItem('lastCodeSentTime');
             navigate(from, { replace: true });
           }
         } catch (err) {
@@ -314,6 +361,22 @@ const Login = () => {
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
+
+  const handleResendCode = async () => {
+    if (resendCooldown > 0) return; // Prevent sending if still in cooldown
+    
+    setError('');
+    try {
+      const { success } = await requestEmailLogin(email.trim().toLowerCase());
+      if (success) {
+        const now = Date.now();
+        setResendCooldown(60); // Start 60-second cooldown
+        sessionStorage.setItem('lastCodeSentTime', now.toString());
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to send login code');
+    }
+  };
   
   // If still loading auth state, show loading indicator
   if (loading) {
@@ -353,7 +416,15 @@ const Login = () => {
           <button
             type="button"
             className={mode === 'utorid' ? 'active' : ''}
-            onClick={() => { setMode('utorid'); setError(''); }}
+            onClick={() => { 
+              setMode('utorid'); 
+              setError(''); 
+              // Clear email login state
+              setOtpSent(false);
+              setResendCooldown(0);
+              sessionStorage.removeItem('pendingEmailLogin');
+              sessionStorage.removeItem('lastCodeSentTime');
+            }}
           >UTORid Login</button>
           <button
             type="button"
@@ -437,6 +508,16 @@ const Login = () => {
                       leftIcon={<FaLock size={16} />}
                     />
                   </InputGroup>
+                  <ResendContainer>
+                    Didn't receive the code?
+                    <ResendButton 
+                      type="button"
+                      disabled={resendCooldown > 0}
+                      onClick={handleResendCode}
+                    >
+                      {resendCooldown > 0 ? `resend code (${resendCooldown}s)` : 'Resend Code'}
+                    </ResendButton>
+                  </ResendContainer>
                 </>
               )}
 
