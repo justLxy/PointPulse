@@ -61,6 +61,8 @@ const theme = {
       paper: '#ffffff',
       dark: '#34495e',
       hover: '#f8fafc',
+      secondary: '#f8f9fa',
+      disabled: '#ecf0f1',
     },
     border: {
       light: '#e0e0e0',
