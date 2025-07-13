@@ -409,6 +409,19 @@ const EmptyState = styled.div`
   padding: ${theme.spacing.xl};
   text-align: center;
   color: ${theme.colors.text.secondary};
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: ${theme.spacing.md};
+  
+  svg {
+    color: ${theme.colors.text.secondary};
+    opacity: 0.6;
+  }
+  
+  p {
+    margin: 0;
+  }
 `;
 
 const SummaryCard = styled(Card)`

@@ -63,24 +63,28 @@ const EmptyState = styled.div`
   text-align: center;
   margin: ${theme.spacing.xl} 0;
   box-shadow: ${theme.shadows.md};
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: ${theme.spacing.md};
   
   svg {
     font-size: 48px;
     color: ${theme.colors.text.secondary};
-    margin-bottom: ${theme.spacing.md};
+    opacity: 0.6;
   }
   
   h3 {
     font-size: ${theme.typography.fontSize.xl};
     font-weight: ${theme.typography.fontWeights.semiBold};
     color: ${theme.colors.text.primary};
-    margin-bottom: ${theme.spacing.sm};
+    margin: 0;
   }
   
   p {
     color: ${theme.colors.text.secondary};
     max-width: 500px;
-    margin: 0 auto;
+    margin: 0;
   }
 `;
 

@@ -7,6 +7,7 @@ import PromotionService from '../../services/promotion.service';
 import Button from '../../components/common/Button';
 import theme from '../../styles/theme';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { FaInfoCircle } from 'react-icons/fa';
 import PromotionFilters from '../../components/promotions/PromotionFilters';
 import PromotionList from '../../components/promotions/PromotionList';
 import {
@@ -66,6 +67,19 @@ const EmptyState = styled.div`
   padding: ${theme.spacing.xl};
   text-align: center;
   color: ${theme.colors.text.secondary};
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: ${theme.spacing.md};
+  
+  svg {
+    color: ${theme.colors.text.secondary};
+    opacity: 0.6;
+  }
+  
+  p {
+    margin: 0;
+  }
 `;
 
 const Promotions = () => {
@@ -432,6 +446,7 @@ const Promotions = () => {
         </>
       ) : (
         <EmptyState>
+          <FaInfoCircle size={48} />
           <p>No promotions found.</p>
           {Object.values(filters).some(v => v && v !== filters.page && v !== filters.limit) ? (
             <p>Try adjusting your filters.</p>
