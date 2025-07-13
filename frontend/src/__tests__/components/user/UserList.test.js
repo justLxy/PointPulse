@@ -12,6 +12,7 @@ jest.mock('react-icons/fa', () => ({
   FaEye: () => <span data-testid="eye-icon">👁</span>,
   FaUserEdit: () => <span data-testid="edit-icon">✏️</span>,
   FaExclamationTriangle: () => <span data-testid="warning-icon">⚠️</span>,
+  FaInfoCircle: () => <span data-testid="info-icon">ℹ️</span>,
 }));
 
 describe('UserList - User Management Interface', () => {
