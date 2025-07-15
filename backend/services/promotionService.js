@@ -292,6 +292,7 @@ const getPromotions = async (filters = {}, userId = null, isManager = false, pag
         const formatted = {
             id: promo.id,
             name: promo.name,
+            description: promo.description,
             type: promo.type,
             minSpending: promo.minSpending,
             rate: promo.rate,

@@ -31,6 +31,7 @@ model User {
   attendedEvents       Event[]           @relation("EventGuests")
   attendances          EventAttendance[]
   usedPromotions       Promotion[]       @relation("UserPromotions")
+  createdShortlinks    Shortlink[]       @relation("CreatedShortlinks")
 }
 
 model Transaction {
@@ -87,6 +88,7 @@ model Event {
   guests       User[]            @relation("EventGuests")
   transactions Transaction[]
   attendances  EventAttendance[]
+  shortlinks   Shortlink[]
 }
 
 model Promotion {
@@ -124,4 +126,20 @@ model EventAttendance {
   user  User  @relation(fields: [userId], references: [id])
 
   @@id([eventId, userId])
+}
+
+model Shortlink {
+  id        Int      @id @default(autoincrement())
+  slug      String   @unique
+  targetUrl String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  createdById Int
+  createdBy   User @relation("CreatedShortlinks", fields: [createdById], references: [id])
+  
+  // Optional event association
+  eventId Int?
+  event   Event? @relation(fields: [eventId], references: [id])
 }

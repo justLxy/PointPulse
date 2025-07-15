@@ -101,9 +101,10 @@ const InputField = styled.input`
 
 const TextArea = styled(InputField.withComponent('textarea'))`
   height: auto;
-  min-height: 100px;
+  min-height: ${({ rows }) => rows ? `${rows * 1.5 + 1}em` : '100px'};
   padding: ${theme.spacing.sm} ${theme.spacing.md};
   resize: vertical;
+  line-height: 1.5;
   
   ${({ hasLeftIcon }) => 
     hasLeftIcon && 
@@ -136,11 +137,13 @@ const Input = forwardRef(
       required = false,
       variant = 'outlined',
       leftIcon,
+      multiline = false,
+      rows = 3,
       ...props
     },
     ref
   ) => {
-    const isTextArea = type === 'textarea';
+    const isTextArea = type === 'textarea' || multiline;
 
     return (
       <InputContainer>
@@ -161,6 +164,7 @@ const Input = forwardRef(
               variant={variant}
               required={required}
               hasLeftIcon={!!leftIcon}
+              rows={rows}
               {...props} 
             />
           ) : (

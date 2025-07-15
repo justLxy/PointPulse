@@ -4,12 +4,15 @@ import styled from '@emotion/styled';
 import { useEvents } from '../../hooks/useEvents';
 import { useUsers } from '../../hooks/useUsers';
 import { useAuth } from '../../contexts/AuthContext';
+import { useEventShortlinks } from '../../hooks/useShortlinks';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Modal from '../../components/common/Modal';
 import Badge from '../../components/common/Badge';
 import { EditEventModal } from '../../components/events/EventModals';
+import { CreateShortlinkModal, EditShortlinkModal, DeleteShortlinkModal } from '../../components/shortlinks/ShortlinkModals';
+import ShortlinkList from '../../components/shortlinks/ShortlinkList';
 import theme from '../../styles/theme';
 import { API_URL } from '../../services/api';
 import { Tooltip } from 'react-tooltip';
@@ -34,7 +37,10 @@ import {
   FaTrashAlt,
   FaQrcode,
   FaKeyboard,
-  FaChevronDown
+  FaChevronDown,
+  FaLink,
+  FaPlus,
+  FaImage
 } from 'react-icons/fa';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { toast } from 'react-hot-toast';
@@ -292,6 +298,31 @@ const EventDescription = styled.div`
   line-height: 1.6;
   color: ${theme.colors.text.primary};
   white-space: pre-wrap;
+`;
+
+const EventBackgroundImageContainer = styled.div`
+  width: 100%;
+  border-radius: ${theme.radius.md};
+  margin-bottom: ${theme.spacing.lg};
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: ${theme.colors.background.secondary};
+`;
+
+const EventBackgroundImage = styled.img`
+  width: 100%;
+  height: auto;
+  max-height: 400px;
+  object-fit: contain;
+  border-radius: ${theme.radius.md};
+  display: block;
+  
+  @media (max-width: 768px) {
+    max-height: 300px;
+  }
 `;
 
 const EventMetadata = styled.div`
@@ -677,6 +708,36 @@ const DropdownSeparator = styled.div`
   margin: ${theme.spacing.xs} 0;
 `;
 
+const EventBackgroundImageComponent = ({ src, alt }) => {
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+    setImageError(false);
+  };
+
+  const handleImageError = () => {
+    setImageError(true);
+    setImageLoaded(false);
+  };
+
+  if (imageError || !src) {
+    return null;
+  }
+
+  return (
+    <EventBackgroundImageContainer>
+      <EventBackgroundImage
+        src={src}
+        alt={alt}
+        onLoad={handleImageLoad}
+        onError={handleImageError}
+      />
+    </EventBackgroundImageContainer>
+  );
+};
+
 const EventDetail = () => {
   const { eventId } = useParams();
   const navigate = useNavigate();
@@ -701,6 +762,12 @@ const EventDetail = () => {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteAllGuestsModalOpen, setDeleteAllGuestsModalOpen] = useState(false);
+  
+  // Shortlink modals state
+  const [createShortlinkModalOpen, setCreateShortlinkModalOpen] = useState(false);
+  const [editShortlinkModalOpen, setEditShortlinkModalOpen] = useState(false);
+  const [deleteShortlinkModalOpen, setDeleteShortlinkModalOpen] = useState(false);
+  const [selectedShortlink, setSelectedShortlink] = useState(null);
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [selectedUtorid, setSelectedUtorid] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -743,6 +810,18 @@ const EventDetail = () => {
   } = useEvents();
   
   const { data: event, isLoading, error, refetch } = getEvent(eventId);
+  
+  // Shortlink hooks
+  const {
+    shortlinks,
+    isLoading: isLoadingShortlinks,
+    createEventShortlink,
+    updateEventShortlink,
+    deleteEventShortlink,
+    isCreating: isCreatingShortlink,
+    isUpdating: isUpdatingShortlink,
+    isDeleting: isDeletingShortlink,
+  } = useEventShortlinks(eventId);
   
   // --- Define Permission Flags --- 
   const isCurrentUserOrganizerForEvent = event?.isOrganizer || false; // Is the current user an organizer for THIS event?
@@ -822,6 +901,13 @@ const EventDetail = () => {
     }
     // If start is in the past and end is in the future (or null), it's ongoing
     return { text: 'Ongoing', color: '#2ecc71' }; // Green
+  };
+
+  // Get background image URL
+  const getBackgroundImageUrl = (backgroundUrl) => {
+    if (!backgroundUrl) return null;
+    if (backgroundUrl.startsWith('http')) return backgroundUrl;
+    return `${API_URL}${backgroundUrl}`;
   };
   
   // Handle add organizer
@@ -1219,6 +1305,50 @@ const EventDetail = () => {
     refetch();
   };
   
+  // Shortlink handlers
+  const handleCreateShortlink = () => {
+    setCreateShortlinkModalOpen(true);
+  };
+  
+  const handleCreateShortlinkSubmit = async (shortlinkData) => {
+    try {
+      await createEventShortlink(shortlinkData);
+      setCreateShortlinkModalOpen(false);
+    } catch (error) {
+      // Error is already handled by the mutation's onError callback
+      // Don't close modal on error so user can retry
+    }
+  };
+  
+  const handleEditShortlink = (shortlink) => {
+    setSelectedShortlink(shortlink);
+    setEditShortlinkModalOpen(true);
+  };
+  
+  const handleEditShortlinkSubmit = async (id, updateData) => {
+    await updateEventShortlink({ id, updateData });
+    setEditShortlinkModalOpen(false);
+    setSelectedShortlink(null);
+  };
+  
+  const handleDeleteShortlink = (shortlink) => {
+    setSelectedShortlink(shortlink);
+    setDeleteShortlinkModalOpen(true);
+  };
+  
+  const handleDeleteShortlinkConfirm = async (id) => {
+    await deleteEventShortlink(id);
+    setDeleteShortlinkModalOpen(false);
+    setSelectedShortlink(null);
+  };
+  
+  const handleCloseShortlinkModals = () => {
+    setCreateShortlinkModalOpen(false);
+    setEditShortlinkModalOpen(false);
+    setDeleteShortlinkModalOpen(false);
+    setSelectedShortlink(null);
+  };
+  
   // Add state for dropdown menu
   const [actionsDropdownOpen, setActionsDropdownOpen] = useState(false);
   
@@ -1414,6 +1544,12 @@ const EventDetail = () => {
               <Card.Title>Event Details</Card.Title>
             </Card.Header>
             <Card.Body>
+              {/* Event Background Image */}
+              <EventBackgroundImageComponent 
+                src={getBackgroundImageUrl(event.backgroundUrl)} 
+                alt={`${event.name} background`}
+              />
+              
               <EventDescription>{event.description}</EventDescription>
               
               <EventMetadata>
@@ -1496,6 +1632,15 @@ const EventDetail = () => {
                     onClick={() => setActiveTab('organizers')}
                   >
                     Organizers ({event.organizers && Array.isArray(event.organizers) ? event.organizers.length : 0})
+                  </TabButton>
+                )}
+                {/* Conditionally render Shortlinks tab */} 
+                {(isManager || isCurrentUserOrganizerForEvent) && ( 
+                  <TabButton 
+                    active={activeTab === 'shortlinks'} 
+                    onClick={() => setActiveTab('shortlinks')}
+                  >
+                    Shortlinks ({shortlinks?.length ?? 0})
                   </TabButton>
                 )}
               </TabHeader>
@@ -1707,6 +1852,29 @@ const EventDetail = () => {
                       <EmptyState>No organizers assigned to this event yet.</EmptyState>
                     )}
                   </AttendeesContainer>
+                </Card.Body>
+              </Card>
+            )}
+            
+            {/* Conditionally render Shortlinks tab content */} 
+            {(activeTab === 'shortlinks' && (isManager || isCurrentUserOrganizerForEvent)) && ( 
+              <Card>
+                <Card.Body>
+                  <ShortlinkList
+                    shortlinks={shortlinks}
+                    isLoading={isLoadingShortlinks}
+                    total={shortlinks?.length || 0}
+                    page={1}
+                    totalPages={1}
+                    onPageChange={() => {}}
+                    onEdit={handleEditShortlink}
+                    onDelete={handleDeleteShortlink}
+                    onCreate={handleCreateShortlink}
+                    canCreate={true}
+                    canEdit={true}
+                    canDelete={true}
+                    title="Event Shortlinks"
+                  />
                 </Card.Body>
               </Card>
             )}
@@ -2178,6 +2346,34 @@ const EventDetail = () => {
         onClose={handleManualCheckinClose}
         eventId={eventId}
         onCheckinSuccess={handleManualCheckinSuccess}
+      />
+      
+      {/* Shortlink modals */}
+      <CreateShortlinkModal
+        isOpen={createShortlinkModalOpen}
+        onClose={handleCloseShortlinkModals}
+        onSubmit={handleCreateShortlinkSubmit}
+        isLoading={isCreatingShortlink}
+        eventId={eventId}
+        eventName={event?.name}
+        suggestedSlug={event?.name ? event.name.toLowerCase().replace(/[^a-zA-Z0-9-_\s]/g, '').replace(/\s+/g, '-') : ''}
+        suggestedUrl={`${window.location.origin}/events/${eventId}`}
+      />
+      
+      <EditShortlinkModal
+        isOpen={editShortlinkModalOpen}
+        onClose={handleCloseShortlinkModals}
+        onSubmit={handleEditShortlinkSubmit}
+        shortlink={selectedShortlink}
+        isLoading={isUpdatingShortlink}
+      />
+      
+      <DeleteShortlinkModal
+        isOpen={deleteShortlinkModalOpen}
+        onClose={handleCloseShortlinkModals}
+        onConfirm={handleDeleteShortlinkConfirm}
+        shortlink={selectedShortlink}
+        isLoading={isDeletingShortlink}
       />
     </div>
   );

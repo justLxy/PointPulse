@@ -12,6 +12,11 @@ PointPulse is a user-friendly loyalty rewards platform that lets users earn, red
     - **Transactions**: Quick processing of purchases and redemptions.
     - **Point Transfers**: Easy peer-to-peer point sharing.
     - A floating scan button is available throughout the app for convenience.
+- **Shortlink Service**:
+    - **Customizable Slugs**: Create easy-to-remember shortlinks for any URL.
+    - **Event Integration**: Associate shortlinks with specific events for organized campaign tracking.
+    - **Role-Based Management**: Securely manage shortlinks with permissions for creation, editing, and deletion.
+    - **Public Redirects**: Fast and reliable redirection for public-facing links.
 - **Product Catalog**:
     - Browse products from the integrated Square catalog.
     - Filter by category, stock status, payment type (cash/points), and affordability.

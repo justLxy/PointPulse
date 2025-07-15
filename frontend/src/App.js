@@ -41,7 +41,9 @@ import Products from './pages/products/Products';
 
 // New pages for universal scanning and transfer
 import TransferPage from './pages/TransferPage';
+import ShortlinkRedirect from './pages/ShortlinkRedirect';
 import Landing from './pages/Landing';
+import NotFound from './pages/NotFound';
 
 // Create a QueryClientProvider with logout reset capability
 const AppQueryClientProvider = ({ children }) => {
@@ -295,8 +297,11 @@ const App = () => {
                 element={<TransferPage />}
               />
 
-              {/* Catch all - redirect to home */}
-              <Route path="*" element={<Navigate to="/" replace />} />
+              {/* Shortlink redirect route - must be before catch-all */}
+              <Route path="/:slug" element={<ShortlinkRedirect />} />
+
+              {/* Catch all - show 404 */}
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </SocketProvider>
         </AppQueryClientProvider>

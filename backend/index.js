@@ -17,6 +17,7 @@ const transactionRoutes = require("./routes/transactionRoutes");
 const eventRoutes = require("./routes/eventRoutes");
 const promotionRoutes = require("./routes/promotionRoutes");
 const productRoutes = require("./routes/productRoutes");
+const shortlinkRoutes = require("./routes/shortlinkRoutes");
 
 // Import error handlers
 const { notFoundHandler, errorHandler } = require("./middlewares/errorMiddleware");
@@ -61,6 +62,7 @@ app.use(
         path: [
             /^\/auth\//,
             /^\/products\/?.*/,
+            /^\/shortlinks\/redirect\/?.*/,
         ],
     })
 );
@@ -71,6 +73,7 @@ app.use("/transactions", transactionRoutes);
 app.use("/events", eventRoutes);
 app.use("/promotions", promotionRoutes);
 app.use("/products", productRoutes);
+app.use("/shortlinks", shortlinkRoutes);
 
 // Error handling
 app.use(notFoundHandler);
