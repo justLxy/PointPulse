@@ -53,7 +53,8 @@ const ShortlinkRedirect = () => {
         const { data } = await api.get(`/shortlinks/exists/${slug}`);
         if (data.exists) {
           // Do the actual redirect via backend so it logs analytics / etc.
-          const redirectUrl = `${API_URL}/shortlinks/redirect/${slug}`;
+          const base = API_URL.replace(/\/+$/, '');
+          const redirectUrl = `${base}/shortlinks/redirect/${slug}`;
           window.location.replace(redirectUrl);
         } else {
           setNotFound(true);
