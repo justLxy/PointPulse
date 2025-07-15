@@ -65,6 +65,8 @@ async function clearData() {
     // New: clear attendance before events/users (composite FK)
     await prisma.eventAttendance?.deleteMany({});
 
+    // Clear entities in correct FK order
+    await prisma.shortlink.deleteMany({});
     await prisma.promotionTransaction.deleteMany({});
     await prisma.transaction.deleteMany({});
     await prisma.promotion.deleteMany({});
