@@ -109,6 +109,9 @@ const PromotionsTitle = styled.h3`
   font-size: ${theme.typography.fontSize.md};
   font-weight: ${theme.typography.fontWeights.semiBold};
   margin-bottom: ${theme.spacing.md};
+  display: flex;
+  align-items: center;
+  gap: ${theme.spacing.sm};
 `;
 
 const PromotionItem = styled.div`
@@ -804,7 +807,7 @@ const CreateTransaction = () => {
             
             <PromotionsContainer>
               <PromotionsTitle>
-                <FaTag style={{ marginRight: theme.spacing.sm }} />
+                <FaTag />
                 Available Promotions
               </PromotionsTitle>
               
