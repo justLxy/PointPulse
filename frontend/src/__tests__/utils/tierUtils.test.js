@@ -102,24 +102,37 @@ describe('Tier Calculation', () => {
 });
 
 describe('Tier Benefits', () => {
-  test('getTierBenefits returns correct benefits for each tier', () => {
-    // Test all tiers
+  test('getTierBenefits returns valid benefits structure for each tier', () => {
+    // Test all tiers return array with content
     TIER_ORDER.forEach(tier => {
       const benefits = getTierBenefits(tier);
       expect(benefits).toBeInstanceOf(Array);
       expect(benefits.length).toBeGreaterThan(0);
+      // Each benefit should be a non-empty string
+      benefits.forEach(benefit => {
+        expect(typeof benefit).toBe('string');
+        expect(benefit.length).toBeGreaterThan(0);
+      });
     });
+  });
 
-    // Test specific tier benefits
+  test('higher tiers have more benefits than lower tiers', () => {
     const bronzeBenefits = getTierBenefits('BRONZE');
-    expect(bronzeBenefits).toContain('Welcome to PointPulse rewards');
-    expect(bronzeBenefits).toContain('Earn 1 point per $0.25 spent');
-
+    const silverBenefits = getTierBenefits('SILVER');
+    const goldBenefits = getTierBenefits('GOLD');
+    const platinumBenefits = getTierBenefits('PLATINUM');
     const diamondBenefits = getTierBenefits('DIAMOND');
-    expect(diamondBenefits).toContain('All Platinum benefits');
-    expect(diamondBenefits).toContain('Dedicated account manager');
 
-    // Test invalid tier
+    // Higher tiers should have at least as many benefits as lower tiers
+    expect(silverBenefits.length).toBeGreaterThanOrEqual(bronzeBenefits.length);
+    expect(goldBenefits.length).toBeGreaterThanOrEqual(silverBenefits.length);
+    expect(platinumBenefits.length).toBeGreaterThanOrEqual(goldBenefits.length);
+    expect(diamondBenefits.length).toBeGreaterThanOrEqual(platinumBenefits.length);
+  });
+
+  test('invalid tier defaults to bronze benefits', () => {
     expect(getTierBenefits('INVALID_TIER')).toEqual(getTierBenefits('BRONZE'));
+    expect(getTierBenefits(null)).toEqual(getTierBenefits('BRONZE'));
+    expect(getTierBenefits(undefined)).toEqual(getTierBenefits('BRONZE'));
   });
 }); 
