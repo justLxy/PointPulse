@@ -119,37 +119,33 @@ export const formatCyclePeriod = (cycleYear, cycleConfig = DEFAULT_CYCLE_START) 
   return `${formatter.format(startDate)} - ${formatter.format(endDate)}`;
 };
 
-// Get tier benefits (can be expanded later)
+// Get tier benefits (reflecting implemented features)
 export const getTierBenefits = (tier) => {
   const benefits = {
     BRONZE: [
-      'Welcome to PointPulse rewards',
-      'Earn 1 point per $0.25 spent',
-      'Access to basic promotions'
+      'Welcome to PointPulse Rewards!',
+      'Earn points on every purchase.',
+      'Access to standard promotions and events.'
     ],
     SILVER: [
-      'All Bronze benefits',
-      '10% bonus points on all purchases',
-      'Early access to special events'
+      'All Bronze benefits.',
+      'Access to exclusive Silver-tier promotions.',
+      'Early sign-up for select events.'
     ],
     GOLD: [
-      'All Silver benefits', 
-      '20% bonus points on all purchases',
-      'Priority customer support',
-      'Exclusive monthly promotions'
+      'All Silver benefits.',
+      'Access to exclusive Gold-tier promotions and offers.',
+      'Priority access and RSVP for popular events.'
     ],
     PLATINUM: [
-      'All Gold benefits',
-      '30% bonus points on all purchases',
-      'VIP event invitations',
-      'Quarterly bonus points'
+      'All Gold benefits.',
+      'Access to premium Platinum-only promotions.',
+      'VIP access and guaranteed spots at all events.'
     ],
     DIAMOND: [
-      'All Platinum benefits',
-      '50% bonus points on all purchases',
-      'Dedicated account manager',
-      'Exclusive Diamond-only events',
-      'Annual appreciation gift'
+      'All Platinum benefits.',
+      'The most exclusive promotions and special offers.',
+      'Early access and reserved seating at all major events.'
     ]
   };
   
