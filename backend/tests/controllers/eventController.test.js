@@ -11,11 +11,21 @@ const mockPrismaEvent = {
     delete: jest.fn()
 };
 
+const mockPrismaUser = {
+    findUnique: jest.fn()
+};
+
+const mockPrismaEventAttendance = {
+    findUnique: jest.fn(),
+    upsert: jest.fn()
+};
+
 jest.doMock('@prisma/client', () => ({
     PrismaClient: jest.fn().mockImplementation(() => ({
         event: mockPrismaEvent,
-        user: { findUnique: jest.fn() },
-        transaction: { findUnique: jest.fn() }
+        user: mockPrismaUser,
+        transaction: { findUnique: jest.fn() },
+        eventAttendance: mockPrismaEventAttendance
     }))
 }));
 
@@ -24,7 +34,7 @@ const eventService = require('../../services/eventService');
 const { checkRole } = require('../../middlewares/authMiddleware');
 
 describe('EventController', () => {
-    let req, res;
+    let req, res, next;
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -32,18 +42,25 @@ describe('EventController', () => {
         jest.spyOn(console, 'error').mockImplementation(() => {});
 
         req = {
-            body: {},
-            params: {},
-            query: {},
+            params: { eventId: '1' },
+            body: {
+                name: 'Test Event',
+                description: 'Test Description',
+                location: 'BA 3200',
+                startTime: '2025-06-10T09:00:00Z',
+                endTime: '2025-06-10T17:00:00Z',
+                points: 500,
+                capacity: 100
+            },
             auth: { id: 1, role: 'manager' },
-            originalUrl: '/test',
-            method: 'POST'
+            query: {}
         };
-
         res = {
             status: jest.fn().mockReturnThis(),
-            json: jest.fn().mockReturnThis()
+            json: jest.fn().mockReturnThis(),
+            send: jest.fn().mockReturnThis()
         };
+        next = jest.fn();
     });
 
     afterEach(() => {
@@ -283,6 +300,326 @@ describe('EventController', () => {
         });
     });
 
+    describe('updateEvent', () => {
+        beforeEach(() => {
+            req.params = { eventId: '1' };
+            req.body = {
+                name: 'Updated Event',
+                description: 'Updated description',
+                location: 'BA 3200',
+                startTime: '2025-06-10T09:00:00Z',
+                endTime: '2025-06-10T17:00:00Z',
+                capacity: 150,
+                points: 600
+            };
+        });
+
+        test('should update event successfully', async () => {
+            checkRole.mockReturnValue(true);
+            const mockEvent = {
+                id: 1,
+                name: 'Updated Event',
+                description: 'Updated description',
+                location: 'BA 3200',
+                startTime: '2025-06-10T09:00:00Z',
+                endTime: '2025-06-10T17:00:00Z',
+                capacity: 150,
+                points: 600
+            };
+            mockPrismaEvent.findUnique.mockResolvedValue({
+                id: 1,
+                name: 'Test Event',
+                organizers: [{ id: 1 }],
+                guests: [],
+                endTime: new Date('2025-12-31')
+            });
+            eventService.updateEvent.mockResolvedValue(mockEvent);
+            await eventController.updateEvent(req, res);
+            expect(eventService.updateEvent).toHaveBeenCalledWith(1, req.body, true);
+            expect(res.status).toHaveBeenCalledWith(200);
+            expect(res.json).toHaveBeenCalledWith(mockEvent);
+        });
+
+        test('should return 400 for invalid event ID', async () => {
+            req.params.eventId = 'invalid';
+
+            await eventController.updateEvent(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.json).toHaveBeenCalledWith({
+                error: 'Invalid event ID'
+            });
+        });
+
+        test('should return 404 when event not found', async () => {
+            mockPrismaEvent.findUnique.mockResolvedValue(null);
+
+            await eventController.updateEvent(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(404);
+            expect(res.json).toHaveBeenCalledWith({
+                error: 'Event not found'
+            });
+        });
+
+        test('should return 403 when user is not authorized', async () => {
+            checkRole.mockReturnValue(false);
+            mockPrismaEvent.findUnique.mockResolvedValue({
+                id: 1,
+                organizers: [],
+                guests: [],
+                endTime: new Date('2025-12-31')
+            });
+
+            await eventController.updateEvent(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(403);
+            expect(res.json).toHaveBeenCalledWith({
+                error: 'Unauthorized to update this event'
+            });
+        });
+    });
+
+    describe('deleteEvent', () => {
+        beforeEach(() => {
+            req.params = { eventId: '1' };
+        });
+
+        test('should delete event successfully', async () => {
+            checkRole.mockReturnValue(true);
+            mockPrismaEvent.findUnique.mockResolvedValue({
+                id: 1,
+                name: 'Test Event',
+                organizers: [{ id: 1 }]
+            });
+            eventService.deleteEvent.mockResolvedValue({ message: 'Event deleted successfully' });
+
+            await eventController.deleteEvent(req, res);
+
+            expect(eventService.deleteEvent).toHaveBeenCalledWith(1);
+            expect(res.status).toHaveBeenCalledWith(204);
+            expect(res.send).toHaveBeenCalled();
+        });
+
+        test('should return 400 for invalid event ID', async () => {
+            req.params.eventId = 'invalid';
+
+            await eventController.deleteEvent(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.json).toHaveBeenCalledWith({
+                error: 'Invalid event ID'
+            });
+        });
+
+        test('should return 404 when event not found', async () => {
+            mockPrismaEvent.findUnique.mockResolvedValue(null);
+
+            await eventController.deleteEvent(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(404);
+            expect(res.json).toHaveBeenCalledWith({
+                error: 'Event not found'
+            });
+        });
+    });
+
+    describe('addOrganizer', () => {
+        beforeEach(() => {
+            req.params = { eventId: '1' };
+            req.body = { utorid: 'organizer1' };
+        });
+
+        test('should add organizer successfully', async () => {
+            req.body = { utorid: 'organizer1' };
+            // Mock user lookup
+            mockPrismaUser.findUnique.mockResolvedValue({ id: 2, utorid: 'organizer1' });
+            // Mock event lookup
+            mockPrismaEvent.findUnique.mockResolvedValueOnce({ id: 1, endTime: new Date('2025-12-31') });
+            eventService.addOrganizer.mockResolvedValue({ message: 'Organizer added successfully' });
+
+            await eventController.addOrganizer(req, res);
+
+            expect(eventService.addOrganizer).toHaveBeenCalledWith(1, 'organizer1');
+            expect(res.status).toHaveBeenCalledWith(201);
+            expect(res.json).toHaveBeenCalledWith({ message: 'Organizer added successfully' });
+        });
+
+        test('should return 400 for invalid event ID', async () => {
+            req.params.eventId = 'invalid';
+
+            await eventController.addOrganizer(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.json).toHaveBeenCalledWith({
+                error: 'Invalid event ID'
+            });
+        });
+
+        test('should return 400 when utorid is missing', async () => {
+            req.body = {};
+            await eventController.addOrganizer(req, res);
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.json).toHaveBeenCalledWith({ error: 'No data provided' });
+        });
+    });
+
+    describe('removeOrganizer', () => {
+        beforeEach(() => {
+            req.params = { eventId: '1', organizerId: '2' };
+        });
+
+        test('should remove organizer successfully', async () => {
+            req.params.userId = '2';
+            eventService.removeOrganizer.mockResolvedValue();
+            await eventController.removeOrganizer(req, res);
+            expect(eventService.removeOrganizer).toHaveBeenCalledWith(1, 2);
+            expect(res.status).toHaveBeenCalledWith(204);
+            expect(res.send).toHaveBeenCalled();
+        });
+
+        test('should return 400 for invalid organizer ID', async () => {
+            req.params.userId = 'abc';
+            await eventController.removeOrganizer(req, res);
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.json).toHaveBeenCalledWith({ error: 'Invalid user ID' });
+        });
+    });
+
+    describe('addGuest', () => {
+        beforeEach(() => {
+            req.params = { eventId: '1' };
+            req.body = { utorid: 'guest1' };
+        });
+
+        test('should add guest successfully', async () => {
+            req.body = { utorid: 'guest1' };
+            checkRole.mockReturnValue(true); // Mock manager role
+            mockPrismaUser.findUnique.mockResolvedValue({ id: 3, utorid: 'guest1' });
+            mockPrismaEvent.findUnique.mockResolvedValueOnce({ 
+                id: 1, 
+                endTime: new Date('2025-12-31'),
+                capacity: 100
+            });
+            mockPrismaEvent.findUnique.mockResolvedValueOnce({
+                id: 1,
+                _count: { guests: 50 }
+            });
+            eventService.addGuest.mockResolvedValue({ message: 'Guest added successfully' });
+            await eventController.addGuest(req, res);
+            expect(eventService.addGuest).toHaveBeenCalledWith(1, 'guest1', true, true);
+            expect(res.status).toHaveBeenCalledWith(201);
+            expect(res.json).toHaveBeenCalledWith({ message: 'Guest added successfully' });
+        });
+
+        test('should return 400 for invalid event ID', async () => {
+            req.params.eventId = 'invalid';
+
+            await eventController.addGuest(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.json).toHaveBeenCalledWith({
+                error: 'Invalid event ID'
+            });
+        });
+
+        test('should return 400 when utorid is missing', async () => {
+            req.body = {};
+            await eventController.addGuest(req, res);
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.json).toHaveBeenCalledWith({ error: 'No data provided' });
+        });
+    });
+
+    describe('removeGuest', () => {
+        beforeEach(() => {
+            req.params = { eventId: '1', guestId: '2' };
+        });
+
+        test('should remove guest successfully', async () => {
+            req.params.userId = '3';
+            checkRole.mockReturnValue(true); // Mock manager role
+            mockPrismaEvent.findUnique.mockResolvedValue({
+                id: 1,
+                name: 'Test Event',
+                endTime: new Date('2025-12-31'),
+                guests: [{ id: 3 }] // User is a guest
+            });
+            eventService.removeGuest.mockResolvedValue();
+            await eventController.removeGuest(req, res);
+            expect(eventService.removeGuest).toHaveBeenCalledWith(1, 3);
+            expect(res.status).toHaveBeenCalledWith(204);
+            expect(res.send).toHaveBeenCalled();
+        });
+
+        test('should return 400 for invalid guest ID', async () => {
+            req.params.userId = 'abc';
+            await eventController.removeGuest(req, res);
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.json).toHaveBeenCalledWith({ error: 'Invalid user ID' });
+        });
+    });
+
+    describe('addCurrentUserAsGuest', () => {
+        beforeEach(() => {
+            req.params = { eventId: '1' };
+        });
+
+        test('should return 400 for invalid event ID', async () => {
+            req.params.eventId = 'invalid';
+
+            await eventController.addCurrentUserAsGuest(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.json).toHaveBeenCalledWith({
+                error: 'Invalid event ID'
+            });
+        });
+
+        test('should return 404 when event not found', async () => {
+            mockPrismaEvent.findUnique.mockResolvedValue(null);
+
+            await eventController.addCurrentUserAsGuest(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(404);
+            expect(res.json).toHaveBeenCalledWith({
+                error: 'Event not found'
+            });
+        });
+    });
+
+    describe('removeCurrentUserAsGuest', () => {
+        beforeEach(() => {
+            req.params = { eventId: '1' };
+        });
+
+        test('should remove current user as guest successfully', async () => {
+            mockPrismaEvent.findUnique.mockResolvedValue({
+                id: 1,
+                name: 'Test Event',
+                endTime: new Date('2025-12-31'),
+                guests: [{ id: 1 }], // User is a guest
+                organizers: [] // User is not an organizer
+            });
+            eventService.removeCurrentUserAsGuest.mockResolvedValue({ message: 'Successfully left event' });
+            await eventController.removeCurrentUserAsGuest(req, res);
+            expect(eventService.removeCurrentUserAsGuest).toHaveBeenCalledWith(1, 1);
+            expect(res.status).toHaveBeenCalledWith(204);
+            expect(res.send).toHaveBeenCalled();
+        });
+
+        test('should return 400 for invalid event ID', async () => {
+            req.params.eventId = 'invalid';
+
+            await eventController.removeCurrentUserAsGuest(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.json).toHaveBeenCalledWith({
+                error: 'Invalid event ID'
+            });
+        });
+    });
+
     describe('createEventTransaction', () => {
         beforeEach(() => {
             req.params = { eventId: '1' };
@@ -380,4 +717,189 @@ describe('EventController', () => {
             });
         });
     });
-}); 
+
+    describe('removeAllGuests', () => {
+        beforeEach(() => {
+            req.params = { eventId: '1' };
+        });
+
+        test('should remove all guests successfully', async () => {
+            checkRole.mockReturnValue(true);
+            mockPrismaEvent.findUnique.mockResolvedValue({
+                id: 1,
+                name: 'Test Event',
+                organizers: [{ id: 1 }]
+            });
+            eventService.removeAllGuests.mockResolvedValue({ message: 'All guests removed successfully' });
+
+            await eventController.removeAllGuests(req, res);
+
+            expect(eventService.removeAllGuests).toHaveBeenCalledWith(1);
+            expect(res.status).toHaveBeenCalledWith(204);
+        });
+
+        test('should return 400 for invalid event ID', async () => {
+            req.params.eventId = 'invalid';
+
+            await eventController.removeAllGuests(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.json).toHaveBeenCalledWith({
+                error: 'Invalid event ID'
+            });
+        });
+
+        test('should return 404 when event not found', async () => {
+            mockPrismaEvent.findUnique.mockResolvedValue(null);
+
+            await eventController.removeAllGuests(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(404);
+            expect(res.json).toHaveBeenCalledWith({
+                error: 'Event not found'
+            });
+        });
+    });
+
+    describe('getCheckinToken', () => {
+        beforeEach(() => {
+            req.params = { eventId: '1' };
+        });
+
+        test('should return 400 for invalid event ID', async () => {
+            req.params.eventId = 'invalid';
+
+            await eventController.getCheckinToken(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.json).toHaveBeenCalledWith({
+                error: 'Invalid event ID'
+            });
+        });
+
+        test('should return 404 when event not found', async () => {
+            mockPrismaEvent.findUnique.mockResolvedValue(null);
+
+            await eventController.getCheckinToken(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(404);
+            expect(res.json).toHaveBeenCalledWith({
+                error: 'Event not found'
+            });
+        });
+
+        test('should return 403 when user is not authorized', async () => {
+            checkRole.mockReturnValue(false);
+            mockPrismaEvent.findUnique.mockResolvedValue({
+                id: 1,
+                name: 'Test Event',
+                organizers: []
+            });
+
+            await eventController.getCheckinToken(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(403);
+            expect(res.json).toHaveBeenCalledWith({
+                error: 'Only managers or organizers can generate check-in tokens'
+            });
+        });
+    });
+
+    describe('checkInWithToken', () => {
+        beforeEach(() => {
+            req.params = { eventId: '1' };
+            req.body = {
+                timestamp: Date.now(),
+                signature: 'valid-signature'
+            };
+        });
+
+        test('should check in with token successfully', async () => {
+            const now = Date.now();
+            const signature = require('crypto').createHmac('sha256', 'pointpulse_checkin_secret').update(`1:${now}`).digest('hex');
+            req.body = {
+                timestamp: now,
+                signature: signature
+            };
+            mockPrismaEvent.findUnique.mockResolvedValue({
+                id: 1,
+                name: 'Test Event',
+                guests: [{ id: 1 }]
+            });
+            mockPrismaEventAttendance.findUnique.mockResolvedValue(null);
+            mockPrismaEventAttendance.upsert.mockResolvedValue({
+                eventId: 1,
+                userId: 1,
+                checkedInAt: new Date()
+            });
+            await eventController.checkInWithToken(req, res);
+            expect(res.status).toHaveBeenCalledWith(201);
+            expect(res.json).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    message: 'Successfully checked in',
+                    checkedInAt: expect.any(String)
+                })
+            );
+        });
+
+        test('should return 400 when token is missing', async () => {
+            req.body = { timestamp: Date.now() };
+            await eventController.checkInWithToken(req, res);
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.json).toHaveBeenCalledWith({ error: 'Missing timestamp or signature' });
+        });
+
+        test('should return 400 when timestamp is missing', async () => {
+            req.body = { signature: 'valid-signature' };
+            await eventController.checkInWithToken(req, res);
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.json).toHaveBeenCalledWith({ error: 'Missing timestamp or signature' });
+        });
+    });
+
+    describe('checkInByScan', () => {
+        beforeEach(() => {
+            req.params = { eventId: '1' };
+        });
+
+        test('should return 400 for invalid event ID', async () => {
+            req.params.eventId = 'invalid';
+
+            await eventController.checkInByScan(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.json).toHaveBeenCalledWith({
+                error: 'Invalid event ID'
+            });
+        });
+
+        test('should return 400 when utorid is missing', async () => {
+            req.body = {};
+            await eventController.checkInByScan(req, res);
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.json).toHaveBeenCalledWith({ error: 'Missing or invalid utorid' });
+        });
+
+        test('should return 403 when user is not authorized', async () => {
+            req.body = { utorid: 'testuser' };
+            req.auth = { id: 2, role: 'user' };
+            mockPrismaUser.findUnique.mockResolvedValue({ 
+                id: 2, 
+                role: 'user', 
+                utorid: 'user1'
+            });
+            mockPrismaEvent.findUnique.mockResolvedValue({
+                id: 1,
+                name: 'Test Event',
+                endTime: new Date('2025-12-31'),
+                guests: [],
+                organizers: []
+            });
+            await eventController.checkInByScan(req, res);
+            expect(res.status).toHaveBeenCalledWith(403);
+            expect(res.json).toHaveBeenCalledWith({
+                error: 'Only organizers or managers can record attendance'
+            });
+        });
+    });
+});
