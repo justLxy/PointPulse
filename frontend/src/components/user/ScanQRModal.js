@@ -211,6 +211,17 @@ const ResultMessage = styled.p`
   font-size: 0.9rem;
 `;
 
+// User info display with proper icon alignment
+const UserInfoDisplay = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: ${theme.spacing.xs};
+  margin: ${theme.spacing.sm} 0;
+  color: ${theme.colors.text.primary};
+  font-size: 0.9rem;
+`;
+
 // Button container
 const ButtonsContainer = styled.div`
   display: flex;
@@ -494,10 +505,10 @@ const ScanQRModal = ({ isOpen, onClose }) => {
             )}
             
             {scanResult.status === 'success' && (
-              <ResultMessage>
-                <FaUser style={{ marginRight: '8px', color: theme.colors.primary.main }} />
-                User ID: {scanResult.recipientUtorid}
-              </ResultMessage>
+              <UserInfoDisplay>
+                <FaUser style={{ color: theme.colors.primary.main }} />
+                <span>User ID: {scanResult.recipientUtorid}</span>
+              </UserInfoDisplay>
             )}
             
             <ButtonsContainer>
