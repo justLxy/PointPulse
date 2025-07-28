@@ -1746,7 +1746,27 @@ const EventDetail = () => {
                                 {guest.name}
                               </AudienceName>
 
-                              <Tooltip id={`guest-tooltip-${guest.id}`} place="top" />
+                              <Tooltip 
+                                id={`guest-tooltip-${guest.id}`} 
+                                place="top"
+                                offset={15}
+                                style={{
+                                  backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                                  color: 'white',
+                                  borderRadius: '8px',
+                                  padding: '8px 12px',
+                                  fontSize: '14px',
+                                  fontWeight: '500',
+                                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+                                  zIndex: 99999,
+                                  maxWidth: '250px',
+                                  textAlign: 'center'
+                                }}
+                                float={true}
+                                clickable={false}
+                                variant="dark"
+                                border="1px solid rgba(255, 255, 255, 0.1)"
+                              />
 
                               <AudienceRole>
                                 {pointsAwarded > 0 ? (
