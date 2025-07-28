@@ -205,7 +205,7 @@ describe('PasswordReset Component', () => {
       expect(screen.getByText('At least one uppercase letter')).toBeInTheDocument();
       expect(screen.getByText('At least one lowercase letter')).toBeInTheDocument();
       expect(screen.getByText('At least one number')).toBeInTheDocument();
-      expect(screen.getByText('At least one special character')).toBeInTheDocument();
+      expect(screen.getByText(/At least one special character/)).toBeInTheDocument();
     });
 
     it('updates form fields when typed', () => {
@@ -301,7 +301,7 @@ describe('PasswordReset Component', () => {
       expect(screen.getByText('At least one uppercase letter')).toBeInTheDocument();
       expect(screen.getByText('At least one lowercase letter')).toBeInTheDocument();
       expect(screen.getByText('At least one number')).toBeInTheDocument();
-      expect(screen.getByText('At least one special character')).toBeInTheDocument();
+      expect(screen.getByText(/At least one special character/)).toBeInTheDocument();
     });
 
     it('validates password length requirement with edge cases', () => {

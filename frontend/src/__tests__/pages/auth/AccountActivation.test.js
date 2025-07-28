@@ -101,7 +101,7 @@ describe('AccountActivation - Core Functionality', () => {
       expect(screen.getByText('At least one uppercase letter')).toBeInTheDocument();
       expect(screen.getByText('At least one lowercase letter')).toBeInTheDocument();
       expect(screen.getByText('At least one number')).toBeInTheDocument();
-      expect(screen.getByText('At least one special character')).toBeInTheDocument();
+      expect(screen.getByText(/At least one special character/)).toBeInTheDocument();
     });
 
     it('initializes form with empty values when no URL parameters', () => {
@@ -211,7 +211,7 @@ describe('AccountActivation - Core Functionality', () => {
       expect(screen.getByText('At least one uppercase letter')).toBeInTheDocument();
       expect(screen.getByText('At least one lowercase letter')).toBeInTheDocument();
       expect(screen.getByText('At least one number')).toBeInTheDocument();
-      expect(screen.getByText('At least one special character')).toBeInTheDocument();
+      expect(screen.getByText(/At least one special character/)).toBeInTheDocument();
     });
 
     it('updates requirements when password changes', () => {
