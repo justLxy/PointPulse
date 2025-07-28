@@ -246,7 +246,7 @@ const PasswordReset = () => {
     setHasUpper(/[A-Z]/.test(pwd));
     setHasLower(/[a-z]/.test(pwd));
     setHasNumber(/\d/.test(pwd));
-    setHasSpecial(/[\W_]/.test(pwd)); // Matches special characters
+    setHasSpecial(/[!@#$%^&*]/.test(pwd)); // Only allow backend-approved special characters
   };
 
   // Handle password change and trigger live validation
@@ -497,7 +497,7 @@ const PasswordReset = () => {
                 At least one number
               </li>
               <li style={{ color: hasSpecial ? theme.colors.success.main : theme.colors.text.secondary }}>
-                At least one special character
+                At least one special character (!@#$%^&*)
               </li>
             </PasswordRequirements>
             

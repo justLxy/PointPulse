@@ -418,7 +418,7 @@ const Profile = () => {
     setHasUpper(/[A-Z]/.test(pwd));
     setHasLower(/[a-z]/.test(pwd));
     setHasNumber(/\d/.test(pwd));
-    setHasSpecial(/[\W_]/.test(pwd));
+    setHasSpecial(/[!@#$%^&*]/.test(pwd));
   };
 
   // const togglePasswordVisibility = (field) => {
@@ -514,18 +514,8 @@ const Profile = () => {
   };
   
   const validatePassword = (password) => {
-    // At least 8 characters, max 20
-    if (password.length < 8 || password.length > 20) {
-      return false;
-    }
-    
-    // Check for at least one uppercase, one lowercase, one number, one special character
-    const hasUppercase = /[A-Z]/.test(password);
-    const hasLowercase = /[a-z]/.test(password);
-    const hasNumber = /[0-9]/.test(password);
-    const hasSpecial = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password);
-    
-    return hasUppercase && hasLowercase && hasNumber && hasSpecial;
+    // Use the same validation as backend: 8-20 chars with at least one uppercase, one lowercase, one number, one special character (!@#$%^&*)
+    return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,20}$/.test(password);
   };
   
   const handlePasswordSubmit = (e) => {
@@ -795,7 +785,7 @@ const Profile = () => {
               At least one number
             </li>
             <li style={{ color: hasSpecial ? theme.colors.success.main : theme.colors.text.secondary }}>
-              At least one special character
+              At least one special character (!@#$%^&*)
             </li>
           </PasswordRequirements>
           
