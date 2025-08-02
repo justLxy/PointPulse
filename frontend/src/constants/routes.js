@@ -15,6 +15,9 @@ export const KNOWN_ROUTES = [
   'login',
   'password-reset',
   'account-activation',
+  'support',
+  'privacy-policy',
+  'terms-of-service',
 ];
 
 /**
