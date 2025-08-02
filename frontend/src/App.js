@@ -45,6 +45,12 @@ import ShortlinkRedirect from './pages/ShortlinkRedirect';
 import Landing from './pages/Landing';
 import NotFound from './pages/NotFound';
 
+// Legal pages
+import About from './pages/legal/About';
+import PrivacyPolicy from './pages/legal/PrivacyPolicy';
+import TermsOfService from './pages/legal/TermsOfService';
+import Support from './pages/legal/Support';
+
 // Create a QueryClientProvider with logout reset capability
 const AppQueryClientProvider = ({ children }) => {
   const [queryClient] = useState(() => new QueryClient({
@@ -139,6 +145,12 @@ const App = () => {
               <Route path="/login" element={<Login />} />
               <Route path="/password-reset" element={<PasswordReset />} />
               <Route path="/account-activation" element={<AccountActivation />} />
+              
+              {/* Legal Pages */}
+              <Route path="/about" element={<About />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/terms-of-service" element={<TermsOfService />} />
+              <Route path="/support" element={<Support />} />
               
               {/* Protected Routes */}
               <Route

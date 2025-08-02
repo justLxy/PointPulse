@@ -736,14 +736,19 @@ const Landing = () => {
             {/* Company Links */}
             <div className="mb-8">
               <div className="flex flex-wrap justify-center gap-6 md:gap-8">
-                {['About', 'Privacy Policy', 'Terms of Service', 'Support'].map((link) => (
-                  <a 
-                    key={link} 
-                    href="#" 
+                {[
+                  { name: 'About', path: '/about' },
+                  { name: 'Privacy Policy', path: '/privacy-policy' },
+                  { name: 'Terms of Service', path: '/terms-of-service' },
+                  { name: 'Support', path: '/support' }
+                ].map((link) => (
+                  <Link 
+                    key={link.name} 
+                    to={link.path}
                     className="text-gray-400 hover:text-white transition-colors text-sm font-medium"
                   >
-                    {link}
-                  </a>
+                    {link.name}
+                  </Link>
                 ))}
               </div>
             </div>
