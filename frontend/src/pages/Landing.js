@@ -59,28 +59,28 @@ const FAQSection = () => {
 
   const faqData = [
     {
-      question: 'How do I earn points with PointPulse?',
-      answer: 'You can earn points through purchases (1 point per 25¢ spent), attending events, and taking advantage of special promotions. Our platform automatically tracks all your point-earning activities.'
+      question: 'What is PointPulse?',
+      answer: 'PointPulse is the official loyalty rewards program for the University of Toronto community. It allows you to earn points on purchases and at events, and redeem them for discounts and other exclusive rewards across campus.'
     },
     {
-      question: 'What can I redeem my points for?',
-      answer: 'Points can be redeemed for discounts on future purchases at a rate of 1 cent per point. You can also use points to access exclusive events and premium services through our rewards catalog.'
+      question: 'Who is eligible to join?',
+      answer: 'All current students, faculty, and staff members of the University of Toronto are eligible to join PointPulse and start earning rewards.'
     },
     {
-      question: 'How does the tier system work?',
-      answer: 'Our tier system includes Bronze, Silver, Gold, and Platinum levels based on your annual point accumulation. Higher tiers unlock increasing bonus multipliers, exclusive promotions, and priority event access.'
+      question: 'How do I get an account?',
+      answer: 'An account must be created for you by an authorized staff member (e.g., a cashier at a participating location). They will register you using your UTORid and official university email.'
     },
     {
-      question: 'Can I transfer points to friends?',
-      answer: 'Yes! Verified users can transfer points to other users. Simply use our transfer feature in your dashboard or scan their QR code to send points directly.'
+      question: 'Is my personal information safe?',
+      answer: 'Absolutely. We take data security very seriously. All your personal information is stored securely and encrypted. For more details, you can review our full Privacy Policy.'
     },
     {
-      question: 'How do I use my QR code?',
-      answer: 'Your universal QR code can be used for purchases, event check-ins, and point transfers. Simply show it to cashiers or event organizers, or have friends scan it to receive point transfers.'
+      question: 'Are the points worth real money?',
+      answer: 'Points do not have a direct cash value, but they can be redeemed for real discounts on products and services. Think of them as a university-wide currency for rewards.'
     },
     {
-      question: "What happens to my points if I don't use them?",
-      answer: 'Points remain in your account indefinitely and never expire. However, your tier status is recalculated annually based on points earned in the current year.'
+      question: 'How can I learn more or get help?',
+      answer: 'For detailed questions about using the platform, please visit our Support Center. For legal information, you can view our Terms of Service and Privacy Policy.'
     }
   ];
 
@@ -737,7 +737,6 @@ const Landing = () => {
             <div className="mb-8">
               <div className="flex flex-wrap justify-center gap-6 md:gap-8">
                 {[
-                  { name: 'About', path: '/about' },
                   { name: 'Privacy Policy', path: '/privacy-policy' },
                   { name: 'Terms of Service', path: '/terms-of-service' },
                   { name: 'Support', path: '/support' }

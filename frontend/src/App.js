@@ -46,7 +46,6 @@ import Landing from './pages/Landing';
 import NotFound from './pages/NotFound';
 
 // Legal pages
-import About from './pages/legal/About';
 import PrivacyPolicy from './pages/legal/PrivacyPolicy';
 import TermsOfService from './pages/legal/TermsOfService';
 import Support from './pages/legal/Support';
@@ -147,7 +146,6 @@ const App = () => {
               <Route path="/account-activation" element={<AccountActivation />} />
               
               {/* Legal Pages */}
-              <Route path="/about" element={<About />} />
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/terms-of-service" element={<TermsOfService />} />
               <Route path="/support" element={<Support />} />
