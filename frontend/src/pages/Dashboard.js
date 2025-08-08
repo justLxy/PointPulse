@@ -553,6 +553,12 @@ const PromotionTypeHeader = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-bottom: ${theme.spacing.sm};
+  cursor: pointer;
+  user-select: none;
+  transition: background-color ${theme.transitions.quick}, transform ${theme.transitions.quick};
+  &:hover {
+    transform: translateY(-1px);
+  }
 `;
 
 const PromotionCard = styled.div`
@@ -1455,7 +1461,15 @@ const Dashboard = () => {
                 
                 return (
                   <PromotionSection key={type}>
-                    <PromotionTypeHeader type={type}>
+                    <PromotionTypeHeader
+                      type={type}
+                      onClick={() => {
+                        // Navigate to Promotions page with filter for this type
+                        window.location.href = `/promotions?type=${encodeURIComponent(type)}`;
+                      }}
+                      role="button"
+                      aria-label={`View ${type} promotions`}
+                    >
                       {type === 'automatic' ? 'Automatic' : 'One-time'}
                       <FaChevronRight size={12} />
                     </PromotionTypeHeader>

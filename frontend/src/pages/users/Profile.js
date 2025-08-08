@@ -694,10 +694,7 @@ const Profile = () => {
               <FaUser size={16} />
               <InfoLabel>Status:</InfoLabel>
               <InfoValue>
-                {/* {profile?.verified ? 'Verified' : 'Not Verified'} */}
-                <Badge verified={profile?.verified}>
-                  {profile?.verified ? 'Verified' : 'Pending'}
-                </Badge>
+                {profile?.verified ? 'Verified' : 'Not Verified'}
               </InfoValue>
             </InfoItem>
           </>

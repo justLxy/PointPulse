@@ -156,8 +156,13 @@ const transformSquareCatalog = (squareData = {}) => {
       };
     });
 
+  // Build categories list for filters and exclude internal pseudo-categories
+  const EXCLUDED_CATEGORY_NAMES = new Set(['cash only', 'points only']);
+  const normalizeCategory = (value) => value.toLowerCase().replace(/[-_]+/g, ' ').trim();
+
   const categoriesList = Object.values(categoriesMap)
     .map((name) => name.toLowerCase())
+    .filter((name) => !EXCLUDED_CATEGORY_NAMES.has(normalizeCategory(name)))
     .sort()
     .map((cat) => ({ value: cat, label: cat.charAt(0).toUpperCase() + cat.slice(1) }));
 

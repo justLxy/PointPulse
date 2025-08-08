@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import styled from '@emotion/styled';
+import { keyframes, css } from '@emotion/react';
 import { motion } from 'framer-motion';
 import { FiDollarSign, FiGift, FiStar, FiPackage, FiLock } from 'react-icons/fi';
 import theme from '../../styles/theme';
@@ -52,6 +53,11 @@ const ProductImage = styled.img`
   transition: transform ${theme.transitions.default};
 `;
 
+const shimmer = keyframes`
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+`;
+
 const ImagePlaceholder = styled.div`
   width: 100%;
   height: 100%;
@@ -62,6 +68,9 @@ const ImagePlaceholder = styled.div`
   justify-content: center;
   position: relative;
   gap: ${theme.spacing.xs};
+  overflow: hidden;
+  /* Subtle gradient base */
+  background-image: linear-gradient(135deg, #f6f9fc 0%, #eef5fb 50%, #f6f9fc 100%);
   
   svg {
     font-size: 2rem;
@@ -74,6 +83,25 @@ const ImagePlaceholder = styled.div`
     font-weight: ${theme.typography.fontWeights.medium};
     text-align: center;
   }
+  
+  /* Shimmer effect only while loading */
+  ${({ animate }) => animate && css`
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 50%;
+      background: linear-gradient(
+        90deg,
+        rgba(255,255,255,0) 0%,
+        rgba(255,255,255,0.6) 50%,
+        rgba(255,255,255,0) 100%
+      );
+      animation: ${shimmer} 1.2s infinite;
+    }
+  `}
 `;
 
 const StockBadge = styled.div`
@@ -348,7 +376,7 @@ const ProductCard = ({ product, userTier = null }) => {
         ) : null}
         
         {(!imageUrl || imageError || imageLoading) && (
-          <ImagePlaceholder>
+          <ImagePlaceholder animate={imageLoading && !!imageUrl}>
             <FiPackage />
             {!imageLoading && (imageError || !imageUrl) && (
               <span className="placeholder-text">No Image</span>
@@ -360,11 +388,13 @@ const ProductCard = ({ product, userTier = null }) => {
         
 
         
-        <StockBadge inStock={isEffectivelyAvailable}>
-          {isEffectivelyAvailable ? 'In Stock' : (
-            !inStock ? 'Out of Stock' : 'Tier Restricted'
-          )}
-        </StockBadge>
+        {!imageLoading && (
+          <StockBadge inStock={isEffectivelyAvailable}>
+            {isEffectivelyAvailable ? 'In Stock' : (
+              !inStock ? 'Out of Stock' : 'Tier Restricted'
+            )}
+          </StockBadge>
+        )}
       </ImageContainer>
 
       <CardContent>
