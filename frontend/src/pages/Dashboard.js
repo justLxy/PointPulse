@@ -1060,7 +1060,7 @@ const Dashboard = () => {
   const promotionParams = useMemo(() => ({ started: true, ended: false }), []); // Active promotions for all users on dashboard
     
   const { promotions, isLoading: isPromotionsLoading } = usePromotions(promotionParams);
-  const { tierStatus, refreshTierStatus } = useTierStatus();
+  const { tierStatus, refreshTierStatus, isLoading: isTierStatusLoading } = useTierStatus();
   
   const [isRedeemModalOpen, setIsRedeemModalOpen] = useState(false);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
@@ -1196,7 +1196,8 @@ const Dashboard = () => {
   };
   
 
-  const showProfileSkeleton = isProfileLoading;
+  // Only show real content when ALL data is loaded, including tier status
+  const showProfileSkeleton = isProfileLoading || isTierStatusLoading;
   const showTransactionsSkeleton = isTransactionsLoading;
   const showPromotionsSkeleton = isPromotionsLoading;
   const showEventsSkeleton = isEventsLoading;
