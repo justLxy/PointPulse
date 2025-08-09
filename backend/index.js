@@ -31,11 +31,25 @@ const app = express();
 // Middlewares
 app.use(cors({
     origin: function (origin, callback) {
-        const allowedOrigins = [
+        const explicitAllowedOrigins = new Set([
             FRONTEND_URL,
-            // Add other specific origins if needed
-        ];
-        if (!origin || allowedOrigins.indexOf(origin) !== -1 || origin.startsWith('https://pointpulse')) {
+            'http://localhost:3000',
+            'http://127.0.0.1:3000',
+            'http://localhost:5173',
+            'http://127.0.0.1:5173',
+            'http://localhost:4173',
+            'http://127.0.0.1:4173',
+        ]);
+
+        const isLocalhost = (value) => typeof value === 'string' && /^https?:\/\/(localhost|127\.0\.0\.1)(:\\d+)?$/.test(value);
+
+        if (
+            !origin ||
+            origin === 'null' || // e.g., file:// or some dev tools
+            explicitAllowedOrigins.has(origin) ||
+            isLocalhost(origin) ||
+            (typeof origin === 'string' && origin.startsWith('https://pointpulse'))
+        ) {
             callback(null, true);
         } else {
             callback(new Error('Not allowed by CORS'));
@@ -43,6 +57,7 @@ app.use(cors({
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
+    optionsSuccessStatus: 200,
 }));
 
 app.use(express.json());
@@ -85,11 +100,24 @@ app.setupSocketIO = (server) => {
     const io = new Server(server, {
         cors: {
             origin: function (origin, callback) {
-                const allowedOrigins = [
+                const explicitAllowedOrigins = new Set([
                     FRONTEND_URL,
-                    // Add other specific origins if needed
-                ];
-                if (!origin || allowedOrigins.indexOf(origin) !== -1 || origin.startsWith('https://pointpulse')) {
+                    'http://localhost:3000',
+                    'http://127.0.0.1:3000',
+                    'http://localhost:5173',
+                    'http://127.0.0.1:5173',
+                    'http://localhost:4173',
+                    'http://127.0.0.1:4173',
+                ]);
+                const isLocalhost = (value) => typeof value === 'string' && /^https?:\/\/(localhost|127\.0\.0\.1)(:\\d+)?$/.test(value);
+
+                if (
+                    !origin ||
+                    origin === 'null' ||
+                    explicitAllowedOrigins.has(origin) ||
+                    isLocalhost(origin) ||
+                    (typeof origin === 'string' && origin.startsWith('https://pointpulse'))
+                ) {
                     callback(null, true);
                 } else {
                     callback(new Error('Not allowed by CORS'));
