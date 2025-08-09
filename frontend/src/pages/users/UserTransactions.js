@@ -5,7 +5,6 @@ import { useEffect } from 'react';
 import styled from '@emotion/styled';
 import { css } from '@emotion/react';
 import useUserTransactions from '../../hooks/useUserTransactions';
-import { Skeleton, SkeletonText, SkeletonCircle } from '../../components/common/skeleton';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import theme from '../../styles/theme';
@@ -18,7 +17,7 @@ import {
   FaChevronLeft,
   FaInfoCircle
 } from 'react-icons/fa';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
+
 import TransactionFilters from '../../components/transactions/TransactionFilters';
 
 const PageTitle = styled.h1`
@@ -463,101 +462,151 @@ const UserTransactions = () => {
       />
       
       <Card>
+        <TableHeader>
+          <div>Type</div>
+          <div>Transaction</div>
+          <div>Details</div>
+          <div>Amount</div>
+        </TableHeader>
+        
+        {/* Transaction Content with separate loading state */}
         {isLoading ? (
-          <>
-            {/* Keep spinner for tests/a11y but visually hide it */}
-            <div style={{ position: 'absolute', left: '-9999px' }}>
-              <LoadingSpinner text="Loading transactions..." />
+          // Simple skeleton rows without header
+          Array.from({ length: 5 }, (_, index) => (
+            <div key={index} style={{
+              display: 'grid',
+              gridTemplateColumns: '80px 1fr 1fr 150px',
+              gap: theme.spacing.md,
+              padding: theme.spacing.md,
+              borderBottom: '1px solid ' + theme.colors.border.light,
+              alignItems: 'center'
+            }}>
+              {/* Transaction Icon Skeleton */}
+              <div style={{ 
+                width: '40px', 
+                height: '40px', 
+                backgroundColor: index === 0 ? theme.colors.secondary.light : 
+                                index === 1 ? theme.colors.accent.light : 
+                                index === 2 ? theme.colors.primary.light :
+                                index === 3 ? theme.colors.info.light : 
+                                theme.colors.success.light,
+                borderRadius: theme.radius.full,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <div style={{
+                  width: '16px',
+                  height: '16px',
+                  backgroundColor: index === 0 ? theme.colors.secondary.dark : 
+                                  index === 1 ? theme.colors.accent.dark : 
+                                  index === 2 ? theme.colors.primary.dark :
+                                  index === 3 ? theme.colors.info.dark : 
+                                  theme.colors.success.dark,
+                  borderRadius: '2px'
+                }} />
+              </div>
+              
+              {/* Transaction Info Skeleton */}
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: theme.spacing.xs
+              }}>
+                <div style={{
+                  height: '16px',
+                  width: index === 0 ? '120px' : index === 1 ? '130px' : index === 2 ? '110px' : index === 3 ? '125px' : '115px',
+                  backgroundColor: theme.colors.border.light,
+                  borderRadius: theme.radius.sm
+                }} />
+                <div style={{
+                  height: '12px',
+                  width: index === 0 ? '70px' : index === 1 ? '80px' : index === 2 ? '75px' : index === 3 ? '85px' : '65px',
+                  backgroundColor: theme.colors.border.light,
+                  borderRadius: theme.radius.sm,
+                  opacity: 0.7
+                }} />
+              </div>
+              
+              {/* Transaction Details Skeleton */}
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: theme.spacing.xs
+              }}>
+                <div style={{
+                  height: '14px',
+                  width: index === 0 ? '85%' : index === 1 ? '75%' : index === 2 ? '90%' : index === 3 ? '80%' : '70%',
+                  backgroundColor: theme.colors.border.light,
+                  borderRadius: theme.radius.sm
+                }} />
+                <div style={{
+                  height: '12px',
+                  width: index === 0 ? '60%' : index === 1 ? '65%' : index === 2 ? '55%' : index === 3 ? '70%' : '50%',
+                  backgroundColor: theme.colors.border.light,
+                  borderRadius: theme.radius.sm,
+                  opacity: 0.6
+                }} />
+                <div style={{
+                  height: '12px',
+                  width: '45%',
+                  backgroundColor: theme.colors.border.light,
+                  borderRadius: theme.radius.sm,
+                  opacity: 0.5
+                }} />
+              </div>
+              
+              {/* Transaction Amount Skeleton */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'center'
+              }}>
+                <div style={{
+                  height: '16px',
+                  width: '70px',
+                  backgroundColor: index % 2 === 0 ? theme.colors.success.light : theme.colors.error.light,
+                  borderRadius: theme.radius.sm
+                }} />
+              </div>
             </div>
-
-            {/* Keep header to reduce layout shift on desktop */}
-            <TableHeader>
-              <div>Type</div>
-              <div>Transaction</div>
-              <div>Details</div>
-              <div>Amount</div>
-            </TableHeader>
-
-            {Array.from({ length: 6 }, (_, index) => (
-              <TableRow key={index}>
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <SkeletonCircle size="40px" />
-                </div>
-
-                <TransactionInfo>
-                  <SkeletonText width="160px" height="16px" />
-                  <div style={{ marginTop: theme.spacing.xs }}>
-                    <Skeleton width="100px" height="12px" rounded={theme.radius.sm} />
-                  </div>
-                </TransactionInfo>
-
-                <TransactionDetails>
-                  <SkeletonText lines={2} width="80%" />
-                  <div style={{ marginTop: theme.spacing.xs }}>
-                    <Skeleton width="160px" height="12px" rounded={theme.radius.sm} />
-                  </div>
-                </TransactionDetails>
-
-                <TransactionAmount>
-                  <Skeleton width="80px" height="16px" rounded={theme.radius.sm} />
-                </TransactionAmount>
-              </TableRow>
-            ))}
-          </>
+          ))
         ) : transactions.length > 0 ? (
-          <>
-            <TableHeader>
-              <div>Type</div>
-              <div>Transaction</div>
-              <div>Details</div>
-              <div>Amount</div>
-            </TableHeader>
-            
-            {transactions.map((transaction) => (
-              <TableRow key={transaction.id}>
-                <TransactionIcon type={transaction.type}>
-                  {getTransactionIcon(transaction.type)}
-                </TransactionIcon>
-                
-                {/* <TransactionInfo>
-                  <MobileLabel>Transaction:</MobileLabel>
+          transactions.map((transaction) => (
+            <TableRow key={transaction.id}>
+              <TransactionIcon type={transaction.type}>
+                {getTransactionIcon(transaction.type)}
+              </TransactionIcon>
+              
+              <TransactionInfo>
+                <TransactionId>Transaction #{transaction.id}</TransactionId>
+                <TransactionType>{transaction.type}</TransactionType>
+              </TransactionInfo>
+              
+              <TransactionDetails>
+                <MobileLabel>Details:</MobileLabel>
+                <div>
                   <div>
-                    <TransactionId>Transaction #{transaction.id}</TransactionId>
-                    <TransactionType>{transaction.type}</TransactionType>
+                    <TransactionType>{getTransactionLabel(transaction)}</TransactionType>
                   </div>
-                </TransactionInfo> */}
-
-                <TransactionInfo>
-                  <TransactionId>Transaction #{transaction.id}</TransactionId>
-                  <TransactionType>{transaction.type}</TransactionType>
-                </TransactionInfo>
-                
-                <TransactionDetails>
-                  <MobileLabel>Details:</MobileLabel>
-                  <div>
+                  {transaction.remark && (
+                    <RemarkInfo>
+                      <InfoLabel>Remark:</InfoLabel> {transaction.remark}
+                    </RemarkInfo>
+                  )}
+                  {transaction.createdAt && (
                     <div>
-                      <TransactionType>{getTransactionLabel(transaction)}</TransactionType>
+                      <InfoLabel>Date:</InfoLabel> {formatDate(transaction.createdAt)} at {formatTime(transaction.createdAt)}
                     </div>
-                    {transaction.remark && (
-                      <RemarkInfo>
-                        <InfoLabel>Remark:</InfoLabel> {transaction.remark}
-                      </RemarkInfo>
-                    )}
-                    {transaction.createdAt && (
-                      <div>
-                        <InfoLabel>Date:</InfoLabel> {formatDate(transaction.createdAt)} at {formatTime(transaction.createdAt)}
-                      </div>
-                    )}
-                  </div>
-                </TransactionDetails>
-                
-                <TransactionAmount positive={isPositiveTransaction(transaction)}>
-                  <MobileLabel>Amount:</MobileLabel>
-                  {formatAmount(transaction.amount)}
-                </TransactionAmount>
-              </TableRow>
-            ))}
-          </>
+                  )}
+                </div>
+              </TransactionDetails>
+              
+              <TransactionAmount positive={isPositiveTransaction(transaction)}>
+                <MobileLabel>Amount:</MobileLabel>
+                {formatAmount(transaction.amount)}
+              </TransactionAmount>
+            </TableRow>
+          ))
         ) : (
           <EmptyState>
             <FaInfoCircle size={48} />
@@ -566,10 +615,20 @@ const UserTransactions = () => {
         )}
       </Card>
       
-      {transactions.length > 0 && (
+      {/* Static pagination controls - always show when there are transactions or when loading */}
+      {(transactions && transactions.length > 0) || isLoading ? (
         <PageControls>
           <PageInfo>
-            Showing {startIndex} to {endIndex} of {totalCount} transactions
+            {isLoading ? (
+              <div style={{
+                height: '16px',
+                width: '200px',
+                backgroundColor: theme.colors.border.light,
+                borderRadius: theme.radius.sm
+              }} />
+            ) : (
+              `Showing ${startIndex} to ${endIndex} of ${totalCount} transactions`
+            )}
           </PageInfo>
           
           <Pagination>
@@ -577,7 +636,7 @@ const UserTransactions = () => {
               size="small"
               variant="outlined"
               onClick={() => handleFilterChange('page', filters.page - 1)}
-              disabled={filters.page === 1}
+              disabled={filters.page === 1 || isLoading}
               style={{ minWidth: '80px' }}
             >
               <FaChevronLeft /> Previous
@@ -588,21 +647,31 @@ const UserTransactions = () => {
               textAlign: 'center', 
               whiteSpace: 'nowrap' 
             }}>
-              Page {filters.page} of {totalPages}
+              {isLoading ? (
+                <div style={{
+                  height: '16px',
+                  width: '80px',
+                  backgroundColor: theme.colors.border.light,
+                  borderRadius: theme.radius.sm,
+                  margin: '0 auto'
+                }} />
+              ) : (
+                `Page ${filters.page} of ${totalPages || 1}`
+              )}
             </PageInfo>
             
             <Button
               size="small"
               variant="outlined"
               onClick={() => handleFilterChange('page', filters.page + 1)}
-              disabled={filters.page === totalPages}
+              disabled={filters.page >= totalPages || isLoading}
               style={{ minWidth: '80px' }}
             >
               Next <FaChevronRight />
             </Button>
           </Pagination>
         </PageControls>
-      )}
+      ) : null}
     </div>
   );
 };
