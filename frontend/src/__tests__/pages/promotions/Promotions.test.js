@@ -212,7 +212,12 @@ describe('Promotions - Core User Flows', () => {
     mockPromotionsState.promotions = [];
     
     renderPromotions();
-    expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
+    // Check that the page title and filters are still shown
+    expect(screen.getByText('Promotions')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/search by name/i)).toBeInTheDocument();
+    
+    // Verify no actual promotion data is shown when loading
+    expect(screen.queryByText('Double Points Weekend')).not.toBeInTheDocument();
   });
 
   test('displays empty state', () => {

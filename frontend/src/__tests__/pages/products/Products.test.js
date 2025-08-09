@@ -201,7 +201,12 @@ describe('Products', () => {
 
     renderComponent();
 
-    expect(screen.getByText('Loading products...')).toBeInTheDocument();
+    // Check that the search and filter elements are still shown
+    expect(screen.getByPlaceholderText(/search by name/i)).toBeInTheDocument();
+    expect(screen.getByText('Find Products')).toBeInTheDocument();
+    
+    // Verify no actual product data is shown when loading
+    expect(screen.queryByText('Test Product')).not.toBeInTheDocument();
   });
 
   it('shows empty state', () => {

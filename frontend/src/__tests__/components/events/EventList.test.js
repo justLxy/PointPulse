@@ -83,8 +83,9 @@ describe('EventList', () => {
   it('shows loading spinner when isLoading is true', () => {
     render(<EventList {...defaultProps} isLoading={true} />);
     
-    expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
-    expect(screen.getByText('Loading events...')).toBeInTheDocument();
+    // Check for EventListSkeleton elements instead of loading spinner
+    const skeletonElements = document.querySelectorAll('div[style*="background-color: rgb(224, 224, 224)"], div[style*="background-color: rgb(245, 245, 245)"]');
+    expect(skeletonElements.length).toBeGreaterThan(0);
   });
 
   it('shows empty state when no events are provided', () => {

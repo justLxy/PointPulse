@@ -45,8 +45,9 @@ describe('UserList - User Management Interface', () => {
   test('displays user data and handles loading states', async () => {
     const { rerender } = render(<UserList {...defaultProps} isLoading={true} />);
     
-    // Loading state
-    expect(screen.getByText('Loading users...')).toBeInTheDocument();
+    // Loading state - check for skeleton elements instead of loading text
+    const skeletonElements = document.querySelectorAll('div[style*="background-color: rgb(224, 224, 224)"]');
+    expect(skeletonElements.length).toBeGreaterThan(0);
     expect(screen.queryByText('John Doe')).not.toBeInTheDocument();
 
     // Data loaded state
