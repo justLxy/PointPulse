@@ -166,7 +166,19 @@ describe('UserTransactions', () => {
     });
 
     renderComponent();
-    expect(screen.getByTestId('loading')).toHaveTextContent('Loading transactions...');
+    
+    // Check that table header is still visible
+    expect(screen.getByText('Type')).toBeInTheDocument();
+    expect(screen.getByText('Transaction')).toBeInTheDocument();
+    expect(screen.getByText('Details')).toBeInTheDocument();
+    expect(screen.getByText('Amount')).toBeInTheDocument();
+    
+    // Check that skeleton elements are present
+    const skeletonElements = document.querySelectorAll('div[style*="background-color: rgb(224, 224, 224)"]');
+    expect(skeletonElements.length).toBeGreaterThan(0);
+    
+    // Verify no actual transaction data is shown
+    expect(screen.queryByText('Transaction #123')).not.toBeInTheDocument();
   });
 
   it('displays empty state when no transactions', () => {
