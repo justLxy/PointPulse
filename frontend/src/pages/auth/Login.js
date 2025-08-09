@@ -328,7 +328,6 @@ const Login = () => {
   const [utorid, setUtorid] = useState('');
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
-  const [otp, setOtp] = useState('');
   const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
   const [otpSent, setOtpSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -474,7 +473,6 @@ const Login = () => {
     
     // Update the combined OTP value
     const combinedOtp = newDigits.join('');
-    setOtp(combinedOtp);
     
     // Auto-focus next input
     if (value && index < 5) {
@@ -511,7 +509,6 @@ const Login = () => {
     
     setOtpDigits(newDigits);
     const combinedOtp = newDigits.join('');
-    setOtp(combinedOtp);
     
     // Focus the next empty input or the last input
     const nextEmptyIndex = newDigits.findIndex(digit => !digit);
@@ -528,7 +525,6 @@ const Login = () => {
   // Reset OTP state
   const resetOtpState = () => {
     setOtpDigits(['', '', '', '', '', '']);
-    setOtp('');
     setOtpSent(false);
     setResendCooldown(0);
     setResendCount(0);
@@ -557,7 +553,6 @@ const Login = () => {
       setError(err.message || 'Invalid verification code. Please try again.');
       // Clear the OTP inputs on error
       setOtpDigits(['', '', '', '', '', '']);
-      setOtp('');
       // Focus first input
       const firstInput = document.getElementById('otp-0');
       if (firstInput) firstInput.focus();

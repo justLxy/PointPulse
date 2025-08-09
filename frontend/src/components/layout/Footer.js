@@ -1,5 +1,4 @@
 import styled from '@emotion/styled';
-import { FaHeart } from 'react-icons/fa';
 import theme from '../../styles/theme';
 
 const FooterContainer = styled.footer`

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useEvents } from '../../hooks/useEvents';
 import { useAuth } from '../../contexts/AuthContext';
@@ -8,7 +8,7 @@ import { CreateEventModal, EditEventModal, DeleteEventModal, RsvpEventModal } fr
 import EventService from '../../services/event.service';
 import { API_URL } from '../../services/api';
 import toast from 'react-hot-toast';
-import { EventListSkeleton } from '../../components/common/skeleton';
+
 
 
 const Events = () => {
@@ -614,10 +614,7 @@ const Events = () => {
     });
   };
   
-  // Check if user is RSVP'd to event
-  const isRsvpd = (event) => {
-    return event && event.isAttending || false;
-  };
+
   
   // Function to navigate to event detail
   const navigateToEventDetail = (eventId) => {

@@ -6,7 +6,7 @@
  * - https://tympanus.net/codrops/2019/01/31/custom-cursor-effects/
  * - https://codepen.io/designcouch/pen/exkBf
  */
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import styled from '@emotion/styled';
 import { keyframes } from '@emotion/react';
 import theme from '../../styles/theme';
