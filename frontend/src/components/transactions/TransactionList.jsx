@@ -5,6 +5,8 @@ import Card from '../common/Card';
 import theme from '../../styles/theme';
 import TransactionItem from './TransactionItem';
 import LoadingSpinner from '../common/LoadingSpinner';
+
+
 import { FaInfoCircle, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 
 const TableContainer = styled(Card)`
@@ -112,21 +114,8 @@ const TransactionList = ({
   formatDate,
   formatTime
 }) => {
-  if (isLoading) {
-    return <LoadingSpinner text="Loading transactions..." />;
-  }
 
-  if (!transactions || transactions.length === 0) {
-    return (
-      <EmptyState>
-        <FaInfoCircle />
-        <h3>No transactions found</h3>
-        <p>
-          No transactions match your search criteria. Try different search terms or filters.
-        </p>
-      </EmptyState>
-    );
-  }
+
   
   return (
     <>
@@ -140,21 +129,95 @@ const TransactionList = ({
             <div style={{ textAlign: 'center' }}>Actions</div>
           </TableHeader>
           
-          {transactions.map(transaction => (
-            <TransactionItem 
-              key={transaction.id}
-              transaction={transaction}
-              getTransactionIcon={getTransactionIcon}
-              getTransactionDetailsLabel={getTransactionDetailsLabel}
-              isSuperuser={isSuperuser}
-              isManager={isManager}
-              handleViewTransaction={handleViewTransaction}
-              handleMarkAsSuspiciousClick={handleMarkAsSuspiciousClick}
-              handleApproveTransactionClick={handleApproveTransactionClick}
-              formatDate={formatDate}
-              formatTime={formatTime}
-            />
-          ))}
+          {/* Transaction Content with separate loading state */}
+          {isLoading ? (
+            // Simple skeleton rows without header
+            Array.from({ length: 5 }, (_, index) => (
+              <div key={index} style={{
+                display: 'grid',
+                gridTemplateColumns: '80px 1fr 1fr 150px 150px',
+                gap: theme.spacing.md,
+                padding: theme.spacing.md,
+                borderBottom: '1px solid ' + theme.colors.border.light,
+                alignItems: 'center'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                  <div style={{ 
+                    width: '32px', 
+                    height: '32px', 
+                    backgroundColor: theme.colors.border.light, 
+                    borderRadius: theme.radius.full 
+                  }} />
+                </div>
+                <div>
+                  <div style={{ 
+                    height: '16px', 
+                    width: '75%', 
+                    backgroundColor: theme.colors.border.light, 
+                    borderRadius: theme.radius.sm,
+                    marginBottom: theme.spacing.xs 
+                  }} />
+                  <div style={{ 
+                    height: '12px', 
+                    width: '60%', 
+                    backgroundColor: theme.colors.border.light, 
+                    borderRadius: theme.radius.sm 
+                  }} />
+                </div>
+                <div style={{ 
+                  height: '16px', 
+                  width: '80%', 
+                  backgroundColor: theme.colors.border.light, 
+                  borderRadius: theme.radius.sm 
+                }} />
+                <div style={{ 
+                  height: '16px', 
+                  width: '80px', 
+                  backgroundColor: theme.colors.border.light, 
+                  borderRadius: theme.radius.sm,
+                  margin: '0 auto'
+                }} />
+                <div style={{ display: 'flex', gap: theme.spacing.xs, justifyContent: 'center' }}>
+                  <div style={{ 
+                    width: '24px', 
+                    height: '24px', 
+                    backgroundColor: theme.colors.border.light, 
+                    borderRadius: theme.radius.sm 
+                  }} />
+                  <div style={{ 
+                    width: '24px', 
+                    height: '24px', 
+                    backgroundColor: theme.colors.border.light, 
+                    borderRadius: theme.radius.sm 
+                  }} />
+                </div>
+              </div>
+            ))
+          ) : (!transactions || transactions.length === 0) ? (
+            <EmptyState>
+              <FaInfoCircle />
+              <h3>No transactions found</h3>
+              <p>
+                No transactions match your search criteria. Try different search terms or filters.
+              </p>
+            </EmptyState>
+          ) : (
+            transactions.map(transaction => (
+              <TransactionItem 
+                key={transaction.id}
+                transaction={transaction}
+                getTransactionIcon={getTransactionIcon}
+                getTransactionDetailsLabel={getTransactionDetailsLabel}
+                isSuperuser={isSuperuser}
+                isManager={isManager}
+                handleViewTransaction={handleViewTransaction}
+                handleMarkAsSuspiciousClick={handleMarkAsSuspiciousClick}
+                handleApproveTransactionClick={handleApproveTransactionClick}
+                formatDate={formatDate}
+                formatTime={formatTime}
+              />
+            ))
+          )}
         </Card.Body>
       </TableContainer>
       

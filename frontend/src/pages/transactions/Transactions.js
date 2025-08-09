@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import TransactionFilters from '../../components/transactions/TransactionFilters';
 import TransactionList from '../../components/transactions/TransactionList';
 import { ViewTransactionModal, MarkSuspiciousModal, ApproveRedemptionModal } from '../../components/transactions/TransactionModals';
+
 import { 
   FaPlus, 
   FaMinus, 
@@ -232,7 +233,7 @@ const Transactions = () => {
         isSuperuser={isSuperuser}
         isManager={isManager}
         isRelatedIdEditable={isRelatedIdEditable}
-          />
+      />
       
       <TransactionList 
         isLoading={isLoading}

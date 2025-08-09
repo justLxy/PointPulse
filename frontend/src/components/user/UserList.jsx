@@ -4,6 +4,8 @@ import Card from '../common/Card';
 import Button from '../common/Button';
 import Badge from '../common/Badge';
 import LoadingSpinner from '../common/LoadingSpinner';
+
+
 import { FaEye, FaUserEdit, FaExclamationTriangle, FaInfoCircle } from 'react-icons/fa';
 import theme from '../../styles/theme';
 
@@ -260,96 +262,161 @@ const UserList = ({
   
   return (
     <>
-      {isLoading ? (
-        <LoadingSpinner text="Loading users..." />
-      ) : (
-        <Card>
-          <TableHeader>
-            <div>User</div>
-            <div>Email</div>
-            <div>Role</div>
-            <div>Status</div>
-            <div>Actions</div>
-          </TableHeader>
-          
-          {users && users.length > 0 ? (
-            users.map((user) => (
-              <TableRow key={user.id}>
-                <UserHeader>
-                  <UserDetails>
-                    <UserName>{user.name}</UserName>
-                    <UserUtorid>{user.utorid}</UserUtorid>
-                  </UserDetails>
-                  <UserStatusIndicator>
-                    {/* Remove renderUserBadges here - we'll use it in the StatusColumn */}
-                  </UserStatusIndicator>
-                </UserHeader>
+      <Card>
+        <TableHeader>
+          <div>User</div>
+          <div>Email</div>
+          <div>Role</div>
+          <div>Status</div>
+          <div>Actions</div>
+        </TableHeader>
+        
+        {/* User Content with separate loading state */}
+        {isLoading ? (
+          // Simple skeleton rows without header
+          Array.from({ length: 5 }, (_, index) => (
+            <div key={index} style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr 1fr 180px 150px',
+              padding: theme.spacing.md,
+              borderBottom: '1px solid ' + theme.colors.border.light,
+              alignItems: 'center',
+              gap: theme.spacing.md
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.md }}>
+                <div style={{ 
+                  width: '40px', 
+                  height: '40px', 
+                  backgroundColor: theme.colors.border.light, 
+                  borderRadius: theme.radius.full 
+                }} />
+                <div>
+                  <div style={{ 
+                    height: '16px', 
+                    width: '120px', 
+                    backgroundColor: theme.colors.border.light, 
+                    borderRadius: theme.radius.sm,
+                    marginBottom: theme.spacing.xs 
+                  }} />
+                  <div style={{ 
+                    height: '12px', 
+                    width: '80px', 
+                    backgroundColor: theme.colors.border.light, 
+                    borderRadius: theme.radius.sm 
+                  }} />
+                </div>
+              </div>
+              <div style={{ 
+                height: '16px', 
+                width: '80%', 
+                backgroundColor: theme.colors.border.light, 
+                borderRadius: theme.radius.sm 
+              }} />
+              <div style={{ 
+                height: '20px', 
+                width: '60px', 
+                backgroundColor: theme.colors.border.light, 
+                borderRadius: theme.radius.md 
+              }} />
+              <div style={{ 
+                height: '16px', 
+                width: '60%', 
+                backgroundColor: theme.colors.border.light, 
+                borderRadius: theme.radius.sm 
+              }} />
+              <div style={{ display: 'flex', gap: theme.spacing.xs }}>
+                <div style={{ 
+                  width: '24px', 
+                  height: '24px', 
+                  backgroundColor: theme.colors.border.light, 
+                  borderRadius: theme.radius.sm 
+                }} />
+                <div style={{ 
+                  width: '24px', 
+                  height: '24px', 
+                  backgroundColor: theme.colors.border.light, 
+                  borderRadius: theme.radius.sm 
+                }} />
+              </div>
+            </div>
+          ))
+        ) : users && users.length > 0 ? (
+          users.map((user) => (
+            <TableRow key={user.id}>
+              <UserHeader>
+                <UserDetails>
+                  <UserName>{user.name}</UserName>
+                  <UserUtorid>{user.utorid}</UserUtorid>
+                </UserDetails>
+                <UserStatusIndicator>
+                  {/* Remove renderUserBadges here - we'll use it in the StatusColumn */}
+                </UserStatusIndicator>
+              </UserHeader>
+              
+              <UserEmail>
+                <MobileLabel>Email:</MobileLabel>
+                {user.email}
+              </UserEmail>
+              
+              <UserRole>
+                <MobileLabel>Role:</MobileLabel>
+                <Badge
+                  style={{
+                    backgroundColor: 
+                      user.role === 'superuser' ? '#3498db' : 
+                      user.role === 'manager' ? '#27ae60' : 
+                      user.role === 'cashier' ? '#f39c12' : 
+                      '#95a5a6',
+                    color: 'white'
+                  }}
+                >
+                  {user.role === 'regular' ? 'Regular' : 
+                   user.role === 'manager' ? 'Manager' : 
+                   user.role === 'cashier' ? 'Cashier' : 
+                   user.role === 'superuser' ? 'Superuser' : 'Unknown'}
+                </Badge>
+              </UserRole>
+              
+              <StatusColumn>
+                <MobileLabel>Status:</MobileLabel>
+                {renderUserBadges(user)}
+              </StatusColumn>
+              
+              <ActionButtons>
+                <Button
+                  size="small" 
+                  variant="outlined"
+                  onClick={() => onViewUser(user)}
+                  title="View User"
+                >
+                  <FaEye />
+                </Button>
                 
-                <UserEmail>
-                  <MobileLabel>Email:</MobileLabel>
-                  {user.email}
-                </UserEmail>
-                
-                <UserRole>
-                  <MobileLabel>Role:</MobileLabel>
-                  <Badge
-                    style={{
-                      backgroundColor: 
-                        user.role === 'superuser' ? '#3498db' : 
-                        user.role === 'manager' ? '#27ae60' : 
-                        user.role === 'cashier' ? '#f39c12' : 
-                        '#95a5a6',
-                      color: 'white'
-                    }}
-                  >
-                    {user.role === 'regular' ? 'Regular' : 
-                     user.role === 'manager' ? 'Manager' : 
-                     user.role === 'cashier' ? 'Cashier' : 
-                     user.role === 'superuser' ? 'Superuser' : 'Unknown'}
-                  </Badge>
-                </UserRole>
-                
-                <StatusColumn>
-                  <MobileLabel>Status:</MobileLabel>
-                  {renderUserBadges(user)}
-                </StatusColumn>
-                
-                <ActionButtons>
+                {/* Add suspicious toggle button for cashiers (Manager and above can use this) */}
+                {canEditUser && user.role === 'cashier' && (
                   <Button
                     size="small" 
                     variant="outlined"
-                    onClick={() => onViewUser(user)}
-                    title="View User"
+                    onClick={() => onToggleSuspicious(user)}
+                    style={{
+                      borderColor: user.suspicious ? '#27ae60' : '#e74c3c',
+                      color: user.suspicious ? '#27ae60' : '#e74c3c'
+                    }}
+                    title={user.suspicious ? "Clear suspicious flag" : "Mark as suspicious"}
                   >
-                    <FaEye />
+                    <FaExclamationTriangle />
                   </Button>
-                  
-                  {/* Add suspicious toggle button for cashiers (Manager and above can use this) */}
-                  {canEditUser && user.role === 'cashier' && (
-                    <Button
-                      size="small" 
-                      variant="outlined"
-                      onClick={() => onToggleSuspicious(user)}
-                      style={{
-                        borderColor: user.suspicious ? '#27ae60' : '#e74c3c',
-                        color: user.suspicious ? '#27ae60' : '#e74c3c'
-                      }}
-                      title={user.suspicious ? "Clear suspicious flag" : "Mark as suspicious"}
-                    >
-                      <FaExclamationTriangle />
-                    </Button>
-                  )}
-                </ActionButtons>
-              </TableRow>
-            ))
-          ) : (
-            <EmptyState>
-              <FaInfoCircle size={48} />
-              <p>No users found matching your filters.</p>
-            </EmptyState>
-          )}
-        </Card>
-      )}
+                )}
+              </ActionButtons>
+            </TableRow>
+          ))
+        ) : (
+          <EmptyState>
+            <FaInfoCircle size={48} />
+            <p>No users found matching your filters.</p>
+          </EmptyState>
+        )}
+      </Card>
       
       <PageControls>
         <PageInfo>

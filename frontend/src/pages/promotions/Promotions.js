@@ -7,6 +7,7 @@ import PromotionService from '../../services/promotion.service';
 import Button from '../../components/common/Button';
 import theme from '../../styles/theme';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { PromotionListSkeleton, Skeleton } from '../../components/common/skeleton';
 import { FaInfoCircle } from 'react-icons/fa';
 import PromotionFilters from '../../components/promotions/PromotionFilters';
 import PromotionList from '../../components/promotions/PromotionList';
@@ -396,54 +397,17 @@ const Promotions = () => {
         onCreateClick={isManager ? () => setCreateModalOpen(true) : undefined}
       />
       
+      {/* Promotions Content with separate loading state */}
       {isLoading ? (
-        <LoadingSpinner text="Loading promotions..." />
+        <PromotionListSkeleton showPagination={false} showCreateButton={isManager} />
       ) : promotions && promotions.length > 0 ? (
-        <>
-          <PromotionList
-            promotions={promotions}
-            isManager={isManager}
-            onEdit={handleEditPromotion}
-            onDelete={handleDeletePromotionClick}
-            formatDate={formatDate}
-          />
-          
-          <PageControls>
-            <ShowingInfo>
-              Showing {startIndex} to {endIndex} of {totalCount} promotions
-            </ShowingInfo>
-            
-            <Pagination>
-              <Button
-                size="small"
-                variant="outlined"
-                onClick={() => handleFilterChange('page', filters.page - 1)}
-                disabled={filters.page === 1}
-                style={{ minWidth: '80px' }}
-              >
-                Previous
-              </Button>
-              
-              <PageInfo style={{ 
-                minWidth: '100px', 
-                textAlign: 'center', 
-                whiteSpace: 'nowrap' 
-              }}>
-                Page {filters.page} of {totalPages || 1}
-              </PageInfo>
-              
-              <Button
-                size="small"
-                variant="outlined"
-                onClick={() => handleFilterChange('page', Math.min(totalPages, filters.page + 1))}
-                disabled={filters.page >= totalPages}
-                style={{ minWidth: '80px' }}
-              >
-                Next
-              </Button>
-            </Pagination>
-          </PageControls>
-        </>
+        <PromotionList
+          promotions={promotions}
+          isManager={isManager}
+          onEdit={handleEditPromotion}
+          onDelete={handleDeletePromotionClick}
+          formatDate={formatDate}
+        />
       ) : (
         <EmptyState>
           <FaInfoCircle size={48} />
@@ -455,6 +419,53 @@ const Promotions = () => {
           )}
         </EmptyState>
       )}
+      
+      {/* Static pagination controls - always show when there are promotions or when loading */}
+      {(promotions && promotions.length > 0) || isLoading ? (
+        <PageControls>
+          <ShowingInfo>
+            {isLoading ? (
+              <Skeleton width="250px" height="16px" />
+            ) : (
+              `Showing ${startIndex} to ${endIndex} of ${totalCount} promotions`
+            )}
+          </ShowingInfo>
+          
+          <Pagination>
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={() => handleFilterChange('page', filters.page - 1)}
+              disabled={filters.page === 1 || isLoading}
+              style={{ minWidth: '80px' }}
+            >
+              Previous
+            </Button>
+            
+            <PageInfo style={{ 
+              minWidth: '100px', 
+              textAlign: 'center', 
+              whiteSpace: 'nowrap' 
+            }}>
+              {isLoading ? (
+                <Skeleton width="120px" height="16px" />
+              ) : (
+                `Page ${filters.page} of ${totalPages || 1}`
+              )}
+            </PageInfo>
+            
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={() => handleFilterChange('page', Math.min(totalPages, filters.page + 1))}
+              disabled={filters.page >= totalPages || isLoading}
+              style={{ minWidth: '80px' }}
+            >
+              Next
+            </Button>
+          </Pagination>
+        </PageControls>
+      ) : null}
       
       {/* Modals */}
       <CreatePromotionModal

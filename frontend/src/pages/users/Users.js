@@ -12,6 +12,7 @@ import UserFilters from '../../components/user/UserFilters';
 import UserList from '../../components/user/UserList';
 import UserModals from '../../components/user/UserModals';
 
+
 const PageTitle = styled.h1`
   font-size: ${theme.typography.fontSize['3xl']};
   font-weight: ${theme.typography.fontWeights.bold};
@@ -440,7 +441,6 @@ const Users = () => {
   
   return (
     <div>
-      {/* User Filters Component */}
       <UserFilters
         isSuperuser={isSuperuser}
         isManager={isManager}

@@ -51,6 +51,13 @@ import {
   FaGem
 } from 'react-icons/fa';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import { 
+  SkeletonCard, 
+  SkeletonText, 
+  SkeletonCircle,
+  Skeleton
+} from '../components/common/skeleton';
+
 
 const DashboardContainer = styled.div`
   display: grid;
@@ -993,6 +1000,31 @@ const SimulatorButton = styled.button`
   }}
 `;
 
+// Section-specific skeleton components
+const PointsOverviewSkeleton = styled.div`
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  border-radius: ${theme.radius.xl};
+  padding: ${theme.spacing.lg};
+  margin-bottom: ${theme.spacing.xl};
+  color: white;
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+`;
+
+const TransactionsSkeleton = styled.div`
+  margin-bottom: ${theme.spacing.xl};
+`;
+
+const PromotionsSkeleton = styled.div`
+  margin-bottom: ${theme.spacing.xl};
+`;
+
+const EventsSkeleton = styled.div`
+  /* Styled like a card */
+`;
+
 const PointsBreakdown = styled.div`
   margin-top: ${theme.spacing.sm};
   font-size: ${theme.typography.fontSize.sm};
@@ -1039,7 +1071,7 @@ const Dashboard = () => {
   const [showTimeSimulator, setShowTimeSimulator] = useState(false);
   const [simulatedDate, setSimulatedDate] = useState(null);
   
-  // Check if we're in development mode (you can change this condition)
+  // Check if we're in development mode
   const isDevelopmentMode = process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost';
   
   // Track previous points to avoid unnecessary API calls
@@ -1163,49 +1195,188 @@ const Dashboard = () => {
     }
   };
   
-  if (isProfileLoading || isTransactionsLoading || isPromotionsLoading || isEventsLoading) {
-    return <LoadingSpinner text="Loading dashboard information..." />;
-  }
+
+  const showProfileSkeleton = isProfileLoading;
+  const showTransactionsSkeleton = isTransactionsLoading;
+  const showPromotionsSkeleton = isPromotionsLoading;
+  const showEventsSkeleton = isEventsLoading;
   
   return (
     <div>
       <PageTitle>Welcome, {profile?.name || 'User'}!</PageTitle>
       
-      <PointsOverview>
-        <PointsHeader>
-          <PointsMainContent>
-            <PointsTitle>Your Points Balance</PointsTitle>
-            <PointsAmount>{profile?.points || 0}</PointsAmount>
-          </PointsMainContent>
-          {tierStatus && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
-            <TierBadgeCompact onClick={() => setShowBenefits(true)}>
-              <TierIconCompact>{getTierIcon(tierStatus.activeTier)}</TierIconCompact>
-              <h3>{TIER_CONFIG[tierStatus.activeTier].name} Member</h3>
-            </TierBadgeCompact>
-              <ExpiryInfo style={{ fontSize: '11px', textAlign: 'right', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span>Member benefits active until {formatTierExpiryDate(tierStatus.expiryDate)}</span>
-                <FaInfoCircle 
-                  style={{ cursor: 'pointer', opacity: 0.8 }} 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowTierExplanation(true);
-                  }}
-                />
-                {tierStatus.tierSource === 'previous' && (
-                  <span style={{ 
-                    fontSize: '10px', 
-                    opacity: 0.7,
-                    fontStyle: 'italic',
-                    marginLeft: '4px'
-                  }}>
-                    (carried over)
-                  </span>
-                )}
-              </ExpiryInfo>
+      {/* Points Overview with loading state */}
+      {showProfileSkeleton ? (
+        <PointsOverviewSkeleton>
+          {/* Header: Points Balance + Tier Badge */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: theme.spacing.lg }}>
+            <div>
+              <div style={{ marginBottom: theme.spacing.sm }}>
+                <Skeleton width="160px" height="20px" style={{ backgroundColor: 'rgba(255,255,255,0.3)' }} />
+              </div>
+              <Skeleton width="100px" height="48px" style={{ backgroundColor: 'rgba(255,255,255,0.3)' }} />
             </div>
-          )}
-        </PointsHeader>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '8px', 
+                padding: `${theme.spacing.sm} ${theme.spacing.md}`,
+                background: 'rgba(255, 255, 255, 0.2)', 
+                borderRadius: theme.radius.lg,
+                border: '1px solid rgba(255, 255, 255, 0.3)'
+              }}>
+                <Skeleton width="20px" height="20px" style={{ backgroundColor: 'rgba(255,255,255,0.4)' }} />
+                <Skeleton width="100px" height="16px" style={{ backgroundColor: 'rgba(255,255,255,0.4)' }} />
+              </div>
+              <Skeleton width="200px" height="14px" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }} />
+            </div>
+          </div>
+          
+          {/* Progress Section */}
+          <div style={{ margin: `${theme.spacing.md} 0` }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing.sm }}>
+              <Skeleton width="140px" height="16px" style={{ backgroundColor: 'rgba(255,255,255,0.3)' }} />
+              <Skeleton width="100px" height="16px" style={{ backgroundColor: 'rgba(255,255,255,0.3)' }} />
+            </div>
+            <div style={{ 
+              height: '8px', 
+              background: 'rgba(255, 255, 255, 0.2)', 
+              borderRadius: '4px', 
+              margin: `${theme.spacing.sm} 0`,
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <div style={{
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                height: '100%',
+                width: '45%',
+                background: 'linear-gradient(90deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.6))',
+                borderRadius: '4px',
+                transition: 'width 0.8s ease-in-out'
+              }} />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: theme.spacing.xs }}>
+              <Skeleton width="140px" height="12px" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }} />
+              <Skeleton width="120px" height="12px" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }} />
+            </div>
+          </div>
+          
+          {/* Tier Cards */}
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            gap: theme.spacing.sm, 
+            marginTop: theme.spacing.md,
+            overflow: 'hidden'
+          }}>
+            {['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond'].map((tier, index) => (
+              <div key={tier} style={{ 
+                flex: 1, 
+                minWidth: '80px',
+                minHeight: '90px', 
+                background: index === 0 ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.05)', 
+                border: index === 0 ? '2px solid rgba(255, 255, 255, 0.9)' : '2px solid rgba(255, 255, 255, 0.3)',
+                borderRadius: theme.radius.md, 
+                padding: theme.spacing.sm,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease'
+              }}>
+                <Skeleton width="20px" height="20px" style={{ 
+                  backgroundColor: 'rgba(255,255,255,0.3)', 
+                  marginBottom: theme.spacing.xs,
+                  borderRadius: '50%'
+                }} />
+                <Skeleton width="45px" height="12px" style={{ 
+                  backgroundColor: 'rgba(255,255,255,0.3)',
+                  marginBottom: '2px'
+                }} />
+                <Skeleton width="35px" height="10px" style={{ 
+                  backgroundColor: 'rgba(255,255,255,0.2)'
+                }} />
+              </div>
+            ))}
+          </div>
+          
+          {/* Action Buttons */}
+          <div style={{ 
+            display: 'flex', 
+            gap: theme.spacing.md, 
+            marginTop: theme.spacing.sm,
+            position: 'relative',
+            zIndex: 1
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: theme.spacing.xs,
+              padding: `${theme.spacing.xs} ${theme.spacing.sm}`,
+              background: 'rgba(255,255,255,0.3)',
+              borderRadius: theme.radius.md,
+              minWidth: '120px',
+              height: '32px'
+            }}>
+              <Skeleton width="16px" height="16px" style={{ backgroundColor: 'rgba(255,255,255,0.4)' }} />
+              <Skeleton width="80px" height="14px" style={{ backgroundColor: 'rgba(255,255,255,0.4)' }} />
+            </div>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: theme.spacing.xs,
+              padding: `${theme.spacing.xs} ${theme.spacing.sm}`,
+              background: 'rgba(255,255,255,0.3)',
+              borderRadius: theme.radius.md,
+              minWidth: '100px',
+              height: '32px'
+            }}>
+              <Skeleton width="16px" height="16px" style={{ backgroundColor: 'rgba(255,255,255,0.4)' }} />
+              <Skeleton width="60px" height="14px" style={{ backgroundColor: 'rgba(255,255,255,0.4)' }} />
+            </div>
+          </div>
+        </PointsOverviewSkeleton>
+      ) : (
+        <PointsOverview>
+          <PointsHeader>
+            <PointsMainContent>
+              <PointsTitle>Your Points Balance</PointsTitle>
+              <PointsAmount>{profile?.points || 0}</PointsAmount>
+            </PointsMainContent>
+            {tierStatus && (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+              <TierBadgeCompact onClick={() => setShowBenefits(true)}>
+                <TierIconCompact>{getTierIcon(tierStatus.activeTier)}</TierIconCompact>
+                <h3>{TIER_CONFIG[tierStatus.activeTier].name} Member</h3>
+              </TierBadgeCompact>
+                <ExpiryInfo style={{ fontSize: '11px', textAlign: 'right', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span>Member benefits active until {formatTierExpiryDate(tierStatus.expiryDate)}</span>
+                  <FaInfoCircle 
+                    style={{ cursor: 'pointer', opacity: 0.8 }} 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowTierExplanation(true);
+                    }}
+                  />
+                  {tierStatus.tierSource === 'previous' && (
+                    <span style={{ 
+                      fontSize: '10px', 
+                      opacity: 0.7,
+                      fontStyle: 'italic',
+                      marginLeft: '4px'
+                    }}>
+                      (carried over)
+                    </span>
+                  )}
+                </ExpiryInfo>
+              </div>
+            )}
+          </PointsHeader>
         
         {/* Integrated Tier Status */}
         {tierStatus && (
@@ -1329,8 +1500,9 @@ const Dashboard = () => {
           >
             <FaExchangeAlt /> Transfer
           </Button>
-        </PointsActions>
-      </PointsOverview>
+          </PointsActions>
+        </PointsOverview>
+      )}
       
       <ShortcutsSection>
         {activeRole === 'regular' && (
@@ -1408,39 +1580,126 @@ const Dashboard = () => {
             </ViewAllLink>
           </SectionTitle>
           
-          <Card>
-            <Card.Body>
-              {transactions.length > 0 ? (
-                transactions.map((transaction) => (
-                  <TransactionItem key={transaction.id}>
-                    <TransactionIcon type={transaction.type}>
-                      {getTransactionIcon(transaction.type)}
-                    </TransactionIcon>
-                    <TransactionInfo>
-                      <div className="transaction-type">{getTransactionLabel(transaction)}</div>
-                      {transaction.remark && (
-                        <div className="transaction-date">
-                          {transaction.remark}
-                        </div>
+          {/* Transactions loading state */}
+          {showTransactionsSkeleton ? (
+            <Card>
+              <Card.Body>
+                {Array.from({ length: 3 }, (_, index) => (
+                  <div key={index} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: `${theme.spacing.md} 0`,
+                    borderBottom: index < 2 ? `1px solid ${theme.colors.border.light}` : 'none'
+                  }}>
+                    {/* Transaction Icon */}
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: theme.radius.full,
+                      marginRight: theme.spacing.md,
+                      backgroundColor: index === 0 ? theme.colors.secondary.light : 
+                                      index === 1 ? theme.colors.accent.light : 
+                                      theme.colors.primary.light,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <div style={{
+                        width: '16px',
+                        height: '16px',
+                        backgroundColor: index === 0 ? theme.colors.secondary.dark : 
+                                        index === 1 ? theme.colors.accent.dark : 
+                                        theme.colors.primary.dark,
+                        borderRadius: '2px'
+                      }} />
+                    </div>
+                    
+                    {/* Transaction Info */}
+                    <div style={{
+                      flex: 1,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: theme.spacing.xs
+                    }}>
+                      <div style={{
+                        height: '16px',
+                        width: index === 0 ? '75%' : index === 1 ? '65%' : '80%',
+                        backgroundColor: theme.colors.border.light,
+                        borderRadius: theme.radius.sm
+                      }} />
+                      {index < 2 && (
+                        <div style={{
+                          height: '12px',
+                          width: index === 0 ? '45%' : '55%',
+                          backgroundColor: theme.colors.border.light,
+                          borderRadius: theme.radius.sm,
+                          opacity: 0.7
+                        }} />
                       )}
-                      {transaction.createdAt && (
-                        <div className="transaction-date">
-                          {formatDate(transaction.createdAt)}
-                        </div>
-                      )}
-                    </TransactionInfo>
-                    <TransactionAmount positive={isPositiveTransaction(transaction)}>
-                      {formatAmount(transaction.amount)}
-                    </TransactionAmount>
-                  </TransactionItem>
-                ))
-              ) : (
-                <EmptyState>
-                  <p>No transactions found</p>
-                </EmptyState>
-              )}
-            </Card.Body>
-          </Card>
+                      <div style={{
+                        height: '12px',
+                        width: '35%',
+                        backgroundColor: theme.colors.border.light,
+                        borderRadius: theme.radius.sm,
+                        opacity: 0.5
+                      }} />
+                    </div>
+                    
+                    {/* Transaction Amount */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'flex-end',
+                      minWidth: '80px'
+                    }}>
+                      <div style={{
+                        height: '16px',
+                        width: '70px',
+                        backgroundColor: index === 0 ? theme.colors.success.light : 
+                                        index === 1 ? theme.colors.error.light : 
+                                        theme.colors.success.light,
+                        borderRadius: theme.radius.sm
+                      }} />
+                    </div>
+                  </div>
+                ))}
+              </Card.Body>
+            </Card>
+          ) : (
+            <Card>
+              <Card.Body>
+                {transactions.length > 0 ? (
+                  transactions.map((transaction) => (
+                    <TransactionItem key={transaction.id}>
+                      <TransactionIcon type={transaction.type}>
+                        {getTransactionIcon(transaction.type)}
+                      </TransactionIcon>
+                      <TransactionInfo>
+                        <div className="transaction-type">{getTransactionLabel(transaction)}</div>
+                        {transaction.remark && (
+                          <div className="transaction-date">
+                            {transaction.remark}
+                          </div>
+                        )}
+                        {transaction.createdAt && (
+                          <div className="transaction-date">
+                            {formatDate(transaction.createdAt)}
+                          </div>
+                        )}
+                      </TransactionInfo>
+                      <TransactionAmount positive={isPositiveTransaction(transaction)}>
+                        {formatAmount(transaction.amount)}
+                      </TransactionAmount>
+                    </TransactionItem>
+                  ))
+                ) : (
+                  <EmptyState>
+                    <p>No transactions found</p>
+                  </EmptyState>
+                )}
+              </Card.Body>
+            </Card>
+          )}
           
           <SectionTitle style={{ marginTop: theme.spacing.xl }}>
             Active Promotions
@@ -1449,85 +1708,192 @@ const Dashboard = () => {
             </ViewAllLink>
           </SectionTitle>
           
-          {promotions && promotions.length > 0 ? (
+          {/* Promotions loading state */}
+          {showPromotionsSkeleton ? (
             <>
-              {/* Group promotions by type */}
-              {['automatic', 'one-time'].map(type => {
-                const typePromotions = promotions.filter(p => 
-                  p.type === type
-                );
-                
-                if (typePromotions.length === 0) return null;
-                
-                return (
-                  <PromotionSection key={type}>
-                    <PromotionTypeHeader
-                      type={type}
-                      onClick={() => {
-                        // Navigate to Promotions page with filter for this type
-                        window.location.href = `/promotions?type=${encodeURIComponent(type)}`;
-                      }}
-                      role="button"
-                      aria-label={`View ${type} promotions`}
-                    >
-                      {type === 'automatic' ? 'Automatic' : 'One-time'}
-                      <FaChevronRight size={12} />
-                    </PromotionTypeHeader>
+              {/* Promotion Type Header Skeleton */}
+              <div style={{
+                backgroundColor: theme.colors.accent.main,
+                color: theme.colors.accent.contrastText,
+                padding: `${theme.spacing.xs} ${theme.spacing.md}`,
+                borderRadius: theme.radius.lg,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: theme.spacing.sm
+              }}>
+                <div style={{
+                  height: '16px',
+                  width: '80px',
+                  backgroundColor: 'rgba(255,255,255,0.3)',
+                  borderRadius: theme.radius.sm
+                }} />
+                <div style={{
+                  width: '12px',
+                  height: '12px',
+                  backgroundColor: 'rgba(255,255,255,0.3)',
+                  borderRadius: '2px'
+                }} />
+              </div>
+
+              {/* Promotion Cards Skeleton */}
+              {Array.from({ length: 2 }, (_, index) => (
+                <div key={index} style={{
+                  backgroundColor: theme.colors.background.paper,
+                  borderRadius: theme.radius.lg,
+                  overflow: 'hidden',
+                  marginBottom: theme.spacing.md,
+                  boxShadow: theme.shadows.sm,
+                  border: `1px solid ${theme.colors.border.light}`,
+                  transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out'
+                }}>
+                  <div style={{ padding: `${theme.spacing.md} ${theme.spacing.lg}` }}>
+                    {/* Title */}
+                    <div style={{
+                      height: '24px',
+                      width: index === 0 ? '85%' : '70%',
+                      backgroundColor: theme.colors.border.light,
+                      borderRadius: theme.radius.sm,
+                      marginBottom: theme.spacing.xs
+                    }} />
                     
-                    {typePromotions.map(promotion => (
-                      <PromotionCard key={promotion.id}>
-                        <PromotionContent>
-                          <h3>{promotion.name}</h3>
-                          <p>{promotion.description || 'Earn points with this special promotion!'}</p>
-                          
-                          <PromotionDetails>
-                            {promotion.points && !promotion.pointRule && (
-                              <PromotionDetail type={promotion.type}>
-                                <FaCoins />
-                                <span>Points: <strong>{promotion.points}</strong></span>
-                              </PromotionDetail>
-                            )}
-                            
-                            {promotion.rate && !promotion.multiplier && (
-                              <PromotionDetail type={promotion.type}>
-                                <FaPercentage />
-                                <span>Rate: <strong>{promotion.rate}x</strong></span>
-                              </PromotionDetail>
-                            )}
-                            
-                            {promotion.minSpending && !promotion.minimumPurchase && (
-                              <PromotionDetail type={promotion.type}>
-                                <FaTags />
-                                <span>Min: <strong>${parseFloat(promotion.minSpending).toFixed(2)}</strong></span>
-                              </PromotionDetail>
-                            )}
-                            
-                            {promotion.startDate && (
-                              <PromotionDetail type={promotion.type}>
-                                <FaCalendarDay />
-                                <span>Start: <strong>{formatDisplayDate(promotion.startDate)}</strong></span>
-                              </PromotionDetail>
-                            )}
-                          </PromotionDetails>
-                        </PromotionContent>
-                      </PromotionCard>
-                    ))}
-                  </PromotionSection>
-                );
-              })}
+                    {/* Description */}
+                    <div style={{
+                      height: '16px',
+                      width: '95%',
+                      backgroundColor: theme.colors.border.light,
+                      borderRadius: theme.radius.sm,
+                      marginBottom: theme.spacing.xs,
+                      opacity: 0.7
+                    }} />
+                    <div style={{
+                      height: '16px',
+                      width: '60%',
+                      backgroundColor: theme.colors.border.light,
+                      borderRadius: theme.radius.sm,
+                      marginBottom: theme.spacing.sm,
+                      opacity: 0.7
+                    }} />
+                    
+                    {/* Details Section */}
+                    <div style={{
+                      marginTop: 'auto',
+                      paddingTop: theme.spacing.sm,
+                      borderTop: `1px solid ${theme.colors.border.light}`,
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(2, 1fr)',
+                      gap: theme.spacing.xs
+                    }}>
+                      {/* Detail Items */}
+                      {Array.from({ length: 4 }, (_, detailIndex) => (
+                        <div key={detailIndex} style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: theme.spacing.xs
+                        }}>
+                          <div style={{
+                            width: '16px',
+                            height: '16px',
+                            backgroundColor: detailIndex % 2 === 0 ? theme.colors.accent.light : theme.colors.primary.light,
+                            borderRadius: '50%'
+                          }} />
+                          <div style={{
+                            height: '14px',
+                            width: detailIndex === 0 ? '60px' : 
+                                   detailIndex === 1 ? '45px' : 
+                                   detailIndex === 2 ? '50px' : '55px',
+                            backgroundColor: theme.colors.border.light,
+                            borderRadius: theme.radius.sm,
+                            opacity: 0.8
+                          }} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </>
           ) : (
-            <Card>
-              <Card.Body>
-                <EmptyState>
-                  <FaTags size={24} style={{ opacity: 0.3, marginBottom: theme.spacing.md }} />
-                  <p>No active promotions found</p>
-                  <p style={{ fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary }}>
-                    Check back later for new promotions and offers!
-                  </p>
-                </EmptyState>
-              </Card.Body>
-            </Card>
+            promotions && promotions.length > 0 ? (
+              <>
+                {/* Group promotions by type */}
+                {['automatic', 'one-time'].map(type => {
+                  const typePromotions = promotions.filter(p => 
+                    p.type === type
+                  );
+                  
+                  if (typePromotions.length === 0) return null;
+                  
+                  return (
+                    <PromotionSection key={type}>
+                      <PromotionTypeHeader
+                        type={type}
+                        onClick={() => {
+                          // Navigate to Promotions page with filter for this type
+                          window.location.href = `/promotions?type=${encodeURIComponent(type)}`;
+                        }}
+                        role="button"
+                        aria-label={`View ${type} promotions`}
+                      >
+                        {type === 'automatic' ? 'Automatic' : 'One-time'}
+                        <FaChevronRight size={12} />
+                      </PromotionTypeHeader>
+                      
+                      {typePromotions.map(promotion => (
+                        <PromotionCard key={promotion.id}>
+                          <PromotionContent>
+                            <h3>{promotion.name}</h3>
+                            <p>{promotion.description || 'Earn points with this special promotion!'}</p>
+                            
+                            <PromotionDetails>
+                              {promotion.points && !promotion.pointRule && (
+                                <PromotionDetail type={promotion.type}>
+                                  <FaCoins />
+                                  <span>Points: <strong>{promotion.points}</strong></span>
+                                </PromotionDetail>
+                              )}
+                              
+                              {promotion.rate && !promotion.multiplier && (
+                                <PromotionDetail type={promotion.type}>
+                                  <FaPercentage />
+                                  <span>Rate: <strong>{promotion.rate}x</strong></span>
+                                </PromotionDetail>
+                              )}
+                              
+                              {promotion.minSpending && !promotion.minimumPurchase && (
+                                <PromotionDetail type={promotion.type}>
+                                  <FaTags />
+                                  <span>Min: <strong>${parseFloat(promotion.minSpending).toFixed(2)}</strong></span>
+                                </PromotionDetail>
+                              )}
+                              
+                              {promotion.startDate && (
+                                <PromotionDetail type={promotion.type}>
+                                  <FaCalendarDay />
+                                  <span>Start: <strong>{formatDisplayDate(promotion.startDate)}</strong></span>
+                                </PromotionDetail>
+                              )}
+                            </PromotionDetails>
+                          </PromotionContent>
+                        </PromotionCard>
+                      ))}
+                    </PromotionSection>
+                  );
+                })}
+              </>
+            ) : (
+              <Card>
+                <Card.Body>
+                  <EmptyState>
+                    <FaTags size={24} style={{ opacity: 0.3, marginBottom: theme.spacing.md }} />
+                    <p>No active promotions found</p>
+                    <p style={{ fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary }}>
+                      Check back later for new promotions and offers!
+                    </p>
+                  </EmptyState>
+                </Card.Body>
+              </Card>
+            )
           )}
         </div>
         
@@ -1552,66 +1918,190 @@ const Dashboard = () => {
             </ViewAllLink>
           </SectionTitle>
           
-          <Card>
-            <Card.Body className="events-card-body">
-              {events && events.length > 0 ? (
-                events.map((event) => {
-                  const date = new Date(event.startTime);
-                  const month = date.toLocaleString('default', { month: 'short' });
-                  const day = date.getDate();
-                  
-                  // Format start and end time for display
-                  const startTime = date.toLocaleTimeString(undefined, {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  });
-                  const endTime = event.endTime ? new Date(event.endTime).toLocaleTimeString(undefined, {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  }) : '';
-                  
-                  const isManagerOrAbove = ['manager', 'superuser'].includes(activeRole);
-                  
-                  return (
-                    <EventPreview key={event.id} as={Link} to={`/events/${event.id}`}>
-                      <EventDate>
-                        <span className="month">{month}</span>
-                        <span className="day">{day}</span>
-                      </EventDate>
-                      <EventInfo>
-                        <h3>{event.name}</h3>
-                        <p>
-                          <FaMapMarkerAlt size={14} style={{ marginRight: theme.spacing.xs, color: theme.colors.text.secondary }} />
-                          {event.location}
-                        </p>
-                        <p>
-                          {isManagerOrAbove ? (
-                            <>
-                              <FaCoins size={14} style={{ marginRight: theme.spacing.xs, color: theme.colors.text.secondary }} />
-                              {event.pointsRemain || event.points || 0} points available
-                            </>
-                          ) : (
-                            <>
-                              <FaClock size={14} style={{ marginRight: theme.spacing.xs, color: theme.colors.text.secondary }} />
-                              {startTime} {endTime ? `- ${endTime}` : ''}
-                            </>
-                          )}
-                        </p>
-                      </EventInfo>
-                    </EventPreview>
-                  );
-                })
-              ) : (
-                <EmptyState>
-                  <FaCalendarAlt size={24} style={{ opacity: 0.3, marginBottom: theme.spacing.md }} />
-                  <p>No upcoming events found</p>
-                  <p style={{ fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary }}>
-                    Check back later for new events!
-                  </p>
-                </EmptyState>
-              )}
-            </Card.Body>
-          </Card>
+          {/* Events loading state */}
+          {showEventsSkeleton ? (
+            <Card>
+              <Card.Body className="events-card-body">
+                {Array.from({ length: 2 }, (_, index) => (
+                  <div key={index} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: `${theme.spacing.lg} ${theme.spacing.md}`,
+                    borderBottom: index < 1 ? `1px solid ${theme.colors.border.light}` : 'none',
+                    minHeight: '90px',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s ease',
+                    borderRadius: theme.radius.md
+                  }}>
+                    {/* Event Date Skeleton */}
+                    <div style={{
+                      width: '70px',
+                      height: '70px',
+                      backgroundColor: theme.colors.background.default,
+                      borderRadius: theme.radius.md,
+                      marginRight: theme.spacing.lg,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '2px',
+                      border: `1px solid ${theme.colors.border.light}`,
+                      position: 'relative'
+                    }}>
+                      {/* Month skeleton */}
+                      <div style={{
+                        height: '12px',
+                        width: '30px',
+                        backgroundColor: theme.colors.border.light,
+                        borderRadius: theme.radius.sm,
+                        marginBottom: '4px'
+                      }} />
+                      {/* Day skeleton */}
+                      <div style={{
+                        height: '28px',
+                        width: '24px',
+                        backgroundColor: theme.colors.primary.light,
+                        borderRadius: theme.radius.sm,
+                        position: 'relative'
+                      }}>
+                        <div style={{
+                          position: 'absolute',
+                          top: '50%',
+                          left: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          width: '16px',
+                          height: '16px',
+                          backgroundColor: theme.colors.primary.main,
+                          borderRadius: '2px'
+                        }} />
+                      </div>
+                    </div>
+                    
+                    {/* Event Info Skeleton */}
+                    <div style={{
+                      flex: 1,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: theme.spacing.sm
+                    }}>
+                      {/* Event Title */}
+                      <div style={{
+                        height: '20px',
+                        width: index === 0 ? '80%' : '75%',
+                        backgroundColor: theme.colors.border.light,
+                        borderRadius: theme.radius.sm
+                      }} />
+                      
+                      {/* Location with icon */}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: theme.spacing.xs
+                      }}>
+                        <div style={{
+                          width: '14px',
+                          height: '14px',
+                          backgroundColor: theme.colors.text.secondary,
+                          borderRadius: '50%',
+                          opacity: 0.6
+                        }} />
+                        <div style={{
+                          height: '14px',
+                          width: index === 0 ? '65%' : '70%',
+                          backgroundColor: theme.colors.border.light,
+                          borderRadius: theme.radius.sm,
+                          opacity: 0.8
+                        }} />
+                      </div>
+                      
+                      {/* Time/Points with icon */}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: theme.spacing.xs
+                      }}>
+                        <div style={{
+                          width: '14px',
+                          height: '14px',
+                          backgroundColor: index === 0 ? theme.colors.accent.main : theme.colors.primary.main,
+                          borderRadius: '50%',
+                          opacity: 0.7
+                        }} />
+                        <div style={{
+                          height: '14px',
+                          width: index === 0 ? '55%' : '60%',
+                          backgroundColor: theme.colors.border.light,
+                          borderRadius: theme.radius.sm,
+                          opacity: 0.8
+                        }} />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </Card.Body>
+            </Card>
+          ) : (
+            <Card>
+              <Card.Body className="events-card-body">
+                {events && events.length > 0 ? (
+                  events.map((event) => {
+                    const date = new Date(event.startTime);
+                    const month = date.toLocaleString('default', { month: 'short' });
+                    const day = date.getDate();
+                    
+                    // Format start and end time for display
+                    const startTime = date.toLocaleTimeString(undefined, {
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    });
+                    const endTime = event.endTime ? new Date(event.endTime).toLocaleTimeString(undefined, {
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    }) : '';
+                    
+                    const isManagerOrAbove = ['manager', 'superuser'].includes(activeRole);
+                    
+                    return (
+                      <EventPreview key={event.id} as={Link} to={`/events/${event.id}`}>
+                        <EventDate>
+                          <span className="month">{month}</span>
+                          <span className="day">{day}</span>
+                        </EventDate>
+                        <EventInfo>
+                          <h3>{event.name}</h3>
+                          <p>
+                            <FaMapMarkerAlt size={14} style={{ marginRight: theme.spacing.xs, color: theme.colors.text.secondary }} />
+                            {event.location}
+                          </p>
+                          <p>
+                            {isManagerOrAbove ? (
+                              <>
+                                <FaCoins size={14} style={{ marginRight: theme.spacing.xs, color: theme.colors.text.secondary }} />
+                                {event.pointsRemain || event.points || 0} points available
+                              </>
+                            ) : (
+                              <>
+                                <FaClock size={14} style={{ marginRight: theme.spacing.xs, color: theme.colors.text.secondary }} />
+                                {startTime} {endTime ? `- ${endTime}` : ''}
+                              </>
+                            )}
+                          </p>
+                        </EventInfo>
+                      </EventPreview>
+                    );
+                  })
+                ) : (
+                  <EmptyState>
+                    <FaCalendarAlt size={24} style={{ opacity: 0.3, marginBottom: theme.spacing.md }} />
+                    <p>No upcoming events found</p>
+                    <p style={{ fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary }}>
+                      Check back later for new events!
+                    </p>
+                  </EmptyState>
+                )}
+              </Card.Body>
+            </Card>
+          )}
         </div>
       </DashboardContainer>
       

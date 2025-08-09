@@ -10,6 +10,7 @@ import theme from './styles/theme';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import CheckinNotification from './components/notifications/CheckinNotification';
 import ScrollToTop from './components/common/ScrollToTop';
+
 import { useState, useEffect } from 'react';
 
 // Import authentication pages
@@ -316,6 +317,7 @@ const App = () => {
           </SocketProvider>
         </AppQueryClientProvider>
       </AuthProvider>
+
     </Router>
   );
 };

@@ -8,6 +8,8 @@ import { CreateEventModal, EditEventModal, DeleteEventModal, RsvpEventModal } fr
 import EventService from '../../services/event.service';
 import { API_URL } from '../../services/api';
 import toast from 'react-hot-toast';
+import { EventListSkeleton } from '../../components/common/skeleton';
+
 
 const Events = () => {
   const { activeRole } = useAuth();

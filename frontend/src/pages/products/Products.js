@@ -10,6 +10,7 @@ import theme from '../../styles/theme';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
+import { ProductGridSkeleton } from '../../components/common/skeleton';
 
 import ProductCard from '../../components/products/ProductCard';
 
@@ -440,7 +441,7 @@ const Products = () => {
       <ContentWrapper>
 
 
-        {/* Filters */}
+        {/* Filters and Stats */}
         <FilterSection
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -589,41 +590,75 @@ const Products = () => {
           </StatsInfo>
         </StatsBar>
 
-        {/* Loading State */}
-        {isLoading && (
-          <LoadingContainer>
-            <LoadingSpinner text="Loading products..." />
-          </LoadingContainer>
-        )}
+        {/* Products Content with separate loading state */}
+        {isLoading ? (
+          <ProductGridSkeleton />
+        ) : products.length > 0 ? (
+          <>
+            {/* Products Grid */}
+            <ProductsGrid
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4, duration: 0.8 }}
+            >
+              <AnimatePresence mode="wait">
+                {products.map((product, index) => (
+                  <motion.div
+                    key={product.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ 
+                      delay: index * 0.05,
+                      duration: 0.4 
+                    }}
+                  >
+                    <ProductCard product={product} userTier={userTier} />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </ProductsGrid>
 
-        {/* Products Grid */}
-        {!isLoading && products.length > 0 && (
-          <ProductsGrid
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4, duration: 0.8 }}
-          >
-            <AnimatePresence mode="wait">
-              {products.map((product, index) => (
-                <motion.div
-                  key={product.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ 
-                    delay: index * 0.05,
-                    duration: 0.4 
-                  }}
-                >
-                  <ProductCard product={product} userTier={userTier} />
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </ProductsGrid>
-        )}
-
-        {/* Empty State */}
-        {!isLoading && products.length === 0 && (
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <PageControls>
+                <PageInfo>
+                  Showing {startIndex} to {endIndex} of {totalCount} products
+                </PageInfo>
+                
+                <Pagination>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => handlePageChange(filters.page - 1)}
+                    disabled={filters.page === 1}
+                    style={{ minWidth: '80px' }}
+                  >
+                    <FiChevronLeft /> Previous
+                  </Button>
+                  
+                  <PageInfo style={{ 
+                    minWidth: '100px', 
+                    textAlign: 'center', 
+                    whiteSpace: 'nowrap' 
+                  }}>
+                    Page {filters.page} of {totalPages}
+                  </PageInfo>
+                  
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => handlePageChange(filters.page + 1)}
+                    disabled={filters.page >= totalPages}
+                    style={{ minWidth: '80px' }}
+                  >
+                    Next <FiChevronRight />
+                  </Button>
+                </Pagination>
+              </PageControls>
+            )}
+          </>
+        ) : (
           <EmptyState
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -637,45 +672,6 @@ const Products = () => {
                 : "There are currently no products available in the catalog."}
             </p>
           </EmptyState>
-        )}
-
-        {/* Pagination */}
-        {!isLoading && products.length > 0 && totalPages > 1 && (
-          <PageControls>
-            <PageInfo>
-              Showing {startIndex} to {endIndex} of {totalCount} products
-            </PageInfo>
-            
-            <Pagination>
-              <Button
-                size="small"
-                variant="outlined"
-                onClick={() => handlePageChange(filters.page - 1)}
-                disabled={filters.page === 1}
-                style={{ minWidth: '80px' }}
-              >
-                <FiChevronLeft /> Previous
-              </Button>
-              
-              <PageInfo style={{ 
-                minWidth: '100px', 
-                textAlign: 'center', 
-                whiteSpace: 'nowrap' 
-              }}>
-                Page {filters.page} of {totalPages}
-              </PageInfo>
-              
-              <Button
-                size="small"
-                variant="outlined"
-                onClick={() => handlePageChange(filters.page + 1)}
-                disabled={filters.page >= totalPages}
-                style={{ minWidth: '80px' }}
-              >
-                Next <FiChevronRight />
-              </Button>
-            </Pagination>
-          </PageControls>
         )}
       </ContentWrapper>
     </PageContainer>

@@ -6,6 +6,7 @@ import { FaInfoCircle } from 'react-icons/fa';
 import theme from '../../styles/theme';
 import EventCardItem from './EventCardItem';
 import LoadingSpinner from '../common/LoadingSpinner';
+import { EventListSkeleton, Skeleton } from '../common/skeleton';
 
 const EventsContainer = styled.div`
   margin-bottom: ${theme.spacing.xl};
@@ -133,93 +134,105 @@ const EventList = ({
   handleRsvpClick,
   activeRole
 }) => {
-  if (isLoading) {
-    return <LoadingSpinner text="Loading events..." />;
-  }
 
-  if (!events || !Array.isArray(events) || events.length === 0) {
-    return (
-      <EmptyState>
-        <FaInfoCircle />
-        <h3>No events found</h3>
-        <p>
-          {isManager
-            ? "No visible events match your filters. Try different filter settings or create a new event."
-            : "No published events found. Check back later for upcoming events!"}
-        </p>
-      </EmptyState>
-    );
-  }
   
   return (
     <EventsContainer>
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-      >
-        <EventsGrid>
-          {events.map((event) => (
-            <motion.div key={event.id || 'unknown'} variants={itemVariants}>
-              <EventCardItem
-                event={event}
-                isManager={isManager}
-                formatCompactDate={formatCompactDate}
-                formatTime={formatTime}
-                getEventCardDate={getEventCardDate}
-                getEventStatus={getEventStatus}
-                isRsvpd={isRsvpd}
-                navigateToEventDetail={navigateToEventDetail}
-                handleEditEvent={handleEditEvent}
-                handleDeleteEventClick={handleDeleteEventClick}
-                handleRsvpClick={handleRsvpClick}
-                activeRole={activeRole}
-              />
-            </motion.div>
-          ))}
-        </EventsGrid>
-      </motion.div>
+      {/* Events Content with separate loading state */}
+      {isLoading ? (
+        <EventListSkeleton showPagination={false} />
+      ) : (!events || !Array.isArray(events) || events.length === 0) ? (
+        <EmptyState>
+          <FaInfoCircle />
+          <h3>No events found</h3>
+          <p>
+            {isManager
+              ? "No visible events match your filters. Try different filter settings or create a new event."
+              : "No published events found. Check back later for upcoming events!"}
+          </p>
+        </EmptyState>
+      ) : (
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          <EventsGrid>
+            {events.map((event) => (
+              <motion.div key={event.id || 'unknown'} variants={itemVariants}>
+                <EventCardItem
+                  event={event}
+                  isManager={isManager}
+                  formatCompactDate={formatCompactDate}
+                  formatTime={formatTime}
+                  getEventCardDate={getEventCardDate}
+                  getEventStatus={getEventStatus}
+                  isRsvpd={isRsvpd}
+                  navigateToEventDetail={navigateToEventDetail}
+                  handleEditEvent={handleEditEvent}
+                  handleDeleteEventClick={handleDeleteEventClick}
+                  handleRsvpClick={handleRsvpClick}
+                  activeRole={activeRole}
+                />
+              </motion.div>
+            ))}
+          </EventsGrid>
+        </motion.div>
+      )}
       
-      <PageControls>
-        <PageInfo>
-          Showing {startIndex} to {Math.min(endIndex, totalCount)} of {totalCount} events
-          {!isManager && (
-            <span style={{ marginLeft: theme.spacing.sm, fontSize: theme.typography.fontSize.xs, color: theme.colors.text.hint }}>
-              (Only showing published events)
-            </span>
-          )}
-        </PageInfo>
-        
-        <Pagination>
-          <Button
-            size="small"
-            variant="outlined"
-            onClick={() => onFilterChange('page', Math.max(1, filters.page - 1))}
-            disabled={filters.page === 1}
-            style={{ minWidth: '80px' }}
-          >
-            Previous
-          </Button>
-          
-          <PageInfo style={{ 
-            minWidth: '100px', 
-            textAlign: 'center', 
-            whiteSpace: 'nowrap' 
-          }}>
-            Page {filters.page} of {totalPages > 0 ? totalPages : 1}
+      {/* Static pagination controls - always show when there are events or when loading */}
+      {(events && events.length > 0) || isLoading ? (
+        <PageControls>
+          <PageInfo>
+            {isLoading ? (
+              <Skeleton width="200px" height="16px" />
+            ) : (
+              <>
+                Showing {startIndex} to {Math.min(endIndex, totalCount)} of {totalCount} events
+                {!isManager && (
+                  <span style={{ marginLeft: theme.spacing.sm, fontSize: theme.typography.fontSize.xs, color: theme.colors.text.hint }}>
+                    (Only showing published events)
+                  </span>
+                )}
+              </>
+            )}
           </PageInfo>
           
-          <Button
-            size="small"
-            variant="outlined"
-            onClick={() => onFilterChange('page', filters.page + 1)}
-            disabled={filters.page >= totalPages}
-            style={{ minWidth: '80px' }}
-          >
-            Next
-          </Button>
-        </Pagination>
-      </PageControls>
+          <Pagination>
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={() => onFilterChange('page', Math.max(1, filters.page - 1))}
+              disabled={filters.page === 1 || isLoading}
+              style={{ minWidth: '80px' }}
+            >
+              Previous
+            </Button>
+            
+            <PageInfo style={{ 
+              minWidth: '100px', 
+              textAlign: 'center', 
+              whiteSpace: 'nowrap' 
+            }}>
+              {isLoading ? (
+                <Skeleton width="100px" height="16px" />
+              ) : (
+                `Page ${filters.page} of ${totalPages > 0 ? totalPages : 1}`
+              )}
+            </PageInfo>
+            
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={() => onFilterChange('page', filters.page + 1)}
+              disabled={filters.page >= totalPages || isLoading}
+              style={{ minWidth: '80px' }}
+            >
+              Next
+            </Button>
+          </Pagination>
+        </PageControls>
+      ) : null}
     </EventsContainer>
   );
 };
