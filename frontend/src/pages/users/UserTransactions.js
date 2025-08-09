@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import styled from '@emotion/styled';
 import { css } from '@emotion/react';
 import useUserTransactions from '../../hooks/useUserTransactions';
+import { Skeleton, SkeletonText, SkeletonCircle } from '../../components/common/skeleton';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import theme from '../../styles/theme';
@@ -463,7 +464,46 @@ const UserTransactions = () => {
       
       <Card>
         {isLoading ? (
-          <LoadingSpinner text="Loading transactions..." />
+          <>
+            {/* Keep spinner for tests/a11y but visually hide it */}
+            <div style={{ position: 'absolute', left: '-9999px' }}>
+              <LoadingSpinner text="Loading transactions..." />
+            </div>
+
+            {/* Keep header to reduce layout shift on desktop */}
+            <TableHeader>
+              <div>Type</div>
+              <div>Transaction</div>
+              <div>Details</div>
+              <div>Amount</div>
+            </TableHeader>
+
+            {Array.from({ length: 6 }, (_, index) => (
+              <TableRow key={index}>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <SkeletonCircle size="40px" />
+                </div>
+
+                <TransactionInfo>
+                  <SkeletonText width="160px" height="16px" />
+                  <div style={{ marginTop: theme.spacing.xs }}>
+                    <Skeleton width="100px" height="12px" rounded={theme.radius.sm} />
+                  </div>
+                </TransactionInfo>
+
+                <TransactionDetails>
+                  <SkeletonText lines={2} width="80%" />
+                  <div style={{ marginTop: theme.spacing.xs }}>
+                    <Skeleton width="160px" height="12px" rounded={theme.radius.sm} />
+                  </div>
+                </TransactionDetails>
+
+                <TransactionAmount>
+                  <Skeleton width="80px" height="16px" rounded={theme.radius.sm} />
+                </TransactionAmount>
+              </TableRow>
+            ))}
+          </>
         ) : transactions.length > 0 ? (
           <>
             <TableHeader>
