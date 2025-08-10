@@ -46,7 +46,10 @@ const createEvent = async (req, res) => {
         // Handle background image upload
         let backgroundUrl = req.body.backgroundUrl;
         if (req.file) {
-            backgroundUrl = `/uploads/events/${req.file.filename}`;
+            // Generate full URL with proper HTTPS protocol detection for proxy
+            const protocol = req.get('X-Forwarded-Proto') || req.protocol;
+            const host = `${protocol}://${req.get('host')}`;
+            backgroundUrl = `${host}/uploads/events/${req.file.filename}`;
         }
 
         const eventData = {
@@ -490,7 +493,10 @@ const updateEvent = async (req, res) => {
         }
         if (req.body.backgroundUrl !== undefined || req.file) {
             if (req.file) {
-                updateData.backgroundUrl = `/uploads/events/${req.file.filename}`;
+                // Generate full URL with proper HTTPS protocol detection for proxy
+                const protocol = req.get('X-Forwarded-Proto') || req.protocol;
+                const host = `${protocol}://${req.get('host')}`;
+                updateData.backgroundUrl = `${host}/uploads/events/${req.file.filename}`;
                 console.log('Adding uploaded backgroundUrl to update data:', updateData.backgroundUrl);
             } else {
                 updateData.backgroundUrl = req.body.backgroundUrl;

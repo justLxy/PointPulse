@@ -435,7 +435,9 @@ const updateCurrentUser = async (req, res) => {
         let avatarUrl = null;
         if (req.file) {
             // Convert relative path to absolute URL based on current request host
-            const host = `${req.protocol}://${req.get('host')}`;
+            // Check for X-Forwarded-Proto header for proper HTTPS detection behind proxy
+            const protocol = req.get('X-Forwarded-Proto') || req.protocol;
+            const host = `${protocol}://${req.get('host')}`;
             avatarUrl = `${host}/uploads/avatars/${req.file.filename}`;
             console.log('Avatar URL:', avatarUrl);
         }

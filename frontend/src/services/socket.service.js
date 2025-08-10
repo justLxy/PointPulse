@@ -1,6 +1,22 @@
 import { io } from 'socket.io-client';
 import { API_URL } from './api';
 
+// Socket.IO should connect to the root domain, not the API path
+const getSocketURL = () => {
+  // If API_URL is '/api' (production), connect to root domain
+  if (API_URL === '/api') {
+    return window.location.origin;
+  }
+  // For development, use the full API_URL but remove any path
+  try {
+    const url = new URL(API_URL);
+    return `${url.protocol}//${url.host}`;
+  } catch {
+    // Fallback for relative URLs
+    return API_URL.replace('/api', '');
+  }
+};
+
 let socket = null;
 let isConnected = false;
 let listeners = {};
@@ -23,9 +39,10 @@ const SocketService = {
           resolve();
           return;
         }
-        
-        // Create a new socket connection
-        socket = io(API_URL, {
+
+        // Create a new socket connection to the correct Socket.IO endpoint
+        const socketURL = getSocketURL();
+        socket = io(socketURL, {
           reconnection: true,
           reconnectionAttempts: 3,
           reconnectionDelay: 5000,
@@ -35,19 +52,19 @@ const SocketService = {
           upgrade: true,
           forceNew: false,
         });
-        
+
         // Connection events
         socket.on('connect', () => {
           isConnected = true;
-          
+
           // Join user's room using their UTORid as the room name
           if (utorid) {
             socket.emit('join', utorid);
           }
-          
+
           resolve();
         });
-        
+
         socket.on('connect_error', (error) => {
           // Silently handle connection errors - WebSocket is optional
           if (!isConnected) {
@@ -55,11 +72,11 @@ const SocketService = {
             resolve();
           }
         });
-        
+
         socket.on('disconnect', (reason) => {
           isConnected = false;
         });
-        
+
         // Set up checkin-success listener for event check-ins
         socket.on('checkin-success', (data) => {
           // Notify registered listeners
@@ -79,7 +96,7 @@ const SocketService = {
       }
     });
   },
-  
+
   /**
    * Disconnect from the Socket.IO server
    */
@@ -90,7 +107,7 @@ const SocketService = {
       isConnected = false;
     }
   },
-  
+
   /**
    * Add an event listener
    * @param {string} event - The event name to listen for
@@ -102,7 +119,7 @@ const SocketService = {
     }
     listeners[event].push(callback);
   },
-  
+
   /**
    * Remove an event listener
    * @param {string} event - The event name
@@ -113,7 +130,7 @@ const SocketService = {
       listeners[event] = listeners[event].filter(cb => cb !== callback);
     }
   },
-  
+
   /**
    * Check if the socket is connected
    * @returns {boolean} - Whether the socket is connected
@@ -123,4 +140,4 @@ const SocketService = {
   }
 };
 
-export default SocketService; 
+export default SocketService;

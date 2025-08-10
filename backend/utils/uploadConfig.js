@@ -38,9 +38,37 @@ const eventUploadDir = path.join(__dirname, "..", "uploads", "events");
 if (!fs.existsSync(eventUploadDir)) {
     fs.mkdirSync(eventUploadDir, { recursive: true });
 }
+// Initialize upload middleware with file size limits
+const upload = multer({
+    storage: avatarStorage,
+    limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB limit for avatars
+        files: 1
+    },
+    fileFilter: (req, file, cb) => {
+        // Accept only image files
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only image files are allowed!'), false);
+        }
+    }
+});
 
-// Initialize upload middleware
-const upload = multer({ storage: avatarStorage });
-const eventBackgroundUpload = multer({ storage: eventBackgroundStorage });
+const eventBackgroundUpload = multer({
+    storage: eventBackgroundStorage,
+    limits: {
+        fileSize: 20 * 1024 * 1024, // 20MB limit for event backgrounds
+        files: 1
+    },
+    fileFilter: (req, file, cb) => {
+        // Accept only image files
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only image files are allowed!'), false);
+        }
+    }
+});
 
 module.exports = { upload, eventBackgroundUpload };
