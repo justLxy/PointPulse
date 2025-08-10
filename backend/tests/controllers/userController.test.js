@@ -22,7 +22,11 @@ describe('UserController', () => {
             originalUrl: '/test',
             method: 'GET',
             protocol: 'http',
-            get: jest.fn().mockReturnValue('localhost:3000'),
+            get: jest.fn().mockImplementation((header) => {
+                if (header === 'host') return 'localhost:3000';
+                if (header === 'X-Forwarded-Proto') return undefined;
+                return undefined;
+            }),
             file: null
         };
 
