@@ -1,6 +1,41 @@
 'use strict';
 
-// JWT secret
-const JWT_SECRET = "4e99950181aa0f71a9b25e29306915ce7c8a8bbb9ce4171d88902d75e3b6459c0bf06da52dc4fbf58354a2c1a649636e738022fe7296a5ef0a11e164d89f987a06550ecd017f5925da9d1ba7a0022192205c0bdeb5e9fcbbb375044df04d313c13fa60b933dad143cfe91182dcf05a6bfb7e6807274585c1b9cbd83698ae0e6b25c6286271e42be2546fbaa6a59969cc22e138e9a28d8c860a225b8c6487f464fd4786ce3fea17d8d08cfcb3ade4bc4510713185e3b003ac9e87831607df7aebd10477d90c1b3d58369daeccedfc89b5a0bf5081f79ff1b4450ea598345d75ed73680d479c060332a37a84f084998af8796e30ff4823c1c105f5954379f7676c";
+require('dotenv').config();
+
+// Test environment fallback secret (only for testing)
+const TEST_JWT_SECRET = "test_jwt_secret_for_testing_only_minimum_32_chars_abcdefghijklmnopqrstuvwxyz";
+
+// JWT secret from environment variable
+let JWT_SECRET = process.env.JWT_SECRET;
+
+// In test environment, use fallback if no JWT_SECRET is provided
+if (process.env.NODE_ENV === 'test' && !JWT_SECRET) {
+    JWT_SECRET = TEST_JWT_SECRET;
+    console.warn('WARNING: Using test JWT secret. This should only happen in test environment.');
+}
+
+// Validate that JWT_SECRET is configured (for non-test environments)
+if (!JWT_SECRET) {
+    console.error('FATAL ERROR: JWT_SECRET environment variable is not configured');
+    console.error('Please set JWT_SECRET in your environment variables or .env file');
+    console.error('For production: Generate a secure secret using:');
+    console.error('node -e "console.log(require(\'crypto\').randomBytes(64).toString(\'hex\'))"');
+    process.exit(1);
+}
+
+// Validate JWT_SECRET length for security (except in test environment with fallback)
+if (JWT_SECRET.length < 32) {
+    console.error('FATAL ERROR: JWT_SECRET must be at least 32 characters long for security');
+    console.error('Generate a secure secret using:');
+    console.error('node -e "console.log(require(\'crypto\').randomBytes(64).toString(\'hex\'))"');
+    process.exit(1);
+}
+
+// Warn if using test secret in non-test environment
+if (JWT_SECRET === TEST_JWT_SECRET && process.env.NODE_ENV !== 'test') {
+    console.error('FATAL ERROR: Test JWT secret detected in non-test environment!');
+    console.error('This is a security risk. Please set a proper JWT_SECRET environment variable.');
+    process.exit(1);
+}
 
 module.exports = { JWT_SECRET };
