@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { ArrowLeft, ChevronDown } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import faqAccountManagement from '../../data/faqAccountManagement';
+import faqPointsTransactions from '../../data/faqPointsTransactions';
+import faqEvents from '../../data/faqEvents';
+import faqPromotions from '../../data/faqPromotions';
 
 const FaqItem = ({ question, answer }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -32,20 +35,8 @@ const Support = () => {
   const faqs = {
     "Account Management": faqAccountManagement,
     "Points & Transactions": faqPointsTransactions,
-     "Events & Promotions": [
-      {
-        question: "How do I sign up for an event?",
-        answer: "Visit the 'Events' page to browse all published events. You can view details and RSVP for any event that still has available capacity."
-      },
-      {
-        question: "How are points awarded at events?",
-        answer: "The event organizer or a manager will award points to guests who have RSVP'd and checked in. Points can be awarded to individuals (e.g., for winning a prize) or to all attendees."
-      },
-      {
-          question: "How do I apply a 'one-time' promotion?",
-          answer: "One-time promotions, like a coupon for bonus points, must be applied by a Cashier during a purchase transaction. Inform the cashier of the promotion you wish to use, and they will add it to your sale."
-      }
-    ]
+    "Events": faqEvents,
+    "Promotions": faqPromotions
   };
 
   return (
