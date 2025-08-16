@@ -13,7 +13,11 @@ const faqPointsTransactions = [
         answer: "As a safeguard against cashiers artifically inflating people's points balance, if the cashier who served you is flagged as 'suspicious' by the system, the points for that transaction will be pending until a Manager approves it. If the points do not appear after 24 hours, please contact support."
     },
     {
-        question: "How do I use my points for a discount?",
+        question: "Why are transactions pending in the first place?",
+        answer: "Transactions may be pending for several reasons, including system checks, manual reviews, or issues with the transaction itself. This is to ensure the integrity of the points system and prevent fraud. When redeeming items, the redemption transaction is marked as \'pending\' by default until you scan your redemption QR code."
+    },
+    {
+        question: "How do I redeem my points for a discount?",
         answer: "From your dashboard, you can initiate a 'Redemption' request for the number of points you wish to use. This creates a redemption transaction. Show the transaction ID to a Cashier, and they will process it to apply the discount to your purchase."
     },
     {
