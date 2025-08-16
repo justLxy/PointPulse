@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft, ChevronDown } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import faqAccountManagement from '../../data/faqAccountManagement';
 
 const FaqItem = ({ question, answer }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -29,42 +30,8 @@ const FaqItem = ({ question, answer }) => {
 
 const Support = () => {
   const faqs = {
-    "Account Management": [
-      {
-        question: "I forgot my password. What should I do?",
-        answer: "On the login page, click 'Forgot Password' and enter your UTORid. A password reset token will be generated for you, which you can use on the reset page to set a new password."
-      },
-      {
-        question: "How can I update my personal information?",
-        answer: "Once logged in, navigate to your profile page. From there, you can update your name, display email, birthday, and profile avatar."
-      },
-      {
-        question: "Why is my account not verified?",
-        answer: "Account verification is performed by a Manager to confirm your status as a member of the University of Toronto community. You may need to present a valid ID at a participating location. Verification is required to access certain features like point transfers."
-      },
-       {
-        question: "Why can't I delete my own account?",
-        answer: "To ensure transaction integrity and maintain a clear audit trail, users cannot delete their own accounts. This policy helps maintain a secure and transparent environment for everyone. Please contact an administrator for assistance if you wish to close your account."
-      }
-    ],
-    "Points & Transactions": [
-      {
-        question: "My points from a recent purchase are missing. Why?",
-        answer: "There might be a slight delay in processing. If the cashier who served you is flagged as 'suspicious' by the system, the points for that transaction will be pending until a Manager approves it. If the points do not appear after 24 hours, please contact support."
-      },
-      {
-        question: "How do I use my points for a discount?",
-        answer: "From your dashboard, you can initiate a 'Redemption' request for the number of points you wish to use. This creates a redemption transaction. Show the transaction ID to a Cashier, and they will process it to apply the discount to your purchase."
-      },
-      {
-        question: "I see an incorrect transaction. What should I do?",
-        answer: "If you find an error in your transaction history, please contact a Manager. They have the authority to make adjustments and correct any discrepancies."
-      },
-       {
-        question: "How do I transfer points to another user?",
-        answer: "As long as your account is verified, you can go to the 'Transfer' page and enter the recipient's UTORid and the amount of points you wish to send. The transfer is instant."
-      }
-    ],
+    "Account Management": faqAccountManagement,
+    "Points & Transactions": faqPointsTransactions,
      "Events & Promotions": [
       {
         question: "How do I sign up for an event?",
