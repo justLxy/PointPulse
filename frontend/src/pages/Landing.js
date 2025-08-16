@@ -14,6 +14,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { Navigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import faqData from '../data/faqData';
 
 /*
   Landing Page (Marketing)
@@ -56,33 +57,6 @@ const FAQItem = ({ question, answer, isOpen, onToggle }) => {
 // FAQ Section Component
 const FAQSection = () => {
   const [openIndex, setOpenIndex] = useState(null);
-
-  const faqData = [
-    {
-      question: 'What is PointPulse?',
-      answer: 'PointPulse is the official loyalty rewards program for the University of Toronto community. It allows you to earn points on purchases and at events, and redeem them for discounts and other exclusive rewards across campus.'
-    },
-    {
-      question: 'Who is eligible to join?',
-      answer: 'All current students, faculty, and staff members of the University of Toronto are eligible to join PointPulse and start earning rewards.'
-    },
-    {
-      question: 'How do I get an account?',
-      answer: 'An account must be created for you by an authorized staff member (e.g., a cashier at a participating location). They will register you using your UTORid and official university email.'
-    },
-    {
-      question: 'Is my personal information safe?',
-      answer: 'Absolutely. We take data security very seriously. All your personal information is stored securely and encrypted. For more details, you can review our full Privacy Policy.'
-    },
-    {
-      question: 'Are the points worth real money?',
-      answer: 'Points do not have a direct cash value, but they can be redeemed for real discounts on products and services. Think of them as a university-wide currency for rewards.'
-    },
-    {
-      question: 'How can I learn more or get help?',
-      answer: 'For detailed questions about using the platform, please visit our Support Center. For legal information, you can view our Terms of Service and Privacy Policy.'
-    }
-  ];
 
   const toggleFAQ = (index) => {
     setOpenIndex(openIndex === index ? null : index);
