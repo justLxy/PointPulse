@@ -63,7 +63,8 @@ describe('TierService', () => {
     });
 
     it('should correctly identify earned points from transfer transactions', () => {
-      expect(tierService.isEarnedTransaction({ type: 'transfer', amount: -30 })).toBe(true);
+      // Transfers are point redistributions, not earned points
+      expect(tierService.isEarnedTransaction({ type: 'transfer', amount: -30 })).toBe(false);
       expect(tierService.isEarnedTransaction({ type: 'transfer', amount: 30 })).toBe(false);
     });
 
@@ -80,8 +81,9 @@ describe('TierService', () => {
 
     it('should calculate earned points correctly for a cycle year', async () => {
       const points = await tierService.calculateCycleEarnedPoints(mockUserId, 2024);
-      // Expected: purchase(100) + event(50) + transfer(-30) + adjustment(20) = 140
-      expect(points).toBe(140);
+      // Expected: purchase(100) + event(50) + adjustment(20) = 170
+      // Transfers are not counted as earned points (they are redistributions)
+      expect(points).toBe(170);
     });
 
     it('should handle empty transaction list', async () => {
@@ -96,9 +98,10 @@ describe('TierService', () => {
       expect(points).toBe(0);
     });
 
-    /* Business Logic Confirmed:
-     * Transfer points should be directly deducted from total earned points
-     * because these points have been transferred to other users
+    /* Business Logic Updated:
+     * Transfer points are NOT counted as earned points because they are 
+     * point redistributions between users, not new points earned through
+     * purchases, events, or adjustments.
      */
     // it('should handle pagination correctly and deduct transfer points', async () => {
     //   // Add spy to isEarnedTransaction
@@ -132,8 +135,9 @@ describe('TierService', () => {
     //     result: isEarnedSpy.mock.results[isEarnedSpy.mock.calls.indexOf(call)].value
     //   })));
     // 
-    //   // Calculation: purchase(100) + event(50) + transfer(-30) + adjustment(20) = 140
-    //   expect(points).toBe(140);
+    //   // Calculation: purchase(100) + event(50) + adjustment(20) = 170
+    //   // Transfers are not counted as earned points
+    //   expect(points).toBe(170);
     //   expect(UserService.getTransactions).toHaveBeenCalledTimes(2);
     //   
     //   // Clean up spy

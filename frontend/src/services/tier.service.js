@@ -52,7 +52,7 @@ class TierService {
     }
   }
 
-  // Check if a transaction represents earned points (not transfer receipts)
+  // Check if a transaction represents earned points (not transfer receipts or transfers)
   isEarnedTransaction(transaction) {
     switch (transaction.type) {
       case 'purchase':
@@ -61,8 +61,9 @@ class TierService {
       case 'adjustment':
         return transaction.amount > 0;
       case 'transfer':
-        // Only count transfer if it's negative (sending points), not receiving
-        return transaction.amount < 0;
+        // Transfers are point redistributions, not earned points
+        // Neither sending nor receiving transfers count as "earned"
+        return false;
       default:
         return false;
     }
