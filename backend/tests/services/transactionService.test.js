@@ -427,6 +427,10 @@ describe('TransactionService', () => {
                 ...mockTransaction,
                 processedBy: 2
             });
+            // Mock user.update to return user with updated points
+            mockPrisma.user.update.mockResolvedValue({
+                points: 500 // 1500 - 1000 = 500
+            });
 
             const result = await transactionService.processRedemption(3, 2);
 
@@ -527,6 +531,10 @@ describe('TransactionService', () => {
                 return await callback(mockPrisma);
             });
             mockPrisma.transaction.create.mockResolvedValue({ id: 4 });
+            // Mock user.update for sender (decrement points) and recipient (increment points)
+            mockPrisma.user.update
+                .mockResolvedValueOnce({ points: 500 }) // Sender: 1000 - 500 = 500
+                .mockResolvedValueOnce({ points: 500 }); // Recipient: 0 + 500 = 500
 
             const result = await transactionService.createTransfer(transferData, 1, 'recipie01');
 
@@ -572,8 +580,18 @@ describe('TransactionService', () => {
                 points: 100,
                 verified: true
             };
+            
+            const mockRecipient = {
+                id: 2,
+                utorid: 'recipie01',
+                points: 0,
+                verified: true
+            };
 
-            mockPrisma.user.findUnique.mockResolvedValue(mockSender);
+            // Mock different users for sender and recipient lookups
+            mockPrisma.user.findUnique
+                .mockResolvedValueOnce(mockSender)   // First call: lookup sender by ID
+                .mockResolvedValueOnce(mockRecipient); // Second call: lookup recipient by utorid
 
             await expect(
                 transactionService.createTransfer({ type: 'transfer', amount: 500 }, 1, 'recipie01')

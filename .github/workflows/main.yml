@@ -58,6 +58,11 @@ jobs:
     - name: 🧪 Run tests with coverage
       id: run-tests
       working-directory: './${{ matrix.project }}'
+      env:
+        # Set environment variables for backend tests
+        JWT_SECRET: ${{ matrix.project == 'backend' && (secrets.JWT_SECRET || 'test_jwt_secret_for_ci_only_minimum_32_chars_abcdefghijklmnopqrstuvwxyz123456789') || '' }}
+        DATABASE_URL: ${{ matrix.project == 'backend' && 'file:./test.db' || '' }}
+        NODE_ENV: test
       run: |
         set +e
         npm run test:coverage 2>&1 | tee test-output.log
@@ -309,6 +314,8 @@ jobs:
         working-directory: ./backend
         env:
           DATABASE_URL: file:./test.db
+          JWT_SECRET: ${{ secrets.JWT_SECRET || 'test_jwt_secret_for_ci_only_minimum_32_chars_abcdefghijklmnopqrstuvwxyz123456789' }}
+          NODE_ENV: development
         run: |
           echo "🗄️ Setting up database..."
           npx prisma generate
@@ -336,6 +343,7 @@ jobs:
           DATABASE_URL: file:./test.db
           PORT: 8000
           NODE_ENV: development
+          JWT_SECRET: ${{ secrets.JWT_SECRET || 'test_jwt_secret_for_ci_only_minimum_32_chars_abcdefghijklmnopqrstuvwxyz123456789' }}
         run: |
           echo "🚀 Starting backend server on port 8000..."
           

@@ -594,7 +594,17 @@ const processRedemption = async (transactionId, processorId) => {
             throw new Error('User not found');
         }
 
-        const redemptionAmount = -lockedTxData.amount; // Convert negative to positive
+        // Convert amount to positive integer for redemption processing
+        const redemptionAmount = Math.abs(Math.floor(Number(lockedTxData.amount)));
+        
+        // Validate redemption amount
+        if (isNaN(redemptionAmount) || redemptionAmount <= 0) {
+            console.log('Invalid redemption amount:', lockedTxData.amount);
+            console.log('===== TRANSACTION SERVICE: PROCESS REDEMPTION FAILED =====\n');
+            throw new Error('Invalid redemption amount');
+        }
+        
+        console.log('Redemption amount (converted to positive):', redemptionAmount);
 
         // Verify user has enough points for the redemption
         if (lockedUserData.points < redemptionAmount) {
