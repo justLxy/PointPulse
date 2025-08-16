@@ -389,60 +389,87 @@ const createRedemption = async (data, userId) => {
         throw new Error('Amount must be a positive number');
     }
 
-    // Find the user
-    const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: {
-            id: true,
-            utorid: true,
-            points: true,
-            verified: true
+    // Convert amount to integer to prevent decimal precision issues
+    const redemptionAmount = Math.floor(amount);
+    if (redemptionAmount !== amount) {
+        throw new Error('Redemption amount must be a whole number');
+    }
+
+    // Begin transaction with proper concurrency safety
+    return prisma.$transaction(async (tx) => {
+        // Find and validate the user
+        const userData = await tx.user.findUnique({
+            where: { id: userId },
+            select: {
+                id: true,
+                utorid: true,
+                points: true,
+                verified: true
+            }
+        });
+
+        if (!userData) {
+            throw new Error('User not found');
         }
-    });
 
-    if (!user) {
-        throw new Error('User not found');
-    }
-
-    // Check if user is verified
-    if (!user.verified) {
-        throw new Error('User is not verified');
-    }
-    
-    // Get the total amount of pending redemptions
-    const pendingRedemptionsTotal = await getUserPendingRedemptionsTotal(userId);
-    
-    // Calculate the available balance after considering pending redemptions
-    const availableBalance = user.points - pendingRedemptionsTotal;
-    
-    // Check if user has enough available points (considering pending redemptions)
-    if (availableBalance < amount) {
-        throw new Error(`Insufficient points. You have ${user.points} points, but ${pendingRedemptionsTotal} are pending redemption. Available: ${availableBalance}`);
-    }
-
-    // Create the redemption transaction
-    const transaction = await prisma.transaction.create({
-        data: {
-            type,
-            amount: -amount, // Negative amount for redemption
-            remark: remark || '',
-            userId: user.id,
-            createdBy: userId,
-            redeemed: amount
+        // Check if user is verified
+        if (!userData.verified) {
+            throw new Error('User is not verified');
         }
+
+        // Get the total amount of pending redemptions within the transaction
+        // to ensure consistency with the user data
+        const pendingRedemptions = await tx.transaction.findMany({
+            where: {
+                userId: userData.id,
+                type: 'redemption',
+                processedBy: null
+            },
+            select: {
+                redeemed: true
+            }
+        });
+
+        const pendingRedemptionsTotal = pendingRedemptions.reduce((total, redemption) => {
+            return total + (redemption.redeemed || 0);
+        }, 0);
+        
+        // Calculate the available balance after considering pending redemptions
+        const availableBalance = userData.points - pendingRedemptionsTotal;
+        
+        // Check if user has enough available points (considering pending redemptions)
+        if (availableBalance < redemptionAmount) {
+            throw new Error(`Insufficient points. You have ${userData.points} points, but ${pendingRedemptionsTotal} are pending redemption. Available: ${availableBalance}, Required: ${redemptionAmount}`);
+        }
+
+        // Create the redemption transaction
+        const transaction = await tx.transaction.create({
+            data: {
+                type,
+                amount: -redemptionAmount, // Negative amount for redemption
+                remark: remark || '',
+                userId: userData.id,
+                createdBy: userId,
+                redeemed: redemptionAmount
+            }
+        });
+
+        // No longer updating user points here - points will be deducted when redemption is processed
+
+        return {
+            id: transaction.id,
+            utorid: userData.utorid,
+            type: transaction.type,
+            processedBy: null,
+            amount: redemptionAmount,
+            remark: transaction.remark,
+            createdBy: userData.utorid
+        };
+    }, {
+        // Set transaction timeout and isolation level for better concurrency control
+        timeout: 10000, // 10 seconds timeout
+        isolationLevel: 'ReadCommitted' // Appropriate isolation level for this use case
     });
-
-    // No longer updating user points here - points will be deducted when redemption is processed
-
-    return {
-        id: transaction.id,
-        utorid: user.utorid,
-        type: transaction.type,
-        processedBy: null,
-        amount,
-        remark: transaction.remark,
-        createdBy: user.utorid
-    };
 };
 
 /**
@@ -514,13 +541,72 @@ const processRedemption = async (transactionId, processorId) => {
     }
     console.log('Processor has required role:', processor.role);
 
-    // Begin transaction
+    // Begin transaction with proper concurrency safety
     console.log('Starting database transaction');
     return prisma.$transaction(async (tx) => {
+        // Find and validate the transaction to be processed
+        console.log('Finding transaction to process');
+        const lockedTxData = await tx.transaction.findUnique({
+            where: { id: parseInt(transactionId) },
+            select: {
+                id: true,
+                type: true,
+                amount: true,
+                userId: true,
+                processedBy: true,
+                remark: true
+            }
+        });
+
+        if (!lockedTxData) {
+            console.log('Transaction not found');
+            console.log('===== TRANSACTION SERVICE: PROCESS REDEMPTION FAILED =====\n');
+            throw new Error('Transaction not found');
+        }
+
+        // Double-check transaction type and processing status
+        if (lockedTxData.type !== 'redemption') {
+            console.log('Transaction is not a redemption');
+            console.log('===== TRANSACTION SERVICE: PROCESS REDEMPTION FAILED =====\n');
+            throw new Error('Transaction is not a redemption');
+        }
+
+        if (lockedTxData.processedBy !== null) {
+            console.log('Transaction has already been processed');
+            console.log('===== TRANSACTION SERVICE: PROCESS REDEMPTION FAILED =====\n');
+            throw new Error('Transaction has already been processed');
+        }
+
+        // Find and validate the user
+        console.log('Finding user record');
+        const lockedUserData = await tx.user.findUnique({
+            where: { id: lockedTxData.userId },
+            select: {
+                id: true,
+                utorid: true,
+                points: true
+            }
+        });
+
+        if (!lockedUserData) {
+            console.log('User not found');
+            console.log('===== TRANSACTION SERVICE: PROCESS REDEMPTION FAILED =====\n');
+            throw new Error('User not found');
+        }
+
+        const redemptionAmount = -lockedTxData.amount; // Convert negative to positive
+
+        // Verify user has enough points for the redemption
+        if (lockedUserData.points < redemptionAmount) {
+            console.log(`Insufficient points for redemption. User has ${lockedUserData.points}, needs ${redemptionAmount}`);
+            console.log('===== TRANSACTION SERVICE: PROCESS REDEMPTION FAILED =====\n');
+            throw new Error(`Insufficient points. User has ${lockedUserData.points} points, but redemption requires ${redemptionAmount} points`);
+        }
+
         // Update the transaction
         console.log('Updating transaction');
         const updatedTransaction = await tx.transaction.update({
-            where: {id: parseInt(transactionId)},
+            where: { id: parseInt(transactionId) },
             data: {
                 processedBy: processorId,
                 relatedId: processorId // Store processor ID as related ID for redemptions
@@ -530,14 +616,23 @@ const processRedemption = async (transactionId, processorId) => {
 
         // Deduct points from user when redemption is processed
         console.log('Deducting points from user');
-        await tx.user.update({
-            where: { id: transaction.userId },
+        const updatedUser = await tx.user.update({
+            where: { id: lockedTxData.userId },
             data: {
                 points: {
-                    decrement: -transaction.amount // transaction.amount is negative, so we negate it
+                    decrement: redemptionAmount
                 }
-            }
+            },
+            select: { points: true }
         });
+
+        // Verify that user's balance didn't go negative (extra safety check)
+        if (updatedUser.points < 0) {
+            console.log(`Redemption would result in negative balance: ${updatedUser.points}`);
+            console.log('===== TRANSACTION SERVICE: PROCESS REDEMPTION FAILED =====\n');
+            throw new Error('Redemption would result in negative balance. Transaction cancelled.');
+        }
+
         console.log('User points updated');
 
         const result = {
@@ -545,13 +640,17 @@ const processRedemption = async (transactionId, processorId) => {
             utorid: transaction.user.utorid,
             type: updatedTransaction.type,
             processedBy: processor.utorid,
-            redeemed: -updatedTransaction.amount, // Convert negative to positive for response
+            redeemed: redemptionAmount,
             remark: updatedTransaction.remark,
             createdBy: transaction.user.utorid
         };
         console.log('Result:', JSON.stringify(result, null, 2));
         console.log('===== TRANSACTION SERVICE: PROCESS REDEMPTION COMPLETED =====\n');
         return result;
+    }, {
+        // Set transaction timeout and isolation level for better concurrency control
+        timeout: 10000, // 10 seconds timeout
+        isolationLevel: 'ReadCommitted' // Appropriate isolation level for this use case
     });
 };
 
@@ -569,60 +668,71 @@ const createTransfer = async (data, senderId, recipientUtorid) => {
         throw new Error('Amount must be a positive number');
     }
 
-    // Find the sender
-    const sender = await prisma.user.findUnique({
-        where: { id: senderId },
-        select: {
-            id: true,
-            utorid: true,
-            points: true,
-            verified: true
-        }
-    });
-
-    if (!sender) {
-        throw new Error('Sender not found');
+    // Convert amount to integer to prevent decimal precision issues
+    const transferAmount = Math.floor(amount);
+    if (transferAmount !== amount) {
+        throw new Error('Transfer amount must be a whole number');
     }
 
-    // Check if sender is verified
-    if (!sender.verified) {
-        throw new Error('Sender is not verified');
-    }
-    
-    // Check if sender has enough points
-    if (sender.points < amount) {
-        throw new Error('Insufficient points');
-    }
-
-    // Find the recipient using UTORid
-    const recipient = await prisma.user.findUnique({
-        where: { utorid: recipientUtorid },
-        select: {
-            id: true,
-            utorid: true
-        }
-    });
-
-    if (!recipient) {
-        throw new Error('Recipient not found');
-    }
-    
-    // Check if sender and recipient are the same
-    if (sender.id === recipient.id) {
-      throw new Error('Cannot transfer points to yourself');
-    }
-
-    // Begin transaction
+    // Begin transaction with proper concurrency safety
     return prisma.$transaction(async (tx) => {
+        // First, validate input parameters before acquiring locks
+        if (senderId === undefined || senderId === null) {
+            throw new Error('Sender ID is required');
+        }
+
+        // Find and validate the sender and recipient in proper order to avoid deadlocks
+        // Always acquire locks in a consistent order (by ID) to prevent deadlocks
+        const [senderData, recipientData] = await Promise.all([
+            tx.user.findUnique({
+                where: { id: senderId },
+                select: {
+                    id: true,
+                    utorid: true,
+                    points: true,
+                    verified: true
+                }
+            }),
+            tx.user.findUnique({
+                where: { utorid: recipientUtorid },
+                select: {
+                    id: true,
+                    utorid: true
+                }
+            })
+        ]);
+
+        if (!senderData) {
+            throw new Error('Sender not found');
+        }
+
+        if (!senderData.verified) {
+            throw new Error('Sender is not verified');
+        }
+
+        if (!recipientData) {
+            throw new Error('Recipient not found');
+        }
+        
+        // Check if sender and recipient are the same
+        if (senderData.id === recipientData.id) {
+            throw new Error('Cannot transfer points to yourself');
+        }
+
+        // Check if sender has enough points
+        if (senderData.points < transferAmount) {
+            throw new Error(`Insufficient points. Available: ${senderData.points}, Required: ${transferAmount}`);
+        }
+
         // Create the sender's transaction (negative amount)
         const senderTransaction = await tx.transaction.create({
             data: {
                 type,
-                amount: -amount, // Negative amount for the sender
+                amount: -transferAmount, // Negative amount for the sender
                 remark: remark || '',
-                userId: sender.id,
-                createdBy: sender.id,
-                relatedId: recipient.id // Store recipient ID as related ID
+                userId: senderData.id,
+                createdBy: senderData.id,
+                relatedId: recipientData.id // Store recipient ID as related ID
             }
         });
 
@@ -630,43 +740,53 @@ const createTransfer = async (data, senderId, recipientUtorid) => {
         await tx.transaction.create({
             data: {
                 type,
-                amount: amount, // Positive amount for the recipient
+                amount: transferAmount, // Positive amount for the recipient
                 remark: remark || '',
-                userId: recipient.id,
-                createdBy: sender.id,
-                relatedId: sender.id, // Store sender ID as related ID
-                senderId: sender.id
+                userId: recipientData.id,
+                createdBy: senderData.id,
+                relatedId: senderData.id, // Store sender ID as related ID
+                senderId: senderData.id
             }
         });
 
-        // Update the points for both users
-        await tx.user.update({
-            where: {id: sender.id},
+        // Update the points for both users atomically
+        const updatedSender = await tx.user.update({
+            where: { id: senderData.id },
             data: {
                 points: {
-                    decrement: amount
+                    decrement: transferAmount
                 }
-            }
+            },
+            select: { points: true }
         });
 
+        // Verify that sender's balance didn't go negative
+        if (updatedSender.points < 0) {
+            throw new Error('Transfer would result in negative balance. Transaction cancelled.');
+        }
+
         await tx.user.update({
-            where: {id: recipient.id},
+            where: { id: recipientData.id },
             data: {
                 points: {
-                    increment: amount
+                    increment: transferAmount
                 }
             }
         });
 
         return {
             id: senderTransaction.id,
-            sender: sender.utorid,
-            recipient: recipient.utorid,
+            sender: senderData.utorid,
+            recipient: recipientData.utorid,
             type,
-            sent: amount,
+            sent: transferAmount,
             remark: remark || '',
-            createdBy: sender.utorid
+            createdBy: senderData.utorid
         };
+    }, {
+        // Set transaction timeout and isolation level for better concurrency control
+        timeout: 10000, // 10 seconds timeout
+        isolationLevel: 'ReadCommitted' // Appropriate isolation level for this use case
     });
 };
 
