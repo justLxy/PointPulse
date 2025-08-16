@@ -19,13 +19,21 @@ const faqAccountManagement = [
         question: "How do I verify my account?",
         answer: "To verify your account, please visit the CSSU lounge (located in BA 2250) with your UTORid and a valid form of identification. A Cashier will assist you with the verification process."
     },
+    { 
+        question: "Will there be an easier way to verify accounts in the future?",
+        answer: "In the future, you can verify an account on the first login by using your UTORid to log in via UTORauth."
+    },
     {
         question: "Why can't I delete my own account?",
         answer: "To ensure transaction integrity and maintain a clear audit trail, users cannot delete accounts on their own. Please email the support team (cssu@cdf.toronto.edu) for assistance. "
     },
     {
-        question: "Does the CSSU delete unverified or unused accounts?",
-        answer: "We reserve the right to delete accounts that are unverified, and accounts that are unused for more than 12 months. We also reserve the right to delete accounts that violate our terms of service."
+        question: "Does the CSSU disable unverified or unused accounts?",
+        answer: "We reserve the right to disable accounts that are unverified, and accounts that are unused for more than 12 months. We also reserve the right to disable accounts that violate our terms of service."
+    },
+    {
+        question: "I found a vulnerability and was able to give myself 50000 points and steal your data...",
+        answer: "If you discover a vulnerability, please report it immediately to the support team (cssu@cdf.toronto.edu) and include the bracket [VULNERABILITY] in the subject line, and your write-up."
     }
 ]
 
