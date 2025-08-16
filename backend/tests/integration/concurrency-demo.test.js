@@ -126,8 +126,8 @@ describe('Concurrency Demonstration Tests', () => {
             // Verify timeout configuration
             expect(transferLogic).toContain('timeout: 10000');
             
-            // Verify isolation level
-            expect(transferLogic).toContain('ReadCommitted');
+            // Verify SQLite compatibility note
+            expect(transferLogic).toContain('SQLite compatibility');
         });
     });
 

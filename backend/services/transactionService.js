@@ -466,9 +466,9 @@ const createRedemption = async (data, userId) => {
             createdBy: userData.utorid
         };
     }, {
-        // Set transaction timeout and isolation level for better concurrency control
-        timeout: 10000, // 10 seconds timeout
-        isolationLevel: 'ReadCommitted' // Appropriate isolation level for this use case
+        // Set transaction timeout for better concurrency control
+        timeout: 10000 // 10 seconds timeout
+        // Note: isolationLevel removed for SQLite compatibility
     });
 };
 
@@ -648,9 +648,9 @@ const processRedemption = async (transactionId, processorId) => {
         console.log('===== TRANSACTION SERVICE: PROCESS REDEMPTION COMPLETED =====\n');
         return result;
     }, {
-        // Set transaction timeout and isolation level for better concurrency control
-        timeout: 10000, // 10 seconds timeout
-        isolationLevel: 'ReadCommitted' // Appropriate isolation level for this use case
+        // Set transaction timeout for better concurrency control
+        timeout: 10000 // 10 seconds timeout
+        // Note: isolationLevel removed for SQLite compatibility
     });
 };
 
@@ -784,9 +784,9 @@ const createTransfer = async (data, senderId, recipientUtorid) => {
             createdBy: senderData.utorid
         };
     }, {
-        // Set transaction timeout and isolation level for better concurrency control
-        timeout: 10000, // 10 seconds timeout
-        isolationLevel: 'ReadCommitted' // Appropriate isolation level for this use case
+        // Set transaction timeout for better concurrency control
+        timeout: 10000 // 10 seconds timeout
+        // Note: isolationLevel removed for SQLite compatibility
     });
 };
 
