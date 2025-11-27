@@ -1,4 +1,4 @@
-# PointPulse Loyalty Program
+# PointPulse
 
 ## Overview
 
